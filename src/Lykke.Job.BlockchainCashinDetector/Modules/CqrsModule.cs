@@ -92,34 +92,35 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .FailedCommandRetryDelay(defaultRetryDelay)
 
                     .ListeningCommands(typeof(EnrollToMatchingEngineCommand))
-                    .On("cashin-commands")
+                    .On("cashin-enroll-commands")
                     .WithLoopback()
                     .WithCommandsHandler<EnrollToMatchingEngineCommandsHandler>()
 
                     .ListeningCommands(typeof(EndCashinCommand))
-                    .On("cashin-commands")
+                    .On("cashin-end-commands")
                     .WithCommandsHandler<EndCashinCommandsHandler>()
 
-                    .ProcessingOptions("cashin-commands").MultiThreaded(10).QueueCapacity(1024),
+                    .ProcessingOptions("cashin-enroll-commands").MultiThreaded(10).QueueCapacity(1024)
+                    .ProcessingOptions("cashin-end-commands").MultiThreaded(10).QueueCapacity(1024),
 
                 Register.Saga<CashinSaga>("cashin-saga")
                     .ListeningEvents(typeof(CashinEnrolledToMatchingEngineEvent))
                     .From(BlockchainCashinDetectorBoundedContext.Name)
-                    .On("cashin-events")
+                    .On("cashin-enroll-events")
 
                     .ListeningEvents(
                         typeof(BlockchainOperationsExecutor.Contract.Events.OperationCompletedEvent),
                         typeof(BlockchainOperationsExecutor.Contract.Events.OperationFailedEvent))
                     .From(BlockchainOperationsExecutorBoundedContext.Name)
-                    .On("transfer-events")
+                    .On("operation-end-events")
 
                     .PublishingCommands(typeof(EndCashinCommand))
                     .To(BlockchainCashinDetectorBoundedContext.Name)
-                    .With("cashin-commands")
+                    .With("cashin-end-commands")
 
                     .PublishingCommands(typeof(BlockchainOperationsExecutor.Contract.Commands.StartOperationCommand))
                     .To(BlockchainOperationsExecutorBoundedContext.Name)
-                    .With("transfer-commands"));
+                    .With("operation-start-commands"));
         }
     }
 }
