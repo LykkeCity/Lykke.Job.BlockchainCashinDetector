@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+	<Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Lykke.Cqrs" Version="0.1.15" />
+    <PackageReference Include="Lykke.MatchingEngineConnector.Abstractions" Version="1.0.37" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Lykke.Job.BlockchainCashinDetector.Core\Lykke.Job.BlockchainCashinDetector.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Cashin\" />
+  </ItemGroup>
+
+</Project>

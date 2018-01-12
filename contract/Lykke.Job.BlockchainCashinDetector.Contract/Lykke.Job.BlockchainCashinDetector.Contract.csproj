@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Version>1.0.0</Version>
+    <Authors>Lykke</Authors>
+    <Company>Lykke</Company>
+    <Description>Contract for the Lykke.Job.BlockchainCashinDetector</Description>
+    <PackageLicenseUrl>https://github.com/LykkeCity/Lykke.Job.BlockchainCashinDetector/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/LykkeCity/Lykke.Job.BlockchainCashinDetector</PackageProjectUrl>
+    <PackageIconUrl>https://avatars3.githubusercontent.com/u/14153330?v=3&amp;amp;s=200</PackageIconUrl>
+    <RepositoryUrl>https://github.com/LykkeCity/Lykke.Job.BlockchainCashinDetector.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>Lykke;BlockchainCashinDetector</PackageTags>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DocumentationFile>bin\Debug\netstandard2.0\Lykke.Job.BlockchainCashinDetector.Contract.xml</DocumentationFile>
+    <NoWarn>1701;1702;1705;1591</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DocumentationFile>bin\Release\netstandard2.0\Lykke.Job.BlockchainCashinDetector.Contract.xml</DocumentationFile>
+    <NoWarn>1701;1702;1705;1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup Label="dotnet pack instructions">
+    <Content Include="$(OutputPath)Lykke.Job.BlockchainCashinDetector.Contract.pdb">
+      <Pack>true</Pack>
+      <PackagePath>lib/netstandard2.0</PackagePath>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="JetBrains.Annotations" Version="11.1.0" />
+  </ItemGroup>
+
+</Project>
