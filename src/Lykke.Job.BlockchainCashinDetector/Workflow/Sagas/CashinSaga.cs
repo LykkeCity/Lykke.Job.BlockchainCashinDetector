@@ -3,9 +3,9 @@ using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Cqrs;
 using Lykke.Job.BlockchainCashinDetector.Contract;
-using Lykke.Job.BlockchainCashinDetector.Core.Domain.Cashin.Commands;
-using Lykke.Job.BlockchainCashinDetector.Core.Domain.Cashin.Events;
 using Lykke.Job.BlockchainCashinDetector.Core.Services.BLockchains;
+using Lykke.Job.BlockchainCashinDetector.Workflow.Commands;
+using Lykke.Job.BlockchainCashinDetector.Workflow.Events;
 using Lykke.Job.BlockchainOperationsExecutor.Contract;
 using Lykke.Service.Assets.Client;
 

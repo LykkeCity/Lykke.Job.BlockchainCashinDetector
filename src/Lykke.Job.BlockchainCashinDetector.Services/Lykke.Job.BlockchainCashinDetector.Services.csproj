@@ -14,8 +14,4 @@
     <ProjectReference Include="..\Lykke.Job.BlockchainCashinDetector.Core\Lykke.Job.BlockchainCashinDetector.Core.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Cashin\" />
-  </ItemGroup>
-
 </Project>

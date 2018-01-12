@@ -1,13 +1,13 @@
 ﻿using System;
 using ProtoBuf;
 
-namespace Lykke.Job.BlockchainCashinDetector.Core.Domain.Cashin.Events
+namespace Lykke.Job.BlockchainCashinDetector.Workflow.Commands
 {
     /// <summary>
-    /// Cashin is enrolled to the ME
+    /// Command to end cashin process
     /// </summary>
     [ProtoContract]
-    public class CashinEnrolledToMatchingEngineEvent
+    public class EndCashinCommand
     {
         [ProtoMember(1)]
         public Guid OperationId { get; set; }
@@ -15,13 +15,10 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain.Cashin.Events
         public string BlockchainType { get; set; }
         [ProtoMember(3)]
         public string BlockchainDepositWalletAddress { get; set; }
+        /// <summary>
+        /// Lykke asset ID
+        /// </summary>
         [ProtoMember(4)]
-        public string BlockchainAssetId { get; set; }
-        [ProtoMember(5)]
         public string AssetId { get; set; }
-        [ProtoMember(6)]
-        public string ClientId { get; set; }
-        [ProtoMember(7)]
-        public decimal Amount { get; set; }
     }
 }

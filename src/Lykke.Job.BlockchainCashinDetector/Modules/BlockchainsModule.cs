@@ -34,6 +34,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                 .WithParameter(TypedParameter.From<IReadOnlyDictionary<string, string>>(_blockchainsIntegrationSettings.Blockchains.ToDictionary(b => b.Type, b => b.HotWalletAddress)))
                 .SingleInstance();
 
+            builder.RegisterType<BlockchainApiClientProvider>()
+                .As<IBlockchainApiClientProvider>();
+
             foreach (var blockchain in _blockchainsIntegrationSettings.Blockchains)
             {
                 _log.WriteInfo("Blockchains registration", "", 
@@ -47,9 +50,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .As<IStartable>()
                     .AutoActivate()
                     .SingleInstance()
-                    .WithParameter(
-                        (p, c) => p.ParameterType == typeof(IBlockchainApiClient),
-                        (p, c) => c.ResolveNamed<IBlockchainApiClient>(blockchain.Type))
                     .WithParameter(TypedParameter.From(_settings.Monitoring.Period))
                     .WithParameter(TypedParameter.From(_settings.Requests.BatchSize))
                     .WithParameter(TypedParameter.From(blockchain.Type));

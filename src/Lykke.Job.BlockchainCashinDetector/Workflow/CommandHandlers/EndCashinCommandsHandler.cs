@@ -3,7 +3,7 @@ using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Cqrs;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain.Cashin;
-using Lykke.Job.BlockchainCashinDetector.Core.Domain.Cashin.Commands;
+using Lykke.Job.BlockchainCashinDetector.Workflow.Commands;
 
 namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
 {

@@ -9,7 +9,8 @@ using JetBrains.Annotations;
 using Lykke.Cqrs;
 using Lykke.Job.BlockchainCashinDetector.Contract;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain.Cashin;
-using Lykke.Job.BlockchainCashinDetector.Core.Domain.Cashin.Commands;
+using Lykke.Job.BlockchainCashinDetector.Core.Services.BLockchains;
+using Lykke.Job.BlockchainCashinDetector.Workflow.Commands;
 using Lykke.Service.BlockchainApi.Client;
 using Lykke.Service.BlockchainApi.Client.Models;
 
@@ -29,7 +30,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
             TimeSpan period, 
             int batchSize, 
             string blockchainType,
-            IBlockchainApiClient blockchainApiClient,
+            IBlockchainApiClientProvider blockchainApiClientProvider,
             IActiveCashinRepository activeCashinRepository,
             ICqrsEngine cqrsEngine) :
 
@@ -40,7 +41,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
         {
             _batchSize = batchSize;
             _blockchainType = blockchainType;
-            _blockchainApiClient = blockchainApiClient;
+            _blockchainApiClient = blockchainApiClientProvider.Get(blockchainType);
             _activeCashinRepository = activeCashinRepository;
             _cqrsEngine = cqrsEngine;
         }

@@ -1,12 +1,11 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
 using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Cqrs;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain.Cashin;
-using Lykke.Job.BlockchainCashinDetector.Core.Domain.Cashin.Commands;
-using Lykke.Job.BlockchainCashinDetector.Core.Domain.Cashin.Events;
+using Lykke.Job.BlockchainCashinDetector.Workflow.Commands;
+using Lykke.Job.BlockchainCashinDetector.Workflow.Events;
 using Lykke.MatchingEngine.Connector.Abstractions.Models;
 using Lykke.MatchingEngine.Connector.Abstractions.Services;
 using Lykke.Service.Assets.Client;

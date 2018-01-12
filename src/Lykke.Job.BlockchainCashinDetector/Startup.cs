@@ -63,7 +63,6 @@ namespace Lykke.Job.BlockchainCashinDetector
                 
                 builder.RegisterModule(new JobModule(
                     appSettings.CurrentValue.MatchingEngineClient,
-                    appSettings.CurrentValue.BlockchainsIntegration,
                     appSettings.CurrentValue.Assets,
                     Log));
                 builder.RegisterModule(new RepositoriesModule(
