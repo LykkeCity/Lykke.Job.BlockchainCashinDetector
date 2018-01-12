@@ -1,5 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Cqrs;
@@ -27,7 +26,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
     public class CashinSaga
     {
         private readonly IHotWalletsProvider _hotWalletsProvider;
-        private readonly IAssetsServiceWithCache _assetsService;
         private readonly ILog _log;
 
         public CashinSaga(
@@ -36,7 +34,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
             IAssetsServiceWithCache assetsService)
         {
             _hotWalletsProvider = hotWalletsProvider;
-            _assetsService = assetsService;
             _log = log;
         }
 
@@ -66,19 +63,12 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         }
 
         [UsedImplicitly]
-        private async Task Handle(BlockchainOperationsExecutor.Contract.Events.OperationCompletedEvent evt, ICommandSender sender)
+        private Task Handle(BlockchainOperationsExecutor.Contract.Events.OperationCompletedEvent evt, ICommandSender sender)
         {
             _log.WriteInfo(nameof(BlockchainOperationsExecutor.Contract.Events.OperationCompletedEvent), evt, "");
 
             ChaosKitty.Meow();
 
-            var asset = await _assetsService.TryGetAssetAsync(evt.AssetId);
-
-            if (asset == null)
-            {
-                throw new InvalidOperationException("Asset not found");
-            }
-
             sender.SendCommand(new EndCashinCommand
             {
                 OperationId = evt.OperationId,
@@ -88,22 +78,17 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
             }, BlockchainCashinDetectorBoundedContext.Name);
 
             ChaosKitty.Meow();
+
+            return Task.CompletedTask;
         }
 
         [UsedImplicitly]
-        private async Task Handle(BlockchainOperationsExecutor.Contract.Events.OperationFailedEvent evt, ICommandSender sender)
+        private Task Handle(BlockchainOperationsExecutor.Contract.Events.OperationFailedEvent evt, ICommandSender sender)
         {
             _log.WriteInfo(nameof(BlockchainOperationsExecutor.Contract.Events.OperationFailedEvent), evt, "");
 
             ChaosKitty.Meow();
 
-            var asset = await _assetsService.TryGetAssetAsync(evt.AssetId);
-
-            if (asset == null)
-            {
-                throw new InvalidOperationException("Asset not found");
-            }
-
             sender.SendCommand(new EndCashinCommand
             {
                 OperationId = evt.OperationId,
@@ -113,6 +98,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
             }, BlockchainCashinDetectorBoundedContext.Name);
 
             ChaosKitty.Meow();
+
+            return Task.CompletedTask;
         }
     }
 }
