@@ -24,8 +24,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
         [UsedImplicitly]
         public async Task<CommandHandlingResult> Handle(EndCashinCommand command)
         {
-            _log.WriteInfo(nameof(EndCashinCommand), command, "");
-
             ChaosKitty.Meow();
 
             await _activeCashinRepository.TryRemoveAsync(

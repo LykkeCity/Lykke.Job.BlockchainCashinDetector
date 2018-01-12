@@ -40,8 +40,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         [UsedImplicitly]
         private Task Handle(CashinEnrolledToMatchingEngineEvent evt, ICommandSender sender)
         {
-            _log.WriteInfo(nameof(CashinEnrolledToMatchingEngineEvent), evt, "");
-
             ChaosKitty.Meow();
 
             var hotWalletAddress = _hotWalletsProvider.GetHotWalletAddress(evt.BlockchainType);
@@ -65,8 +63,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         [UsedImplicitly]
         private Task Handle(BlockchainOperationsExecutor.Contract.Events.OperationCompletedEvent evt, ICommandSender sender)
         {
-            _log.WriteInfo(nameof(BlockchainOperationsExecutor.Contract.Events.OperationCompletedEvent), evt, "");
-
             ChaosKitty.Meow();
 
             sender.SendCommand(new EndCashinCommand
@@ -85,8 +81,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         [UsedImplicitly]
         private Task Handle(BlockchainOperationsExecutor.Contract.Events.OperationFailedEvent evt, ICommandSender sender)
         {
-            _log.WriteInfo(nameof(BlockchainOperationsExecutor.Contract.Events.OperationFailedEvent), evt, "");
-
             ChaosKitty.Meow();
 
             sender.SendCommand(new EndCashinCommand
