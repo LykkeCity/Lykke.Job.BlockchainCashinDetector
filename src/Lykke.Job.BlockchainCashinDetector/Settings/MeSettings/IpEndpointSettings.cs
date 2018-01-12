@@ -1,12 +1,15 @@
 ﻿using System.Net;
 using JetBrains.Annotations;
+using Lykke.SettingsReader.Attributes;
 
 namespace Lykke.Job.BlockchainCashinDetector.Settings.MeSettings
 {
     [UsedImplicitly]
     public class IpEndpointSettings
     {
+        [TcpCheck("Port")]
         public string InternalHost { get; set; }
+        [TcpCheck("Port")]
         public string Host { get; set; }
         public int Port { get; set; }
 
