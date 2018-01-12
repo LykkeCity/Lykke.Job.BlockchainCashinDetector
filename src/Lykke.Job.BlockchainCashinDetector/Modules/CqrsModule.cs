@@ -86,7 +86,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                 Register.DefaultEndpointResolver(new RabbitMqConventionEndpointResolver(
                     "RabbitMq",
                     "protobuf",
-                    "lykke.bcn-integration")),
+                    environment: "lykke.bcn-integration")),
 
                 Register.BoundedContext(BlockchainCashinDetectorBoundedContext.Name)
                     .FailedCommandRetryDelay(defaultRetryDelay)
