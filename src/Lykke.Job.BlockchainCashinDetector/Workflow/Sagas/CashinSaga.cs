@@ -7,7 +7,7 @@ using Lykke.Job.BlockchainCashinDetector.Contract;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain.Cashin.Commands;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain.Cashin.Events;
 using Lykke.Job.BlockchainCashinDetector.Core.Services.BLockchains;
-using Lykke.Job.BlockchainTransfersExecutor.Contract;
+using Lykke.Job.BlockchainOperationsExecutor.Contract;
 using Lykke.Service.Assets.Client;
 
 namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
@@ -16,11 +16,11 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
     /// DepositWalletsBalanceProcessingPeriodicalHandler 
     /// -> EnrollToMatchingEngineCommand
     /// -> CashinEnrolledToMatchingEngineEvent
-    /// -> BlockchainTransfersExecutor : StartTransferCommand
-    /// -> BlockchainTransfersExecutor : 
-    ///     TransferCompleted 
+    /// -> BlockchainOperationsExecutor : StartOperationCommand
+    /// -> BlockchainOperationsExecutor : 
+    ///     OperationCompleted 
     ///         -> EndCashinCommand
-    ///     TransferFailed
+    ///     OperationFailed
     ///         -> EndCashinCommand
     /// </summary>
     [UsedImplicitly]
@@ -49,7 +49,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
 
             var hotWalletAddress = _hotWalletsProvider.GetHotWalletAddress(evt.BlockchainType);
 
-            sender.SendCommand(new BlockchainTransfersExecutor.Contract.Commands.StartTransferCommand
+            sender.SendCommand(new BlockchainOperationsExecutor.Contract.Commands.StartOperationCommand
             {
                 OperationId = evt.OperationId,
                 BlockchainType = evt.BlockchainType,
@@ -58,7 +58,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                 AssetId = evt.AssetId,
                 Amount = evt.Amount,
                 IncludeFee = true
-            }, BlockchainTransferExecutorBoundedContext.Name);
+            }, BlockchainOperationsExecutorBoundedContext.Name);
 
             ChaosKitty.Meow();
 
@@ -66,9 +66,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         }
 
         [UsedImplicitly]
-        private async Task Handle(BlockchainTransfersExecutor.Contract.Events.TransferCompletedEvent evt, ICommandSender sender)
+        private async Task Handle(BlockchainOperationsExecutor.Contract.Events.OperationCompletedEvent evt, ICommandSender sender)
         {
-            _log.WriteInfo(nameof(BlockchainTransfersExecutor.Contract.Events.TransferCompletedEvent), evt, "");
+            _log.WriteInfo(nameof(BlockchainOperationsExecutor.Contract.Events.OperationCompletedEvent), evt, "");
 
             ChaosKitty.Meow();
 
@@ -91,9 +91,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         }
 
         [UsedImplicitly]
-        private async Task Handle(BlockchainTransfersExecutor.Contract.Events.TransferFailedEvent evt, ICommandSender sender)
+        private async Task Handle(BlockchainOperationsExecutor.Contract.Events.OperationFailedEvent evt, ICommandSender sender)
         {
-            _log.WriteInfo(nameof(BlockchainTransfersExecutor.Contract.Events.TransferFailedEvent), evt, "");
+            _log.WriteInfo(nameof(BlockchainOperationsExecutor.Contract.Events.OperationFailedEvent), evt, "");
 
             ChaosKitty.Meow();
 

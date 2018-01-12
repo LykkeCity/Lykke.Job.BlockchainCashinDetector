@@ -13,7 +13,7 @@ using Lykke.Job.BlockchainCashinDetector.Settings.JobSettings;
 using Lykke.Job.BlockchainCashinDetector.Workflow;
 using Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Sagas;
-using Lykke.Job.BlockchainTransfersExecutor.Contract;
+using Lykke.Job.BlockchainOperationsExecutor.Contract;
 using Lykke.Messaging;
 
 namespace Lykke.Job.BlockchainCashinDetector.Modules
@@ -108,17 +108,17 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .On("cashin-events")
 
                     .ListeningEvents(
-                        typeof(BlockchainTransfersExecutor.Contract.Events.TransferCompletedEvent),
-                        typeof(BlockchainTransfersExecutor.Contract.Events.TransferFailedEvent))
-                    .From(BlockchainTransferExecutorBoundedContext.Name)
+                        typeof(BlockchainOperationsExecutor.Contract.Events.OperationCompletedEvent),
+                        typeof(BlockchainOperationsExecutor.Contract.Events.OperationFailedEvent))
+                    .From(BlockchainOperationsExecutorBoundedContext.Name)
                     .On("transfer-events")
 
                     .PublishingCommands(typeof(EndCashinCommand))
                     .To(BlockchainCashinDetectorBoundedContext.Name)
                     .With("cashin-commands")
 
-                    .PublishingCommands(typeof(BlockchainTransfersExecutor.Contract.Commands.StartTransferCommand))
-                    .To(BlockchainTransferExecutorBoundedContext.Name)
+                    .PublishingCommands(typeof(BlockchainOperationsExecutor.Contract.Commands.StartOperationCommand))
+                    .To(BlockchainOperationsExecutorBoundedContext.Name)
                     .With("transfer-commands"));
         }
     }
