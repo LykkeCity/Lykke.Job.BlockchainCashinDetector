@@ -1,4 +1,6 @@
-﻿namespace Lykke.Job.BlockchainCashinDetector.Settings.JobSettings
+﻿using Lykke.SettingsReader.Attributes;
+
+namespace Lykke.Job.BlockchainCashinDetector.Settings.JobSettings
 {
     public class BlockchainCashinDetectorSettings
     {
@@ -6,5 +8,7 @@
         public MonitoringSettings Monitoring { get; set; }
         public RequestsSettings Requests { get; set; }
         public CqrsSettings Cqrs { get; set; }
+        [Optional]
+        public ChaosSettings ChaosKitty { get; set; }
     }
 }

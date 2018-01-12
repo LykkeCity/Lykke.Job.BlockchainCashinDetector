@@ -26,11 +26,15 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
         {
             _log.WriteInfo(nameof(EndCashinCommand), command, "");
 
+            ChaosKitty.Meow();
+
             await _activeCashinRepository.TryRemoveAsync(
                 command.BlockchainType,
                 command.BlockchainDepositWalletAddress,
                 command.AssetId,
                 command.OperationId);
+
+            ChaosKitty.Meow();
 
             return CommandHandlingResult.Ok();
         }

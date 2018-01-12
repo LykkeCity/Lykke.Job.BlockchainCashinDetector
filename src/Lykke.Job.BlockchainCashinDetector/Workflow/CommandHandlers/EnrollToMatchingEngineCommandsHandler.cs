@@ -41,6 +41,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
         {
             _log.WriteInfo(nameof(EnrollToMatchingEngineCommand), command, "");
 
+            ChaosKitty.Meow();
+
             // First level deduplication just to reduce traffic to the ME
             if (await _deduplicationRepository.IsExists(command.OperationId))
             {
@@ -49,6 +51,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                 // Skips silently
                 return CommandHandlingResult.Ok();
             }
+
+            ChaosKitty.Meow();
 
             var clientId = GetClientId();
             var assets = await _assetsService.GetAllAssetsAsync();
@@ -66,6 +70,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                 clientId,
                 asset.Id,
                 (double) command.Amount);
+
+            ChaosKitty.Meow();
 
             if (cashInResult == null)
             {
@@ -93,7 +99,11 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                     Amount = command.Amount
                 });
 
+                ChaosKitty.Meow();
+
                 await _deduplicationRepository.InsertOrReplaceAsync(command.OperationId);
+
+                ChaosKitty.Meow();
 
                 return CommandHandlingResult.Ok();
             }

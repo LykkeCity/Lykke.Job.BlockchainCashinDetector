@@ -29,24 +29,23 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         private readonly IHotWalletsProvider _hotWalletsProvider;
         private readonly IAssetsServiceWithCache _assetsService;
         private readonly ILog _log;
-        private readonly RetryDelayProvider _delayProvider;
 
         public CashinSaga(
             ILog log,
-            RetryDelayProvider delayProvider,
             IHotWalletsProvider hotWalletsProvider,
             IAssetsServiceWithCache assetsService)
         {
             _hotWalletsProvider = hotWalletsProvider;
             _assetsService = assetsService;
             _log = log;
-            _delayProvider = delayProvider;
         }
 
         [UsedImplicitly]
         private Task Handle(CashinEnrolledToMatchingEngineEvent evt, ICommandSender sender)
         {
             _log.WriteInfo(nameof(CashinEnrolledToMatchingEngineEvent), evt, "");
+
+            ChaosKitty.Meow();
 
             var hotWalletAddress = _hotWalletsProvider.GetHotWalletAddress(evt.BlockchainType);
 
@@ -61,6 +60,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                 IncludeFee = true
             }, BlockchainTransferExecutorBoundedContext.Name);
 
+            ChaosKitty.Meow();
+
             return Task.CompletedTask;
         }
 
@@ -69,6 +70,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         {
             _log.WriteInfo(nameof(BlockchainTransfersExecutor.Contract.Events.TransferCompletedEvent), evt, "");
 
+            ChaosKitty.Meow();
+
             var asset = await _assetsService.TryGetAssetAsync(evt.AssetId);
 
             if (asset == null)
@@ -83,6 +86,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                 BlockchainDepositWalletAddress = evt.FromAddress,
                 AssetId = evt.AssetId
             }, BlockchainCashinDetectorBoundedContext.Name);
+
+            ChaosKitty.Meow();
         }
 
         [UsedImplicitly]
@@ -90,6 +95,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         {
             _log.WriteInfo(nameof(BlockchainTransfersExecutor.Contract.Events.TransferFailedEvent), evt, "");
 
+            ChaosKitty.Meow();
+
             var asset = await _assetsService.TryGetAssetAsync(evt.AssetId);
 
             if (asset == null)
@@ -104,6 +111,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                 BlockchainDepositWalletAddress = evt.FromAddress,
                 AssetId = evt.AssetId
             }, BlockchainCashinDetectorBoundedContext.Name);
+
+            ChaosKitty.Meow();
         }
     }
 }

@@ -75,6 +75,7 @@ namespace Lykke.Job.BlockchainCashinDetector
                     Log));
                 builder.RegisterModule(new CqrsModule(
                     appSettings.CurrentValue.BlockchainCashinDetectorJob.Cqrs,
+                    appSettings.CurrentValue.BlockchainCashinDetectorJob.ChaosKitty,
                     Log));
 
                 ApplicationContainer = builder.Build();

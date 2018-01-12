@@ -116,6 +116,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
                 balance.AssetId,
                 Guid.NewGuid);
 
+            ChaosKitty.Meow();
+
             // Cashin detected, sends command to enroll the cashin to the ME.
             // This command will be sended while balance is non zero.
             // The main thing here, is the same operationID for the same balance instance.
@@ -132,6 +134,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
                 },
                 BlockchainCashinDetectorBoundedContext.Name,
                 BlockchainCashinDetectorBoundedContext.Name);
+
+            ChaosKitty.Meow();
 
             return true;
         }
