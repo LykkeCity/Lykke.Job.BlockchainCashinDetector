@@ -61,8 +61,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
             builder.RegisterType<CashinSaga>();
 
             // Command handlers
+            builder.RegisterType<StartCashinCommandsHandler>();
             builder.RegisterType<EnrollToMatchingEngineCommandsHandler>();
-            builder.RegisterType<StartCashinCommandHandler>();
+            builder.RegisterType<DetectDepositBalanceCommandHandler>();
 
             builder.Register(ctx => CreateEngine(ctx, messagingEngine))
                 .As<ICqrsEngine>()
@@ -88,24 +89,39 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                 Register.BoundedContext(Self)
                     .FailedCommandRetryDelay(defaultRetryDelay)
 
+                    .ListeningCommands(typeof(DetectDepositBalanceCommand))
+                    .On("detect-balance")
+                    .WithLoopback()
+                    .PublishingEvents(typeof(DepositBalanceDetectedEvent))
+                    .With("balance-detected")
+                    .WithCommandsHandler<DetectDepositBalanceCommandHandler>()
+
                     .ListeningCommands(typeof(StartCashinCommand))
                     .On("start")
                     .WithLoopback()
-                    .PublishingEvents(typeof(CashinStartRequestedEvent))
+                    .PublishingEvents(typeof(CashinStartedEvent))
                     .With("started")
-                    .WithCommandsHandler<StartCashinCommandHandler>()
-                    
+                    .WithCommandsHandler<StartCashinCommandsHandler>()
+
                     .ListeningCommands(typeof(EnrollToMatchingEngineCommand))
                     .On("enroll")
                     .PublishingEvents(typeof(CashinEnrolledToMatchingEngineEvent))
                     .With("enrolled")
                     .WithCommandsHandler<EnrollToMatchingEngineCommandsHandler>()
-                    
+
+                    .ProcessingOptions("detect-balance").MultiThreaded(4).QueueCapacity(1024)
                     .ProcessingOptions("start").MultiThreaded(4).QueueCapacity(1024)
                     .ProcessingOptions("enroll").MultiThreaded(4).QueueCapacity(1024),
 
                 Register.Saga<CashinSaga>("cashin-saga")
-                    .ListeningEvents(typeof(CashinStartRequestedEvent))
+                    .ListeningEvents(typeof(DepositBalanceDetectedEvent))
+                    .From(Self)
+                    .On("balance-detected")
+                    .PublishingCommands(typeof(StartCashinCommand))
+                    .To(Self)
+                    .With("start")
+
+                    .ListeningEvents(typeof(CashinStartedEvent))
                     .From(Self)
                     .On("started")
                     .PublishingCommands(typeof(EnrollToMatchingEngineCommand))

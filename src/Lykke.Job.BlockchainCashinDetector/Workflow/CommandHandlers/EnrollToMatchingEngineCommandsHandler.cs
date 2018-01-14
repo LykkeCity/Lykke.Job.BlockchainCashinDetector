@@ -37,8 +37,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
         [UsedImplicitly]
         public async Task<CommandHandlingResult> Handle(EnrollToMatchingEngineCommand command, IEventPublisher publisher)
         {
-            ChaosKitty.Meow();
-
             // First level deduplication just to reduce traffic to the ME
             if (await _deduplicationRepository.IsExists(command.OperationId))
             {

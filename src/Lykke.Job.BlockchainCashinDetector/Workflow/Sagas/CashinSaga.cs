@@ -11,10 +11,12 @@ using Lykke.Job.BlockchainOperationsExecutor.Contract;
 namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
 {
     /// <summary>
-    /// -> DepositWalletsBalanceProcessingPeriodicalHandler : StartCashinCommand
-    /// -> CashinStartRequestedEvent
+    /// -> DepositWalletsBalanceProcessingPeriodicalHandler : DetectDepositBalanceCommand
+    /// -> DepositBalanceDetectedEvent
+    ///     -> StartCashinCommand
+    /// -> CashinStartedEvent
     ///     -> EnrollToMatchingEngineCommand
-    /// -> CashinEnrolledToMatchingEngineEvent
+    /// -> CashinEnrolledToMatchingEngineEvent 
     ///     -> BlockchainOperationsExecutor : StartOperationCommand
     /// -> BlockchainOperationsExecutor : OperationCompleted | OperationFailed
     /// </summary>
@@ -31,7 +33,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         }
 
         [UsedImplicitly]
-        private async Task Handle(CashinStartRequestedEvent evt, ICommandSender sender)
+        private async Task Handle(DepositBalanceDetectedEvent evt, ICommandSender sender)
         {
             var aggregate = await _cashinRepository.GetOrAddAsync(
                 evt.BlockchainType,
@@ -46,7 +48,22 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
 
             ChaosKitty.Meow();
 
-            if (aggregate.State == CashinState.Started)
+            if (aggregate.State == CashinState.Starting)
+            {
+                sender.SendCommand(new StartCashinCommand
+                    {
+                        OperationId = aggregate.OperationId
+                    },
+                    Self);
+            }
+        }
+
+        [UsedImplicitly]
+        private async Task Handle(CashinStartedEvent evt, ICommandSender sender)
+        {
+            var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
+
+            if (aggregate.Start())
             {
                 sender.SendCommand(new EnrollToMatchingEngineCommand
                     {
@@ -57,6 +74,12 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                         Amount = aggregate.Amount
                     },
                     Self);
+
+                ChaosKitty.Meow();
+
+                await _cashinRepository.SaveAsync(aggregate);
+
+                ChaosKitty.Meow();
             }
         }
 

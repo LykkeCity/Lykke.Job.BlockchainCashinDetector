@@ -49,7 +49,10 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
         [UsedImplicitly]
         public CashinState State { get; set; }
         [UsedImplicitly]
-        public DateTime StartMoment { get; set; }
+        public DateTime CreationMoment { get; set; }
+        [UsedImplicitly]
+        public DateTime? StartMoment { get; set; }
+
         [UsedImplicitly]
         public DateTime? MatchingEngineEnrollementMoment { get; set; }
         [UsedImplicitly]
@@ -112,6 +115,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 PartitionKey = GetPartitionKey(operationId),
                 RowKey = GetRowKey(operationId),
                 State = aggregate.State,
+                CreationMoment = aggregate.CreationMoment,
                 StartMoment = aggregate.StartMoment,
                 MatchingEngineEnrollementMoment = aggregate.MatchingEngineEnrollementMoment,
                 FinishMoment = aggregate.FinishMoment,
@@ -140,6 +144,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
             return CashinAggregate.Restore(
                 ETag,
                 State,
+                CreationMoment,
                 StartMoment,
                 MatchingEngineEnrollementMoment,
                 FinishMoment,

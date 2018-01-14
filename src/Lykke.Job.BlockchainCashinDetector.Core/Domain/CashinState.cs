@@ -2,6 +2,7 @@
 {
     public enum CashinState
     {
+        Starting,
         Started,
         EnrolledToMatchingEnging,
         Completed,

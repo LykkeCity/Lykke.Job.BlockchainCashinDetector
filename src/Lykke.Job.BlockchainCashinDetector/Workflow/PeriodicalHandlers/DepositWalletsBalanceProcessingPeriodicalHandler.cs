@@ -74,12 +74,11 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
                 {
                     foreach (var balance in batch)
                     {
-                        // Balance on the deposit wallet is detected, sends command to start the cashin process.
-                        // This command will be sended while balance is non zero. Deduplication of the
-                        // commands will be performed in the saga
+                        // Balance on the deposit wallet is detected, sends command to let the cashin saga
+                        // detect it.
 
                         _cqrsEngine.SendCommand(
-                            new StartCashinCommand
+                            new DetectDepositBalanceCommand
                             {
                                 BlockchainType = _blockchainType,
                                 Amount = balance.Balance,

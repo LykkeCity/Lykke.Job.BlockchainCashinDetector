@@ -3,7 +3,7 @@
 namespace Lykke.Job.BlockchainCashinDetector.Workflow.Events
 {
     [ProtoContract]
-    public class CashinStartRequestedEvent
+    public class DepositBalanceDetectedEvent
     {
         [ProtoMember(1)]
         public string BlockchainType { get; set; }

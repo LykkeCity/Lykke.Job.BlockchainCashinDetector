@@ -9,21 +9,21 @@ using Lykke.Job.BlockchainCashinDetector.Workflow.Events;
 namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
 {
     [UsedImplicitly]
-    public class StartCashinCommandHandler
+    public class DetectDepositBalanceCommandHandler
     {
         private readonly IHotWalletsProvider _hotWalletsProvider;
 
-        public StartCashinCommandHandler(IHotWalletsProvider hotWalletsProvider)
+        public DetectDepositBalanceCommandHandler(IHotWalletsProvider hotWalletsProvider)
         {
             _hotWalletsProvider = hotWalletsProvider;
         }
 
         [UsedImplicitly]
-        public Task<CommandHandlingResult> Handle(StartCashinCommand command, IEventPublisher publisher)
+        public Task<CommandHandlingResult> Handle(DetectDepositBalanceCommand command, IEventPublisher publisher)
         {
             var hotWalletAddress = _hotWalletsProvider.GetHotWalletAddress(command.BlockchainType);
 
-            publisher.PublishEvent(new CashinStartRequestedEvent
+            publisher.PublishEvent(new DepositBalanceDetectedEvent
             {
                 BlockchainType = command.BlockchainType,
                 BlockchainAssetId = command.BlockchainAssetId,

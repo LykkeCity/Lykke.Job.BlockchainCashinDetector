@@ -8,7 +8,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
 
         public CashinState State { get; private set; }
 
-        public DateTime StartMoment { get; }
+        public DateTime CreationMoment { get; }
+        public DateTime? StartMoment { get; private set; }
         public DateTime? MatchingEngineEnrollementMoment { get; private set; }
         public DateTime? FinishMoment { get; private set; }
 
@@ -35,7 +36,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             string blockchainAssetId, 
             decimal amount)
         {
-            StartMoment = DateTime.UtcNow;
+            CreationMoment = DateTime.UtcNow;
 
             OperationId = Guid.NewGuid();
             BlockchainType = blockchainType;
@@ -44,13 +45,14 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             BlockchainAssetId = blockchainAssetId;
             Amount = amount;
 
-            State = CashinState.Started;
+            State = CashinState.Starting;
         }
 
         private CashinAggregate(
             string version,
             CashinState state,
-            DateTime startMoment,
+            DateTime creationMoment,
+            DateTime? startMoment,
             DateTime? matchingEngineEnrollementMoment,
             DateTime? finishMoment,
             Guid operationId,
@@ -69,6 +71,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             Version = version;
             State = state;
 
+            CreationMoment = creationMoment;
             StartMoment = startMoment;
             MatchingEngineEnrollementMoment = matchingEngineEnrollementMoment;
             FinishMoment = finishMoment;
@@ -101,7 +104,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
         public static CashinAggregate Restore(
             string version,
             CashinState state,
-            DateTime startMoment,
+            DateTime creationMoment,
+            DateTime? startMoment,
             DateTime? matchingEngineEnrollementMoment,
             DateTime? finishMoment,
             Guid operationId,
@@ -120,6 +124,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             return new CashinAggregate(
                 version,
                 state,
+                creationMoment,
                 startMoment,
                 matchingEngineEnrollementMoment,
                 finishMoment,
@@ -135,6 +140,20 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
                 transactionTimestamp,
                 fee,
                 error);
+        }
+
+        public bool Start()
+        {
+            if (State != CashinState.Starting)
+            {
+                return false;
+            }
+
+            StartMoment = DateTime.UtcNow;
+
+            State = CashinState.Started;
+
+            return true;
         }
 
         public bool OnEnrolledToMatchingEngine(string clientId, string assetId)
