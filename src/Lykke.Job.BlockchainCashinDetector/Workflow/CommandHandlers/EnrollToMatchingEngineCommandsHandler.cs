@@ -11,6 +11,7 @@ using Lykke.Job.BlockchainCashinDetector.Workflow.Events;
 using Lykke.MatchingEngine.Connector.Abstractions.Models;
 using Lykke.MatchingEngine.Connector.Abstractions.Services;
 using Lykke.Service.Assets.Client;
+using Lykke.Service.BlockchainWallets.Client;
 
 namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
 {
@@ -19,17 +20,20 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
     {
         private readonly ILog _log;
         private readonly IAssetsServiceWithCache _assetsService;
+        private readonly IBlockchainWalletsClient _walletsClient;
         private readonly IMatchingEngineCallsDeduplicationRepository _deduplicationRepository;
         private readonly IMatchingEngineClient _meClient;
 
         public EnrollToMatchingEngineCommandsHandler(
             ILog log,
             IAssetsServiceWithCache assetsService,
+            IBlockchainWalletsClient walletsClient,
             IMatchingEngineCallsDeduplicationRepository deduplicationRepository, 
             IMatchingEngineClient meClient)
         {
             _log = log;
             _assetsService = assetsService;
+            _walletsClient = walletsClient;
             _deduplicationRepository = deduplicationRepository;
             _meClient = meClient;
         }
@@ -46,7 +50,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                 return CommandHandlingResult.Ok();
             }
 
-            var clientId = TryGetClientId(command.DepositWalletAddress);
+            var clientId = await _walletsClient.TryGetClientIdAsync(command.BlockchainType, command.BlockchainAssetId, command.DepositWalletAddress);
 
             if (clientId == null)
             {
@@ -65,7 +69,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
 
             var cashInResult = await _meClient.CashInOutAsync(
                 command.OperationId.ToString(),
-                clientId,
+                clientId.Value.ToString(),
                 asset.Id,
                 (double) command.Amount);
 
@@ -87,7 +91,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                 publisher.PublishEvent(new CashinEnrolledToMatchingEngineEvent
                 {
                     OperationId = command.OperationId,
-                    ClientId = clientId,
+                    ClientId = clientId.Value,
                     AssetId = asset.Id
                 });
 
@@ -101,12 +105,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
             }
 
             throw new InvalidOperationException($"Cashin into the ME is failed. ME status: {cashInResult.Status}, ME message: {cashInResult.Message}");
-        }
-
-        private string TryGetClientId(string commandDepositWalletAddress)
-        {
-            // TODO:
-            return $"fake-client-for-{commandDepositWalletAddress}";
         }
     }
 }

@@ -4,10 +4,12 @@ using Autofac;
 using Common.Log;
 using Lykke.Job.BlockchainCashinDetector.Core.Services.BLockchains;
 using Lykke.Job.BlockchainCashinDetector.Services.Blockchains;
+using Lykke.Job.BlockchainCashinDetector.Settings;
 using Lykke.Job.BlockchainCashinDetector.Settings.Blockchain;
 using Lykke.Job.BlockchainCashinDetector.Settings.JobSettings;
 using Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers;
 using Lykke.Service.BlockchainApi.Client;
+using Lykke.Service.BlockchainWallets.Client;
 
 namespace Lykke.Job.BlockchainCashinDetector.Modules
 {
@@ -15,15 +17,18 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
     {
         private readonly BlockchainCashinDetectorSettings _settings;
         private readonly BlockchainsIntegrationSettings _blockchainsIntegrationSettings;
+        private readonly BlockchainWalletsServiceClientSettings _walletsServiceSettings;
         private readonly ILog _log;
 
         public BlockchainsModule(
             BlockchainCashinDetectorSettings settings,
             BlockchainsIntegrationSettings blockchainsIntegrationSettings,
+            BlockchainWalletsServiceClientSettings walletsServiceSettings,
             ILog log)
         {
             _settings = settings;
             _blockchainsIntegrationSettings = blockchainsIntegrationSettings;
+            _walletsServiceSettings = walletsServiceSettings;
             _log = log;
         }
 
@@ -37,6 +42,11 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
             builder.RegisterType<BlockchainApiClientProvider>()
                 .As<IBlockchainApiClientProvider>();
 
+            builder.RegisterType<BlockchainWalletsClient>()
+                .As<IBlockchainWalletsClient>()
+                .WithParameter(TypedParameter.From(_walletsServiceSettings.ServiceUrl))
+                .SingleInstance();
+
             foreach (var blockchain in _blockchainsIntegrationSettings.Blockchains)
             {
                 _log.WriteInfo("Blockchains registration", "", 
@@ -44,7 +54,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
 
                 builder.RegisterType<BlockchainApiClient>()
                     .Named<IBlockchainApiClient>(blockchain.Type)
-                    .WithParameter(TypedParameter.From(blockchain.ApiUrl));
+                    .WithParameter(TypedParameter.From(blockchain.ApiUrl))
+                    .SingleInstance();
 
                 builder.RegisterType<DepositWalletsBalanceProcessingPeriodicalHandler>()
                     .As<IStartable>()

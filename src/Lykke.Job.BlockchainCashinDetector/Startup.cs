@@ -71,6 +71,7 @@ namespace Lykke.Job.BlockchainCashinDetector
                 builder.RegisterModule(new BlockchainsModule(
                     appSettings.CurrentValue.BlockchainCashinDetectorJob,
                     appSettings.CurrentValue.BlockchainsIntegration,
+                    appSettings.CurrentValue.BlockchainWalletsServiceClient,
                     Log));
                 builder.RegisterModule(new CqrsModule(
                     appSettings.CurrentValue.BlockchainCashinDetectorJob.Cqrs,

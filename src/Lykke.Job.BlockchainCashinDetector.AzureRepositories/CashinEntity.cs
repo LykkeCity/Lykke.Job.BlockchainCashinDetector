@@ -1,4 +1,5 @@
 ﻿using System;
+using Common;
 using JetBrains.Annotations;
 using Lykke.AzureStorage.Tables;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain;
@@ -19,7 +20,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 public static string GetPartitionKey(string blockchainType, string depositWalletAddress)
                 {
                     // Adds hash to distribute all records to the different partitions
-                    var hash = HashTools.GetPartitionKeyHash(depositWalletAddress);
+                    var hash = depositWalletAddress.CalculateHexHash32(3);
 
                     return $"{blockchainType}-{hash}";
                 }
@@ -72,7 +73,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
         public decimal Amount { get; set; }
 
         [UsedImplicitly]
-        public string ClientId { get; set; }
+        public Guid ClientId { get; set; }
         [UsedImplicitly]
         public string AssetId { get; set; }
         [UsedImplicitly]
@@ -92,7 +93,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
         public static string GetPartitionKey(Guid operationId)
         {
             // Use hash to distribute all records to the different partitions
-            var hash = HashTools.GetPartitionKeyHash(operationId.ToString());
+            var hash = operationId.ToString().CalculateHexHash32(3);
 
             return $"{hash}";
         }

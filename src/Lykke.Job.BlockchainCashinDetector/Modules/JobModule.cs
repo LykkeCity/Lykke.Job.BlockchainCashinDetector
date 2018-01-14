@@ -57,8 +57,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
 
             builder.Populate(_services);
         }
-
-
+        
         private void RegisterMatchingEngine(ContainerBuilder builder)
         {
             var socketLog = new SocketLogDynamic(

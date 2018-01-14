@@ -20,7 +20,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
         public string BlockchainAssetId { get; }
         public decimal Amount { get; }
 
-        public string ClientId { get; private set; }
+        public Guid ClientId { get; private set; }
         public string AssetId { get; private set; }
         public string TransactionHash { get; private set; }
         public DateTime? TransactionTimestamp { get; private set; }
@@ -61,7 +61,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             string depositWalletAddress,
             string blockchainAssetId,
             decimal amount,
-            string clientId,
+            Guid clientId,
             string assetId,
             string transactionHash,
             DateTime? transactionTimestamp,
@@ -114,7 +114,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             string depositWalletAddress,
             string blockchainAssetId,
             decimal amount,
-            string clientId,
+            Guid clientId,
             string assetId,
             string transactionHash,
             DateTime? transactionTimestamp,
@@ -156,7 +156,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             return true;
         }
 
-        public bool OnEnrolledToMatchingEngine(string clientId, string assetId)
+        public bool OnEnrolledToMatchingEngine(Guid clientId, string assetId)
         {
             if (State != CashinState.Started)
             {

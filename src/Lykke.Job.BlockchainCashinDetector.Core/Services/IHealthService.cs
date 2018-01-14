@@ -8,7 +8,5 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Services
     {
         string GetHealthViolationMessage();
         IEnumerable<HealthIssue> GetHealthIssues();
-
-        // TODO: Place health tracing methods declarations here
     }
 }

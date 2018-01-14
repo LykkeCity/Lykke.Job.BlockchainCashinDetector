@@ -13,5 +13,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Settings
         public BlockchainsIntegrationSettings BlockchainsIntegration { get; set; }
         public MatchingEngineSettings MatchingEngineClient { get; set; }
         public AssetsSettings Assets { get; set; }
+        public BlockchainWalletsServiceClientSettings BlockchainWalletsServiceClient { get; set; }
     }
 }

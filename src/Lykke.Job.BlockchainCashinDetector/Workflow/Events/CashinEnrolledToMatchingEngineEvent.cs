@@ -13,7 +13,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Events
         public Guid OperationId { get; set; }
 
         [ProtoMember(2)]
-        public string ClientId { get; set; }
+        public Guid ClientId { get; set; }
 
         [ProtoMember(3)]
         public string AssetId { get; set; }
