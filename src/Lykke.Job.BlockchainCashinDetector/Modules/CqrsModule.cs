@@ -7,8 +7,8 @@ using Inceptum.Messaging.Contract;
 using Inceptum.Messaging.RabbitMq;
 using Lykke.Cqrs;
 using Lykke.Job.BlockchainCashinDetector.Contract;
+using Lykke.Job.BlockchainCashinDetector.Core;
 using Lykke.Job.BlockchainCashinDetector.Settings.JobSettings;
-using Lykke.Job.BlockchainCashinDetector.Workflow;
 using Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Commands;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Events;
@@ -20,6 +20,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
 {
     public class CqrsModule : Module
     {
+        private static readonly string Self = BlockchainCashinDetectorBoundedContext.Name;
+
         private readonly CqrsSettings _settings;
         private readonly ChaosSettings _chaosSettings;
         private readonly ILog _log;
@@ -39,11 +41,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
             }
 
             builder.Register(context => new AutofacDependencyResolver(context)).As<IDependencyResolver>().SingleInstance();
-
-            builder.RegisterType<RetryDelayProvider>()
-                .AsSelf()
-                .WithParameter(TypedParameter.From(_settings.RetryDelay))
-                .SingleInstance();
 
             var rabbitMqSettings = new RabbitMQ.Client.ConnectionFactory
             {
@@ -65,7 +62,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
 
             // Command handlers
             builder.RegisterType<EnrollToMatchingEngineCommandsHandler>();
-            builder.RegisterType<EndCashinCommandsHandler>();
+            builder.RegisterType<StartCashinCommandHandler>();
 
             builder.Register(ctx => CreateEngine(ctx, messagingEngine))
                 .As<ICqrsEngine>()
@@ -88,39 +85,45 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     "protobuf",
                     environment: "lykke.bcn-integration")),
 
-                Register.BoundedContext(BlockchainCashinDetectorBoundedContext.Name)
+                Register.BoundedContext(Self)
                     .FailedCommandRetryDelay(defaultRetryDelay)
 
-                    .ListeningCommands(typeof(EnrollToMatchingEngineCommand))
-                    .On("cashin-enroll-commands")
+                    .ListeningCommands(typeof(StartCashinCommand))
+                    .On("start")
                     .WithLoopback()
+                    .PublishingEvents(typeof(CashinStartRequestedEvent))
+                    .With("started")
+                    .WithCommandsHandler<StartCashinCommandHandler>()
+                    
+                    .ListeningCommands(typeof(EnrollToMatchingEngineCommand))
+                    .On("enroll")
+                    .PublishingEvents(typeof(CashinEnrolledToMatchingEngineEvent))
+                    .With("enrolled")
                     .WithCommandsHandler<EnrollToMatchingEngineCommandsHandler>()
-
-                    .ListeningCommands(typeof(EndCashinCommand))
-                    .On("cashin-end-commands")
-                    .WithCommandsHandler<EndCashinCommandsHandler>()
-
-                    .ProcessingOptions("cashin-enroll-commands").MultiThreaded(10).QueueCapacity(1024)
-                    .ProcessingOptions("cashin-end-commands").MultiThreaded(10).QueueCapacity(1024),
+                    
+                    .ProcessingOptions("start").MultiThreaded(4).QueueCapacity(1024)
+                    .ProcessingOptions("enroll").MultiThreaded(4).QueueCapacity(1024),
 
                 Register.Saga<CashinSaga>("cashin-saga")
+                    .ListeningEvents(typeof(CashinStartRequestedEvent))
+                    .From(Self)
+                    .On("started")
+                    .PublishingCommands(typeof(EnrollToMatchingEngineCommand))
+                    .To(Self)
+                    .With("enroll")
+
                     .ListeningEvents(typeof(CashinEnrolledToMatchingEngineEvent))
-                    .From(BlockchainCashinDetectorBoundedContext.Name)
-                    .On("cashin-enroll-events")
+                    .From(Self)
+                    .On("enrolled")
+                    .PublishingCommands(typeof(BlockchainOperationsExecutor.Contract.Commands.StartOperationCommand))
+                    .To(BlockchainOperationsExecutorBoundedContext.Name)
+                    .With("start")
 
                     .ListeningEvents(
                         typeof(BlockchainOperationsExecutor.Contract.Events.OperationCompletedEvent),
                         typeof(BlockchainOperationsExecutor.Contract.Events.OperationFailedEvent))
                     .From(BlockchainOperationsExecutorBoundedContext.Name)
-                    .On("operation-end-events")
-
-                    .PublishingCommands(typeof(EndCashinCommand))
-                    .To(BlockchainCashinDetectorBoundedContext.Name)
-                    .With("cashin-end-commands")
-
-                    .PublishingCommands(typeof(BlockchainOperationsExecutor.Contract.Commands.StartOperationCommand))
-                    .To(BlockchainOperationsExecutorBoundedContext.Name)
-                    .With("operation-start-commands"));
+                    .On("finished"));
         }
     }
 }

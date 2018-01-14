@@ -1,7 +1,7 @@
 ﻿using Autofac;
 using Common.Log;
 using Lykke.Job.BlockchainCashinDetector.AzureRepositories;
-using Lykke.Job.BlockchainCashinDetector.Core.Domain.Cashin;
+using Lykke.Job.BlockchainCashinDetector.Core.Domain;
 using Lykke.Job.BlockchainCashinDetector.Settings.JobSettings;
 using Lykke.SettingsReader;
 
@@ -22,11 +22,11 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
 
         protected override void Load(ContainerBuilder builder)
         {
-            builder.Register(c => OperationsDeduplicationRepository.Create(_dbSettings.Nested(x => x.DataConnString), _log))
-                .As<IOperationsDeduplicationRepository>();
+            builder.Register(c => MatchingEngineCallsDeduplicationRepository.Create(_dbSettings.Nested(x => x.DataConnString), _log))
+                .As<IMatchingEngineCallsDeduplicationRepository>();
 
-            builder.Register(c => ActiveCashinRepository.Create(_dbSettings.Nested(x => x.DataConnString), _log))
-                .As<IActiveCashinRepository>();
+            builder.Register(c => CashinRepository.Create(_dbSettings.Nested(x => x.DataConnString), _log))
+                .As<ICashinRepository>();
         }
     }
 }

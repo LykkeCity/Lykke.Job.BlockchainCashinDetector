@@ -1,99 +1,128 @@
 ﻿using System.Threading.Tasks;
-using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Cqrs;
 using Lykke.Job.BlockchainCashinDetector.Contract;
-using Lykke.Job.BlockchainCashinDetector.Core.Services.BLockchains;
+using Lykke.Job.BlockchainCashinDetector.Core;
+using Lykke.Job.BlockchainCashinDetector.Core.Domain;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Commands;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Events;
 using Lykke.Job.BlockchainOperationsExecutor.Contract;
-using Lykke.Service.Assets.Client;
 
 namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
 {
     /// <summary>
-    /// DepositWalletsBalanceProcessingPeriodicalHandler 
-    /// -> EnrollToMatchingEngineCommand
+    /// -> DepositWalletsBalanceProcessingPeriodicalHandler : StartCashinCommand
+    /// -> CashinStartRequestedEvent
+    ///     -> EnrollToMatchingEngineCommand
     /// -> CashinEnrolledToMatchingEngineEvent
-    /// -> BlockchainOperationsExecutor : StartOperationCommand
-    /// -> BlockchainOperationsExecutor : 
-    ///     OperationCompleted 
-    ///         -> EndCashinCommand
-    ///     OperationFailed
-    ///         -> EndCashinCommand
+    ///     -> BlockchainOperationsExecutor : StartOperationCommand
+    /// -> BlockchainOperationsExecutor : OperationCompleted | OperationFailed
     /// </summary>
     [UsedImplicitly]
     public class CashinSaga
     {
-        private readonly IHotWalletsProvider _hotWalletsProvider;
-        private readonly ILog _log;
+        private static readonly string Self = BlockchainCashinDetectorBoundedContext.Name;
 
-        public CashinSaga(
-            ILog log,
-            IHotWalletsProvider hotWalletsProvider,
-            IAssetsServiceWithCache assetsService)
+        private readonly ICashinRepository _cashinRepository;
+
+        public CashinSaga(ICashinRepository cashinRepository)
         {
-            _hotWalletsProvider = hotWalletsProvider;
-            _log = log;
+            _cashinRepository = cashinRepository;
         }
 
         [UsedImplicitly]
-        private Task Handle(CashinEnrolledToMatchingEngineEvent evt, ICommandSender sender)
+        private async Task Handle(CashinStartRequestedEvent evt, ICommandSender sender)
         {
+            var aggregate = await _cashinRepository.GetOrAddAsync(
+                evt.BlockchainType,
+                evt.DepositWalletAddress,
+                evt.BlockchainAssetId,
+                () => CashinAggregate.StartNew(
+                    evt.BlockchainType,
+                    evt.HotWalletAddress,
+                    evt.DepositWalletAddress,
+                    evt.BlockchainAssetId,
+                    evt.Amount));
+
             ChaosKitty.Meow();
 
-            var hotWalletAddress = _hotWalletsProvider.GetHotWalletAddress(evt.BlockchainType);
-
-            sender.SendCommand(new BlockchainOperationsExecutor.Contract.Commands.StartOperationCommand
+            if (aggregate.State == CashinState.Started)
             {
-                OperationId = evt.OperationId,
-                BlockchainType = evt.BlockchainType,
-                FromAddress = evt.BlockchainDepositWalletAddress,
-                ToAddress = hotWalletAddress,
-                AssetId = evt.AssetId,
-                Amount = evt.Amount,
-                IncludeFee = true
-            }, BlockchainOperationsExecutorBoundedContext.Name);
-
-            ChaosKitty.Meow();
-
-            return Task.CompletedTask;
+                sender.SendCommand(new EnrollToMatchingEngineCommand
+                    {
+                        OperationId = aggregate.OperationId,
+                        BlockchainType = aggregate.BlockchainType,
+                        DepositWalletAddress = aggregate.DepositWalletAddress,
+                        BlockchainAssetId = aggregate.BlockchainAssetId,
+                        Amount = aggregate.Amount
+                    },
+                    Self);
+            }
         }
 
         [UsedImplicitly]
-        private Task Handle(BlockchainOperationsExecutor.Contract.Events.OperationCompletedEvent evt, ICommandSender sender)
+        private async Task Handle(CashinEnrolledToMatchingEngineEvent evt, ICommandSender sender)
         {
-            ChaosKitty.Meow();
+            var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
 
-            sender.SendCommand(new EndCashinCommand
+            if (aggregate.OnEnrolledToMatchingEngine(evt.ClientId, evt.AssetId))
             {
-                OperationId = evt.OperationId,
-                BlockchainType = evt.BlockchainType,
-                BlockchainDepositWalletAddress = evt.FromAddress,
-                AssetId = evt.AssetId
-            }, BlockchainCashinDetectorBoundedContext.Name);
+                sender.SendCommand(new BlockchainOperationsExecutor.Contract.Commands.StartOperationCommand
+                    {
+                        OperationId = aggregate.OperationId,
+                        BlockchainType = aggregate.BlockchainType,
+                        FromAddress = aggregate.DepositWalletAddress,
+                        ToAddress = aggregate.HotWalletAddress,
+                        AssetId = aggregate.AssetId,
+                        Amount = aggregate.Amount,
+                        IncludeFee = true
+                    },
+                    BlockchainOperationsExecutorBoundedContext.Name);
 
-            ChaosKitty.Meow();
+                ChaosKitty.Meow();
 
-            return Task.CompletedTask;
+                await _cashinRepository.SaveAsync(aggregate);
+
+                ChaosKitty.Meow();
+            }
         }
 
         [UsedImplicitly]
-        private Task Handle(BlockchainOperationsExecutor.Contract.Events.OperationFailedEvent evt, ICommandSender sender)
+        private async Task Handle(BlockchainOperationsExecutor.Contract.Events.OperationCompletedEvent evt, ICommandSender sender)
         {
-            ChaosKitty.Meow();
+            var aggregate = await _cashinRepository.TryGetAsync(evt.OperationId);
 
-            sender.SendCommand(new EndCashinCommand
+            if (aggregate == null)
             {
-                OperationId = evt.OperationId,
-                BlockchainType = evt.BlockchainType,
-                BlockchainDepositWalletAddress = evt.FromAddress,
-                AssetId = evt.AssetId
-            }, BlockchainCashinDetectorBoundedContext.Name);
+                // This is not a cashin operation
+                return;
+            }
 
-            ChaosKitty.Meow();
+            if (aggregate.OnOperationComplete(evt.TransactionHash, evt.TransactionTimestamp, evt.Fee))
+            {
+                await _cashinRepository.SaveAsync(aggregate);
 
-            return Task.CompletedTask;
+                ChaosKitty.Meow();
+            }
+        }
+
+        [UsedImplicitly]
+        private async Task Handle(BlockchainOperationsExecutor.Contract.Events.OperationFailedEvent evt, ICommandSender sender)
+        {
+            var aggregate = await _cashinRepository.TryGetAsync(evt.OperationId);
+
+            if (aggregate == null)
+            {
+                // This is not a cashin operation
+                return;
+            }
+
+            if (aggregate.OnOperationFailed(evt.TransactionTimestamp, evt.Error))
+            {
+                await _cashinRepository.SaveAsync(aggregate);
+
+                ChaosKitty.Meow();
+            }
         }
     }
 }

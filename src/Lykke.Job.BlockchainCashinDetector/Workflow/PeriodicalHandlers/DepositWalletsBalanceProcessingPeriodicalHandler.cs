@@ -1,18 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Threading.Tasks;
 using Common;
 using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Cqrs;
 using Lykke.Job.BlockchainCashinDetector.Contract;
-using Lykke.Job.BlockchainCashinDetector.Core.Domain.Cashin;
 using Lykke.Job.BlockchainCashinDetector.Core.Services.BLockchains;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Commands;
 using Lykke.Service.BlockchainApi.Client;
-using Lykke.Service.BlockchainApi.Client.Models;
 
 namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
 {
@@ -22,7 +19,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
         private readonly int _batchSize;
         private readonly string _blockchainType;
         private readonly IBlockchainApiClient _blockchainApiClient;
-        private readonly IActiveCashinRepository _activeCashinRepository;
         private readonly ICqrsEngine _cqrsEngine;
 
         public DepositWalletsBalanceProcessingPeriodicalHandler(
@@ -31,7 +27,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
             int batchSize, 
             string blockchainType,
             IBlockchainApiClientProvider blockchainApiClientProvider,
-            IActiveCashinRepository activeCashinRepository,
             ICqrsEngine cqrsEngine) :
 
             base(
@@ -42,7 +37,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
             _batchSize = batchSize;
             _blockchainType = blockchainType;
             _blockchainApiClient = blockchainApiClientProvider.Get(blockchainType);
-            _activeCashinRepository = activeCashinRepository;
             _cqrsEngine = cqrsEngine;
         }
 
@@ -52,7 +46,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
 
             var stopwatch = Stopwatch.StartNew();
             var wallets = new HashSet<string>();
-            var detectedCashinsCount = 0;
 
             var blockchainAssets = await _blockchainApiClient.GetAllAssetsAsync(_batchSize);
             
@@ -77,22 +70,29 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
 
                     return asset.Accuracy;
                 },
-                async batch =>
+                batch =>
                 {
-                    var cashinDetectionTasks = batch
-                        .Select(TryToDetectCashin)
-                        .ToList();
-
                     foreach (var balance in batch)
                     {
+                        // Balance on the deposit wallet is detected, sends command to start the cashin process.
+                        // This command will be sended while balance is non zero. Deduplication of the
+                        // commands will be performed in the saga
+
+                        _cqrsEngine.SendCommand(
+                            new StartCashinCommand
+                            {
+                                BlockchainType = _blockchainType,
+                                Amount = balance.Balance,
+                                DepositWalletAddress = balance.Address,
+                                BlockchainAssetId = balance.AssetId
+                            },
+                            BlockchainCashinDetectorBoundedContext.Name,
+                            BlockchainCashinDetectorBoundedContext.Name);
+
                         wallets.Add(balance.Address);
                     }
 
-                    var detectionResults = await Task.WhenAll(cashinDetectionTasks);
-
-                    detectedCashinsCount += detectionResults.Count(r => r);
-
-                    return true;
+                    return Task.FromResult(true);
                 });
 
             Log.WriteInfo(nameof(Execute), new
@@ -100,45 +100,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
                 balancesCount = statistics.ItemsCount,
                 walletsCount = wallets.Count,
                 batchesCount = statistics.BatchesCount,
-                detectedCashinsCount,
                 processingElapsed = statistics.Elapsed,
                 totalElapsed = stopwatch.Elapsed
             }, "Done");
-        }
-
-        private async Task<bool> TryToDetectCashin(WalletBalance balance)
-        {
-            // Atomically gets operation ID of the existing active cashin,
-            // or adds new active cashin 
-
-            var operationId = await _activeCashinRepository.GetOrAdd(
-                _blockchainType,
-                balance.Address,
-                balance.AssetId,
-                Guid.NewGuid);
-
-            ChaosKitty.Meow();
-
-            // Cashin detected, sends command to enroll the cashin to the ME.
-            // This command will be sended while balance is non zero.
-            // The main thing here, is the same operationID for the same balance instance.
-            // This allows to deduplicate the commands in the handler
-
-            _cqrsEngine.SendCommand(
-                new EnrollToMatchingEngineCommand
-                {
-                    OperationId = operationId,
-                    BlockchainType = _blockchainType,
-                    Amount = balance.Balance,
-                    BlockchainDepositWalletAddress = balance.Address,
-                    BlockchainAssetId = balance.AssetId
-                },
-                BlockchainCashinDetectorBoundedContext.Name,
-                BlockchainCashinDetectorBoundedContext.Name);
-
-            ChaosKitty.Meow();
-
-            return true;
         }
     }
 }

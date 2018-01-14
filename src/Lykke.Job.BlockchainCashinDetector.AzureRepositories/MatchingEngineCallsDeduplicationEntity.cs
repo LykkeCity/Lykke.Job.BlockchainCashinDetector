@@ -3,12 +3,12 @@ using Lykke.AzureStorage.Tables;
 
 namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
 {
-    internal class OperationDeduplicationEntity : AzureTableEntity
+    internal class MatchingEngineCallsDeduplicationEntity : AzureTableEntity
     {
         public static string GetPartitionKey(Guid operationId)
         {
             // Adds hash to distribute all records to the different partitions
-            var hash = (operationId.GetHashCode() & 0xFFF).ToString("X3");
+            var hash = HashTools.GetPartitionKeyHash(operationId.ToString());
 
             return hash;
         }

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Lykke.Job.BlockchainCashinDetector.Workflow
+namespace Lykke.Job.BlockchainCashinDetector.Core
 {
     public static class ChaosKitty
     {
