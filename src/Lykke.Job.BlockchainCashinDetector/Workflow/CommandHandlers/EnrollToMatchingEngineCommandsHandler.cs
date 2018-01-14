@@ -54,7 +54,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
 
             if (clientId == null)
             {
-                throw new InvalidOperationException($"Client ID for the blockchain deposit wallet address is not found");
+                throw new InvalidOperationException("Client ID for the blockchain deposit wallet address is not found");
             }
 
             var assets = await _assetsService.GetAllAssetsAsync();
@@ -62,7 +62,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
 
             if (asset == null)
             {
-                throw new InvalidOperationException($"Asset for the blockchain asset is not found");
+                throw new InvalidOperationException("Asset for the blockchain asset is not found");
             }
 
             ChaosKitty.Meow();
