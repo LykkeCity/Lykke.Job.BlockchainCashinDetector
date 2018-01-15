@@ -42,7 +42,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
 
         public override async Task Execute()
         {
-            Log.WriteInfo(nameof(Execute), "", "Detecting cashin (0 -> Deposit Wallet)...");
+            Log.WriteInfo(nameof(Execute), "", "Detecting cashin...");
 
             var stopwatch = Stopwatch.StartNew();
             var wallets = new HashSet<string>();
