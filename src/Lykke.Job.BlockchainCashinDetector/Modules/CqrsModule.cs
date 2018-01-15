@@ -109,7 +109,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .ProcessingOptions("start").MultiThreaded(4).QueueCapacity(1024)
                     .ProcessingOptions("enroll").MultiThreaded(4).QueueCapacity(1024),
 
-                Register.Saga<CashinSaga>("cashin-saga")
+                Register.Saga<CashinSaga>($"{Self}.cashin-saga")
                     .ListeningEvents(typeof(DepositBalanceDetectedEvent))
                     .From(Self)
                     .On("balance-detected")
