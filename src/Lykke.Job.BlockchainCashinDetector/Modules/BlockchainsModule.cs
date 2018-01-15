@@ -47,7 +47,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                 .WithParameter(TypedParameter.From(_walletsServiceSettings.ServiceUrl))
                 .SingleInstance();
 
-            foreach (var blockchain in _blockchainsIntegrationSettings.Blockchains)
+            foreach (var blockchain in _blockchainsIntegrationSettings.Blockchains.Where(b => !b.IsDisabled))
             {
                 _log.WriteInfo("Blockchains registration", "", 
                     $"Registering blockchain: {blockchain.Type} -> \r\nAPI: {blockchain.ApiUrl}\r\nHW: {blockchain.HotWalletAddress}");
