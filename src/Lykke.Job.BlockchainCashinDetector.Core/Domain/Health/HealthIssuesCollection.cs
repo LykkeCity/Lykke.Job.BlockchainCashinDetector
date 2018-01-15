@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 
 namespace Lykke.Job.BlockchainCashinDetector.Core.Domain.Health
@@ -14,6 +14,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain.Health
             _list = new List<HealthIssue>();
         }
 
+        // ReSharper disable once UnusedMember.Global
         public void Add(string type, string value)
         {
             _list.Add(HealthIssue.Create(type, value));

@@ -7,6 +7,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Settings
     public class BlockchainWalletsServiceClientSettings
     {
         [HttpCheck("/api/isalive")]
+        [UsedImplicitly(ImplicitUseKindFlags.Assign)]
         public string ServiceUrl { get; set; }
     }
 }

@@ -121,7 +121,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                 return;
             }
 
-            if (aggregate.OnOperationComplete(evt.TransactionHash, evt.TransactionTimestamp, evt.Fee))
+            if (aggregate.OnOperationComplete(evt.TransactionHash, evt.TransactionTimestamp, evt.TransactionAmount, evt.Fee))
             {
                 await _cashinRepository.SaveAsync(aggregate);
 

@@ -81,6 +81,8 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
         [UsedImplicitly]
         public DateTime? TransactionTimestamp { get; set; }
         [UsedImplicitly]
+        public decimal? TransactionAmount { get; set; }
+        [UsedImplicitly]
         public decimal? Fee { get; set; }
         [UsedImplicitly]
         public string Error { get; set; }
@@ -130,11 +132,12 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 AssetId = aggregate.AssetId,
                 TransactionHash = aggregate.TransactionHash,
                 TransactionTimestamp = aggregate.TransactionTimestamp,
+                TransactionAmount = aggregate.TransactionAmount,
                 Fee = aggregate.Fee,
                 Error = aggregate.Error
             };
         }
-        
+
         public static CashinEntity FromDomain(CashinAggregate aggregate)
         {
             return FromDomain(aggregate.OperationId, aggregate);
@@ -159,6 +162,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 AssetId,
                 TransactionHash,
                 TransactionTimestamp,
+                TransactionAmount,
                 Fee,
                 Error);
         }

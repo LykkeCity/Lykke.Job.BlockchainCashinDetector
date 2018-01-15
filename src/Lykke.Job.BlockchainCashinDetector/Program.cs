@@ -1,15 +1,18 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.PlatformAbstractions;
 
 namespace Lykke.Job.BlockchainCashinDetector
 {
+    [UsedImplicitly]
     internal sealed class Program
     {
         public static string EnvInfo => Environment.GetEnvironmentVariable("ENV_INFO");
 
+        // ReSharper disable once UnusedParameter.Global
         public static async Task Main(string[] args)
         {
             Console.WriteLine($"{PlatformServices.Default.Application.ApplicationName} version {PlatformServices.Default.Application.ApplicationVersion}");

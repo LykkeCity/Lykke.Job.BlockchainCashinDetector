@@ -92,23 +92,22 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .ListeningCommands(typeof(DetectDepositBalanceCommand))
                     .On("detect-balance")
                     .WithLoopback()
+                    .WithCommandsHandler<DetectDepositBalanceCommandHandler>()
                     .PublishingEvents(typeof(DepositBalanceDetectedEvent))
                     .With("balance-detected")
-                    .WithCommandsHandler<DetectDepositBalanceCommandHandler>()
-
+                    
                     .ListeningCommands(typeof(StartCashinCommand))
                     .On("start")
-                    .WithLoopback()
+                    .WithCommandsHandler<StartCashinCommandsHandler>()
                     .PublishingEvents(typeof(CashinStartedEvent))
                     .With("started")
-                    .WithCommandsHandler<StartCashinCommandsHandler>()
-
+                    
                     .ListeningCommands(typeof(EnrollToMatchingEngineCommand))
                     .On("enroll")
+                    .WithCommandsHandler<EnrollToMatchingEngineCommandsHandler>()
                     .PublishingEvents(typeof(CashinEnrolledToMatchingEngineEvent))
                     .With("enrolled")
-                    .WithCommandsHandler<EnrollToMatchingEngineCommandsHandler>()
-
+                    
                     .ProcessingOptions("detect-balance").MultiThreaded(4).QueueCapacity(1024)
                     .ProcessingOptions("start").MultiThreaded(4).QueueCapacity(1024)
                     .ProcessingOptions("enroll").MultiThreaded(4).QueueCapacity(1024),

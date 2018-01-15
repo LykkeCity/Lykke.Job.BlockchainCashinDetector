@@ -4,6 +4,7 @@ using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using AzureStorage.Tables;
 using Common.Log;
+using JetBrains.Annotations;
 using Lykke.Common.Api.Contract.Responses;
 using Lykke.Common.ApiLibrary.Middleware;
 using Lykke.Common.ApiLibrary.Swagger;
@@ -21,12 +22,12 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Lykke.Job.BlockchainCashinDetector
 {
+    [UsedImplicitly]
     public class Startup
     {
-        public IHostingEnvironment Environment { get; }
-        public IContainer ApplicationContainer { get; private set; }
-        public IConfigurationRoot Configuration { get; }
-        public ILog Log { get; private set; }
+        private IContainer ApplicationContainer { get; set; }
+        private IConfigurationRoot Configuration { get; }
+        private ILog Log { get; set; }
 
         public Startup(IHostingEnvironment env)
         {
@@ -35,9 +36,9 @@ namespace Lykke.Job.BlockchainCashinDetector
                 .AddEnvironmentVariables();
 
             Configuration = builder.Build();
-            Environment = env;
         }
 
+        [UsedImplicitly]
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
             try
@@ -89,6 +90,7 @@ namespace Lykke.Job.BlockchainCashinDetector
             }
         }
 
+        [UsedImplicitly]
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, IApplicationLifetime appLifetime)
         {
             try

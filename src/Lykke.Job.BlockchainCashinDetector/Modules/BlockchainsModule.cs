@@ -50,7 +50,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
             foreach (var blockchain in _blockchainsIntegrationSettings.Blockchains)
             {
                 _log.WriteInfo("Blockchains registration", "", 
-                    $"Registering blockchain: {blockchain.Type} -> \r\nAPI: {blockchain.ApiUrl}\r\nSign: {blockchain.SignFacadeUrl}\r\nHW: {blockchain.HotWalletAddress}");
+                    $"Registering blockchain: {blockchain.Type} -> \r\nAPI: {blockchain.ApiUrl}\r\nHW: {blockchain.HotWalletAddress}");
 
                 builder.RegisterType<BlockchainApiClient>()
                     .Named<IBlockchainApiClient>(blockchain.Type)

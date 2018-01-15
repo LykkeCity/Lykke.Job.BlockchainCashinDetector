@@ -1,5 +1,5 @@
 ﻿using System.Threading.Tasks;
-using Common.Log;
+using JetBrains.Annotations;
 using Lykke.Job.BlockchainCashinDetector.Core.Services;
 
 namespace Lykke.Job.BlockchainCashinDetector.Services
@@ -10,16 +10,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Services
     // or any incoming message will be processed and so on.
     // Do not forget to remove As<IStartable>() and AutoActivate() from DI registartions of services, 
     // which you want to startup explicitly.
-
+    [UsedImplicitly]
     public class StartupManager : IStartupManager
     {
-        private readonly ILog _log;
-
-        public StartupManager(ILog log)
-        {
-            _log = log.CreateComponentScope(nameof(ShutdownManager));
-        }
-
         public async Task StartAsync()
         {
             await Task.CompletedTask;

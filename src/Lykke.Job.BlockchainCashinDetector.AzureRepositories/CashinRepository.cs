@@ -67,6 +67,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
             var indexByStarted = await _indexByStartedStorage.GetOrInsertAsync(
                 indexByStartedPartitionKey,
                 indexByStartedRowKey,
+                // ReSharper disable once ImplicitlyCapturedClosure
                 () =>
                 {
                     newAggregate = newAggregateFactory();
@@ -161,7 +162,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                         }
                         catch (StorageException e) when (e.RequestInformation.HttpStatusCode == (int)HttpStatusCode.NotFound)
                         {
-                            // Index was already removed, so just ignores this exception
+                            // Index has been already removed, so just ignores this exception
                         }
                     }
                 }
