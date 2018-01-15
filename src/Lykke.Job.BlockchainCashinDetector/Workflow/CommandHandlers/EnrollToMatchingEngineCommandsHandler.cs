@@ -58,7 +58,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
             }
 
             var assets = await _assetsService.GetAllAssetsAsync();
-            var asset = assets.FirstOrDefault(a => a.BlockChainAssetId == command.BlockchainAssetId);
+            var asset = assets.FirstOrDefault(a =>
+                a.BlockchainIntegrationLayerId == command.BlockchainType &&
+                a.BlockchainIntegrationLayerAssetId == command.BlockchainAssetId);
 
             if (asset == null)
             {
