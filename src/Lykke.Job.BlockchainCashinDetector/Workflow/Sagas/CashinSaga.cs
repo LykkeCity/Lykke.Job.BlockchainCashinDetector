@@ -93,7 +93,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                 sender.SendCommand(new BlockchainOperationsExecutor.Contract.Commands.StartOperationCommand
                     {
                         OperationId = aggregate.OperationId,
-                        BlockchainType = aggregate.BlockchainType,
                         FromAddress = aggregate.DepositWalletAddress,
                         ToAddress = aggregate.HotWalletAddress,
                         AssetId = aggregate.AssetId,
