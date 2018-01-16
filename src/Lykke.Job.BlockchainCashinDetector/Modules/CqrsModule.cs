@@ -75,6 +75,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
         {
             var defaultRetryDelay = (long)_settings.RetryDelay.TotalMilliseconds;
 
+            const string defaultPipeline = "commands";
+            const string defaultRoute = "self";
+
             return new CqrsEngine(
                 _log,
                 ctx.Resolve<IDependencyResolver>(),
@@ -90,55 +93,53 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .FailedCommandRetryDelay(defaultRetryDelay)
 
                     .ListeningCommands(typeof(DetectDepositBalanceCommand))
-                    .On("detect-balance")
+                    .On(defaultRoute)
                     .WithLoopback()
                     .WithCommandsHandler<DetectDepositBalanceCommandHandler>()
                     .PublishingEvents(typeof(DepositBalanceDetectedEvent))
-                    .With("balance-detected")
+                    .With(defaultPipeline)
                     
                     .ListeningCommands(typeof(StartCashinCommand))
-                    .On("start")
+                    .On(defaultRoute)
                     .WithCommandsHandler<StartCashinCommandsHandler>()
                     .PublishingEvents(typeof(CashinStartedEvent))
-                    .With("started")
+                    .With(defaultPipeline)
                     
                     .ListeningCommands(typeof(EnrollToMatchingEngineCommand))
-                    .On("enroll")
+                    .On(defaultRoute)
                     .WithCommandsHandler<EnrollToMatchingEngineCommandsHandler>()
                     .PublishingEvents(typeof(CashinEnrolledToMatchingEngineEvent))
-                    .With("enrolled")
+                    .With(defaultPipeline)
                     
-                    .ProcessingOptions("detect-balance").MultiThreaded(4).QueueCapacity(1024)
-                    .ProcessingOptions("start").MultiThreaded(4).QueueCapacity(1024)
-                    .ProcessingOptions("enroll").MultiThreaded(4).QueueCapacity(1024),
+                    .ProcessingOptions(defaultRoute).MultiThreaded(8).QueueCapacity(1024),
 
-                Register.Saga<CashinSaga>($"{Self}.cashin-saga")
+                Register.Saga<CashinSaga>($"{Self}.saga")
                     .ListeningEvents(typeof(DepositBalanceDetectedEvent))
                     .From(Self)
-                    .On("balance-detected")
+                    .On(defaultRoute)
                     .PublishingCommands(typeof(StartCashinCommand))
                     .To(Self)
-                    .With("start")
+                    .With(defaultPipeline)
 
                     .ListeningEvents(typeof(CashinStartedEvent))
                     .From(Self)
-                    .On("started")
+                    .On(defaultRoute)
                     .PublishingCommands(typeof(EnrollToMatchingEngineCommand))
                     .To(Self)
-                    .With("enroll")
+                    .With(defaultPipeline)
 
                     .ListeningEvents(typeof(CashinEnrolledToMatchingEngineEvent))
                     .From(Self)
-                    .On("enrolled")
+                    .On(defaultRoute)
                     .PublishingCommands(typeof(BlockchainOperationsExecutor.Contract.Commands.StartOperationCommand))
                     .To(BlockchainOperationsExecutorBoundedContext.Name)
-                    .With("start")
+                    .With(defaultPipeline)
 
                     .ListeningEvents(
                         typeof(BlockchainOperationsExecutor.Contract.Events.OperationCompletedEvent),
                         typeof(BlockchainOperationsExecutor.Contract.Events.OperationFailedEvent))
                     .From(BlockchainOperationsExecutorBoundedContext.Name)
-                    .On("finished"));
+                    .On(defaultRoute));
         }
     }
 }
