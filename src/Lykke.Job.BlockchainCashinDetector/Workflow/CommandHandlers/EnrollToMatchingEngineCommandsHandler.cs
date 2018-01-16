@@ -46,7 +46,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
             {
                 _log.WriteInfo(nameof(EnrollToMatchingEngineCommand), command.OperationId, "Deduplicated");
 
-                // Skips silently
+                // Just skips
                 return CommandHandlingResult.Ok();
             }
 
@@ -57,7 +57,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                 throw new InvalidOperationException("Client ID for the blockchain deposit wallet address is not found");
             }
 
-            var assets = await _assetsService.GetAllAssetsAsync();
+            var assets = await _assetsService.GetAllAssetsAsync(false);
             var asset = assets.FirstOrDefault(a =>
                 a.BlockchainIntegrationLayerId == command.BlockchainType &&
                 a.BlockchainIntegrationLayerAssetId == command.BlockchainAssetId);
