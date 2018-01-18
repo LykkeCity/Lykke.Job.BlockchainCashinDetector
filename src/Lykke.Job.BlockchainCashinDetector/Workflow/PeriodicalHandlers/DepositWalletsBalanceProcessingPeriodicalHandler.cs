@@ -42,8 +42,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
 
         public override async Task Execute()
         {
-            Log.WriteInfo(nameof(Execute), "", "Detecting cashin...");
-
             var stopwatch = Stopwatch.StartNew();
             var wallets = new HashSet<string>();
 
@@ -94,14 +92,17 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
                     return Task.FromResult(true);
                 });
 
-            Log.WriteInfo(nameof(Execute), new
+            if (statistics.ItemsCount > 0)
             {
-                balancesCount = statistics.ItemsCount,
-                walletsCount = wallets.Count,
-                batchesCount = statistics.BatchesCount,
-                processingElapsed = statistics.Elapsed,
-                totalElapsed = stopwatch.Elapsed
-            }, "Done");
+                Log.WriteInfo(nameof(Execute), new
+                {
+                    balancesCount = statistics.ItemsCount,
+                    walletsCount = wallets.Count,
+                    batchesCount = statistics.BatchesCount,
+                    processingElapsed = statistics.Elapsed,
+                    totalElapsed = stopwatch.Elapsed
+                }, "Positive balance on the deposit wallets is detected");
+            }
         }
     }
 }
