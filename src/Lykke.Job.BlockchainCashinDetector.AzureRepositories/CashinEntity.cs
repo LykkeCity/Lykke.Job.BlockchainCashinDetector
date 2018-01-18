@@ -79,8 +79,6 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
         [UsedImplicitly]
         public string TransactionHash { get; set; }
         [UsedImplicitly]
-        public DateTime? TransactionTimestamp { get; set; }
-        [UsedImplicitly]
         public decimal? TransactionAmount { get; set; }
         [UsedImplicitly]
         public decimal? Fee { get; set; }
@@ -131,7 +129,6 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 ClientId = aggregate.ClientId,
                 AssetId = aggregate.AssetId,
                 TransactionHash = aggregate.TransactionHash,
-                TransactionTimestamp = aggregate.TransactionTimestamp,
                 TransactionAmount = aggregate.TransactionAmount,
                 Fee = aggregate.Fee,
                 Error = aggregate.Error
@@ -161,7 +158,6 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 ClientId,
                 AssetId,
                 TransactionHash,
-                TransactionTimestamp,
                 TransactionAmount,
                 Fee,
                 Error);

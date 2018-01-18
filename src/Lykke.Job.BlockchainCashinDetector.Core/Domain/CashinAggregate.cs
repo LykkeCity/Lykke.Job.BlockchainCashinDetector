@@ -23,7 +23,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
         public Guid ClientId { get; private set; }
         public string AssetId { get; private set; }
         public string TransactionHash { get; private set; }
-        public DateTime? TransactionTimestamp { get; private set; }
         public decimal? TransactionAmount { get; private set; }
         public decimal? Fee { get; private set; }
         public string Error { get; private set; }
@@ -65,7 +64,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             Guid clientId,
             string assetId,
             string transactionHash,
-            DateTime? transactionTimestamp,
             decimal? transactionAmount,
             decimal? fee,
             string error)
@@ -88,7 +86,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             ClientId = clientId;
             AssetId = assetId;
             TransactionHash = transactionHash;
-            TransactionTimestamp = transactionTimestamp;
             TransactionAmount = transactionAmount;
             Fee = fee;
             Error = error;
@@ -120,7 +117,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             Guid clientId,
             string assetId,
             string transactionHash,
-            DateTime? transactionTimestamp,
             decimal? transactionAmount,
             decimal? fee,
             string error)
@@ -141,7 +137,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
                 clientId,
                 assetId,
                 transactionHash,
-                transactionTimestamp,
                 transactionAmount,
                 fee,
                 error);
@@ -178,7 +173,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             return true;
         }
         
-        public bool OnOperationComplete(string transactionHash, DateTime transactionTimestamp, decimal transactionAmount, decimal fee)
+        public bool OnOperationComplete(string transactionHash, decimal transactionAmount, decimal fee)
         {
             if (State != CashinState.EnrolledToMatchingEnging)
             {
@@ -188,7 +183,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             FinishMoment = DateTime.UtcNow;
 
             TransactionHash = transactionHash;
-            TransactionTimestamp = transactionTimestamp;
             TransactionAmount = transactionAmount;
             Fee = fee;
 
@@ -197,7 +191,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             return true;
         }
 
-        public bool OnOperationFailed(DateTime transactionTimestamp, string error)
+        public bool OnOperationFailed(string error)
         {
             if (State != CashinState.EnrolledToMatchingEnging)
             {
@@ -206,7 +200,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
 
             FinishMoment = DateTime.UtcNow;
 
-            TransactionTimestamp = transactionTimestamp;
             Error = error;
 
             State = CashinState.Failed;

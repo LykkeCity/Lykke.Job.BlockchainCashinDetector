@@ -131,13 +131,13 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .ListeningEvents(typeof(CashinEnrolledToMatchingEngineEvent))
                     .From(Self)
                     .On(defaultRoute)
-                    .PublishingCommands(typeof(BlockchainOperationsExecutor.Contract.Commands.StartOperationCommand))
+                    .PublishingCommands(typeof(BlockchainOperationsExecutor.Contract.Commands.StartOperationExecutionCommand))
                     .To(BlockchainOperationsExecutorBoundedContext.Name)
                     .With(defaultPipeline)
 
                     .ListeningEvents(
-                        typeof(BlockchainOperationsExecutor.Contract.Events.OperationCompletedEvent),
-                        typeof(BlockchainOperationsExecutor.Contract.Events.OperationFailedEvent))
+                        typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent),
+                        typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent))
                     .From(BlockchainOperationsExecutorBoundedContext.Name)
                     .On(defaultRoute));
         }

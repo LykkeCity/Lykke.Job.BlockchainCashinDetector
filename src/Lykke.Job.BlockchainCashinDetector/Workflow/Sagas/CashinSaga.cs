@@ -90,7 +90,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
 
             if (aggregate.OnEnrolledToMatchingEngine(evt.ClientId, evt.AssetId))
             {
-                sender.SendCommand(new BlockchainOperationsExecutor.Contract.Commands.StartOperationCommand
+                sender.SendCommand(new BlockchainOperationsExecutor.Contract.Commands.StartOperationExecutionCommand
                     {
                         OperationId = aggregate.OperationId,
                         FromAddress = aggregate.DepositWalletAddress,
@@ -110,7 +110,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         }
 
         [UsedImplicitly]
-        private async Task Handle(BlockchainOperationsExecutor.Contract.Events.OperationCompletedEvent evt, ICommandSender sender)
+        private async Task Handle(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent evt, ICommandSender sender)
         {
             var aggregate = await _cashinRepository.TryGetAsync(evt.OperationId);
 
@@ -120,7 +120,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                 return;
             }
 
-            if (aggregate.OnOperationComplete(evt.TransactionHash, evt.TransactionTimestamp, evt.TransactionAmount, evt.Fee))
+            if (aggregate.OnOperationComplete(evt.TransactionHash, evt.TransactionAmount, evt.Fee))
             {
                 await _cashinRepository.SaveAsync(aggregate);
 
@@ -129,7 +129,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         }
 
         [UsedImplicitly]
-        private async Task Handle(BlockchainOperationsExecutor.Contract.Events.OperationFailedEvent evt, ICommandSender sender)
+        private async Task Handle(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent evt, ICommandSender sender)
         {
             var aggregate = await _cashinRepository.TryGetAsync(evt.OperationId);
 
@@ -139,7 +139,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                 return;
             }
 
-            if (aggregate.OnOperationFailed(evt.TransactionTimestamp, evt.Error))
+            if (aggregate.OnOperationFailed(evt.Error))
             {
                 await _cashinRepository.SaveAsync(aggregate);
 
