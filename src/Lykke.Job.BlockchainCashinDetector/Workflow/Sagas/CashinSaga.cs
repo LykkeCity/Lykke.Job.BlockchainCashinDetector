@@ -114,6 +114,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         {
             var aggregate = await _cashinRepository.TryGetAsync(evt.OperationId);
 
+            // TODO: Add tag (cashin/cashiout) to the operation, and pass it to the operations executor?
+
             if (aggregate == null)
             {
                 // This is not a cashin operation
@@ -132,6 +134,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         private async Task Handle(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent evt, ICommandSender sender)
         {
             var aggregate = await _cashinRepository.TryGetAsync(evt.OperationId);
+
+            // TODO: Add tag (cashin/cashout) to the operation, and pass it to the operations executor?
 
             if (aggregate == null)
             {
