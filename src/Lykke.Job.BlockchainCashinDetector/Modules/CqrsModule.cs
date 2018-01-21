@@ -64,6 +64,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
             builder.RegisterType<StartCashinCommandsHandler>();
             builder.RegisterType<EnrollToMatchingEngineCommandsHandler>();
             builder.RegisterType<DetectDepositBalanceCommandHandler>();
+            builder.RegisterType<RemoveMatchingEngineDeduplicationLockCommandsHandler>();
 
             builder.Register(ctx => CreateEngine(ctx, messagingEngine))
                 .As<ICqrsEngine>()
@@ -110,7 +111,13 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .WithCommandsHandler<EnrollToMatchingEngineCommandsHandler>()
                     .PublishingEvents(typeof(CashinEnrolledToMatchingEngineEvent))
                     .With(defaultPipeline)
-                    
+
+                    .ListeningCommands(typeof(RemoveMatchingEngineDeduplicationLockCommand))
+                    .On(defaultRoute)
+                    .WithCommandsHandler<RemoveMatchingEngineDeduplicationLockCommandsHandler>()
+                    .PublishingEvents(typeof(MatchingEngineDeduplicationLockRemovedEvent))
+                    .With(defaultPipeline)
+
                     .ProcessingOptions(defaultRoute).MultiThreaded(8).QueueCapacity(1024),
 
                 Register.Saga<CashinSaga>($"{Self}.saga")
@@ -139,6 +146,13 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                         typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent),
                         typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent))
                     .From(BlockchainOperationsExecutorBoundedContext.Name)
+                    .On(defaultRoute)
+                    .PublishingCommands(typeof(RemoveMatchingEngineDeduplicationLockCommand))
+                    .To(Self)
+                    .With(defaultPipeline)
+
+                    .ListeningEvents(typeof(MatchingEngineDeduplicationLockRemovedEvent))
+                    .From(Self)
                     .On(defaultRoute));
         }
     }

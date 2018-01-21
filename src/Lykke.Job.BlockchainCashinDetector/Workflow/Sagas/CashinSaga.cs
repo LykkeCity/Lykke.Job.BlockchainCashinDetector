@@ -19,6 +19,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
     /// -> CashinEnrolledToMatchingEngineEvent 
     ///     -> BlockchainOperationsExecutor : StartOperationCommand
     /// -> BlockchainOperationsExecutor : OperationCompleted | OperationFailed
+    ///     -> RemoveMatchingEngineDeduplicationLockCommand
+    /// -> MatchingEngineDeduplicationLockRemovedEvent
     /// </summary>
     [UsedImplicitly]
     public class CashinSaga
@@ -124,6 +126,12 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
 
             if (aggregate.OnOperationComplete(evt.TransactionHash, evt.TransactionAmount, evt.Fee))
             {
+                sender.SendCommand(new RemoveMatchingEngineDeduplicationLockCommand
+                    {
+                        OperationId = aggregate.OperationId
+                    },
+                    Self);
+
                 await _cashinRepository.SaveAsync(aggregate);
 
                 ChaosKitty.Meow();
@@ -144,6 +152,25 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
             }
 
             if (aggregate.OnOperationFailed(evt.Error))
+            {
+                sender.SendCommand(new RemoveMatchingEngineDeduplicationLockCommand
+                    {
+                        OperationId = aggregate.OperationId
+                    },
+                    Self);
+
+                await _cashinRepository.SaveAsync(aggregate);
+
+                ChaosKitty.Meow();
+            }
+        }
+
+        [UsedImplicitly]
+        private async Task Handle(MatchingEngineDeduplicationLockRemovedEvent evt, ICommandSender sender)
+        {
+            var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
+
+            if (aggregate.OnMatchingEngineDeduplicationLockRemoved())
             {
                 await _cashinRepository.SaveAsync(aggregate);
 

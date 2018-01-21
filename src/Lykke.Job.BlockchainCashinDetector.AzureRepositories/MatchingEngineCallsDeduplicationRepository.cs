@@ -43,5 +43,13 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
 
             return await _storage.GetDataAsync(partitionKey, rowKey) != null;
         }
+
+        public Task TryRemove(Guid operationId)
+        {
+            var partitionKey = MatchingEngineCallsDeduplicationEntity.GetPartitionKey(operationId);
+            var rowKey = MatchingEngineCallsDeduplicationEntity.GetRowKey(operationId);
+
+            return _storage.DeleteIfExistAsync(partitionKey, rowKey);
+        }
     }
 }

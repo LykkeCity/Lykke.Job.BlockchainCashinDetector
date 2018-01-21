@@ -50,14 +50,18 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
         [UsedImplicitly]
         public CashinState State { get; set; }
         [UsedImplicitly]
+        public CashinResult Result { get; set; }
+
+        [UsedImplicitly]
         public DateTime CreationMoment { get; set; }
         [UsedImplicitly]
         public DateTime? StartMoment { get; set; }
-
         [UsedImplicitly]
         public DateTime? MatchingEngineEnrollementMoment { get; set; }
         [UsedImplicitly]
-        public DateTime? FinishMoment { get; set; }
+        public DateTime? OperationFinishMoment { get; set; }
+        [UsedImplicitly]
+        public DateTime? MatchingEngineDeduplicationLockRemovingMoment { get; set; }
 
         [UsedImplicitly]
         public Guid OperationId { get; set; }
@@ -116,10 +120,12 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 PartitionKey = GetPartitionKey(operationId),
                 RowKey = GetRowKey(operationId),
                 State = aggregate.State,
+                Result = aggregate.Result,
                 CreationMoment = aggregate.CreationMoment,
                 StartMoment = aggregate.StartMoment,
                 MatchingEngineEnrollementMoment = aggregate.MatchingEngineEnrollementMoment,
-                FinishMoment = aggregate.FinishMoment,
+                MatchingEngineDeduplicationLockRemovingMoment = aggregate.MatchingEngineDeduplicationLockRemovingMoment,
+                OperationFinishMoment = aggregate.OperationFinishMoment,
                 OperationId = operationId,
                 BlockchainType = aggregate.BlockchainType,
                 HotWalletAddress = aggregate.HotWalletAddress,
@@ -145,10 +151,12 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
             return CashinAggregate.Restore(
                 ETag,
                 State,
+                Result,
                 CreationMoment,
                 StartMoment,
                 MatchingEngineEnrollementMoment,
-                FinishMoment,
+                OperationFinishMoment,
+                MatchingEngineDeduplicationLockRemovingMoment,
                 OperationId,
                 BlockchainType,
                 HotWalletAddress,

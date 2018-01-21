@@ -7,5 +7,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
     {
         Task InsertOrReplaceAsync(Guid operationId);
         Task<bool> IsExists(Guid operationId);
+        Task TryRemove(Guid operationId);
     }
 }

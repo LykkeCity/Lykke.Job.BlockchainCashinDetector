@@ -5,7 +5,7 @@
         Starting,
         Started,
         EnrolledToMatchingEnging,
-        Completed,
-        Failed
+        OperationIsFinished,
+        MatchingEngineDeduplicationLockIsRemoved
     }
 }
