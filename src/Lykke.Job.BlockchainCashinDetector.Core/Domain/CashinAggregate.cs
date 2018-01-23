@@ -240,6 +240,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
                 return false;
             }
 
+            State = nextState;
+
             return true;
         }
     }
