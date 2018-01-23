@@ -1,27 +1,27 @@
 ﻿using System;
-using ProtoBuf;
+using MessagePack;
 
 namespace Lykke.Job.BlockchainCashinDetector.Workflow.Commands
 {
     /// <summary>
     /// Command to enroll cashin to the client ME account
     /// </summary>
-    [ProtoContract]
+    [MessagePackObject]
     public class EnrollToMatchingEngineCommand
     {
-        [ProtoMember(1)]
+        [Key(0)]
         public Guid OperationId { get; set; }
 
-        [ProtoMember(2)]
+        [Key(1)]
         public string BlockchainType { get; set; }
 
-        [ProtoMember(3)]
+        [Key(2)]
         public string DepositWalletAddress { get; set; }
 
-        [ProtoMember(4)]
+        [Key(3)]
         public string BlockchainAssetId { get; set; }
 
-        [ProtoMember(5)]
+        [Key(4)]
         public decimal Amount { get; set; }
     }
 }

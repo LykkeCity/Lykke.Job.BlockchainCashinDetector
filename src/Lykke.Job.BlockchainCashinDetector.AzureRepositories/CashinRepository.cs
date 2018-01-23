@@ -78,7 +78,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
             var partitionKey = CashinEntity.GetPartitionKey(indexByStarted.OperationId);
             var rowKey = CashinEntity.GetRowKey(indexByStarted.OperationId);
 
-            ChaosKitty.Meow();
+            ChaosKitty.Meow(indexByStarted.OperationId);
 
             // Gets existing started or inserts new cashin
 
@@ -168,7 +168,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 }
             }
 
-            ChaosKitty.Meow();
+            ChaosKitty.Meow(aggregate.OperationId);
 
             var entity = CashinEntity.FromDomain(aggregate);
             

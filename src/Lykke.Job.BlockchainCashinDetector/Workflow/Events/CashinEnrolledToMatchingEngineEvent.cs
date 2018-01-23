@@ -1,21 +1,21 @@
 ﻿using System;
-using ProtoBuf;
+using MessagePack;
 
 namespace Lykke.Job.BlockchainCashinDetector.Workflow.Events
 {
     /// <summary>
     /// Cashin is enrolled to the ME
     /// </summary>
-    [ProtoContract]
+    [MessagePackObject]
     public class CashinEnrolledToMatchingEngineEvent
     {
-        [ProtoMember(1)]
+        [Key(0)]
         public Guid OperationId { get; set; }
 
-        [ProtoMember(2)]
+        [Key(1)]
         public Guid ClientId { get; set; }
 
-        [ProtoMember(3)]
+        [Key(2)]
         public string AssetId { get; set; }
     }
 }

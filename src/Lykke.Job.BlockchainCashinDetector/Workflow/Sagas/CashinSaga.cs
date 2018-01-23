@@ -41,6 +41,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         [UsedImplicitly]
         private async Task Handle(DepositBalanceDetectedEvent evt, ICommandSender sender)
         {
+#if DEBUG
+            _log.WriteInfo(nameof(DepositBalanceDetectedEvent), evt, "");
+#endif
             try
             {
                 var aggregate = await _cashinRepository.GetOrAddAsync(
@@ -54,7 +57,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                         evt.BlockchainAssetId,
                         evt.Amount));
 
-                ChaosKitty.Meow();
+                ChaosKitty.Meow(aggregate.OperationId);
 
                 if (aggregate.State == CashinState.Starting)
                 {
@@ -75,6 +78,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         [UsedImplicitly]
         private async Task Handle(CashinStartedEvent evt, ICommandSender sender)
         {
+#if DEBUG
+            _log.WriteInfo(nameof(CashinStartedEvent), evt, "");
+#endif
             try
             {
                 var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
@@ -91,16 +97,14 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                         },
                         Self);
 
-                    ChaosKitty.Meow();
+                    ChaosKitty.Meow(evt.OperationId);
 
                     await _cashinRepository.SaveAsync(aggregate);
-
-                    ChaosKitty.Meow();
                 }
             }
             catch (Exception ex)
             {
-                _log.WriteError(nameof(DepositBalanceDetectedEvent), evt, ex);
+                _log.WriteError(nameof(CashinStartedEvent), evt, ex);
                 throw;
             }
         }
@@ -108,6 +112,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         [UsedImplicitly]
         private async Task Handle(CashinEnrolledToMatchingEngineEvent evt, ICommandSender sender)
         {
+#if DEBUG
+            _log.WriteInfo(nameof(CashinEnrolledToMatchingEngineEvent), evt, "");
+#endif
             try
             {
                 var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
@@ -125,16 +132,14 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                         },
                         BlockchainOperationsExecutorBoundedContext.Name);
 
-                    ChaosKitty.Meow();
+                    ChaosKitty.Meow(evt.OperationId);
 
                     await _cashinRepository.SaveAsync(aggregate);
-
-                    ChaosKitty.Meow();
                 }
             }
             catch (Exception ex)
             {
-                _log.WriteError(nameof(DepositBalanceDetectedEvent), evt, ex);
+                _log.WriteError(nameof(CashinEnrolledToMatchingEngineEvent), evt, ex);
                 throw;
             }
         }
@@ -142,6 +147,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         [UsedImplicitly]
         private async Task Handle(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent evt, ICommandSender sender)
         {
+#if DEBUG
+            _log.WriteInfo(nameof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent), evt, "");
+#endif
             try
             {
                 var aggregate = await _cashinRepository.TryGetAsync(evt.OperationId);
@@ -162,14 +170,14 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                         },
                         Self);
 
-                    await _cashinRepository.SaveAsync(aggregate);
+                    ChaosKitty.Meow(evt.OperationId);
 
-                    ChaosKitty.Meow();
+                    await _cashinRepository.SaveAsync(aggregate);
                 }
             }
             catch (Exception ex)
             {
-                _log.WriteError(nameof(DepositBalanceDetectedEvent), evt, ex);
+                _log.WriteError(nameof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent), evt, ex);
                 throw;
             }
         }
@@ -177,6 +185,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         [UsedImplicitly]
         private async Task Handle(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent evt, ICommandSender sender)
         {
+#if DEBUG
+            _log.WriteInfo(nameof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent), evt, "");
+#endif
             try
             {
                 var aggregate = await _cashinRepository.TryGetAsync(evt.OperationId);
@@ -197,14 +208,14 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                         },
                         Self);
 
-                    await _cashinRepository.SaveAsync(aggregate);
+                    ChaosKitty.Meow(evt.OperationId);
 
-                    ChaosKitty.Meow();
+                    await _cashinRepository.SaveAsync(aggregate);
                 }
             }
             catch (Exception ex)
             {
-                _log.WriteError(nameof(DepositBalanceDetectedEvent), evt, ex);
+                _log.WriteError(nameof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent), evt, ex);
                 throw;
             }
         }
@@ -212,20 +223,23 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         [UsedImplicitly]
         private async Task Handle(MatchingEngineDeduplicationLockRemovedEvent evt, ICommandSender sender)
         {
+#if DEBUG
+            _log.WriteInfo(nameof(MatchingEngineDeduplicationLockRemovedEvent), evt, "");
+#endif
             try
             {
                 var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
 
                 if (aggregate.OnMatchingEngineDeduplicationLockRemoved())
                 {
-                    await _cashinRepository.SaveAsync(aggregate);
+                    ChaosKitty.Meow(evt.OperationId);
 
-                    ChaosKitty.Meow();
+                    await _cashinRepository.SaveAsync(aggregate);
                 }
             }
             catch (Exception ex)
             {
-                _log.WriteError(nameof(DepositBalanceDetectedEvent), evt, ex);
+                _log.WriteError(nameof(MatchingEngineDeduplicationLockRemovedEvent), evt, ex);
                 throw;
             }
         }

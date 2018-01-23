@@ -1,7 +1,7 @@
 ﻿using System;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Events;
-using ProtoBuf;
+using MessagePack;
 
 namespace Lykke.Job.BlockchainCashinDetector.Workflow.Commands
 {
@@ -13,10 +13,10 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Commands
     /// for the given deposit wallet and asset id is in-progress and to not
     /// clog process pipeline with the same balance detection messages
     /// </summary>
-    [ProtoContract]
+    [MessagePackObject]
     public class StartCashinCommand
     {
-        [ProtoMember(1)]
+        [Key(0)]
         public Guid OperationId { get; set; }
     }
 }

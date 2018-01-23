@@ -86,8 +86,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                 new DefaultEndpointProvider(),
                 true,
                 Register.DefaultEndpointResolver(new RabbitMqConventionEndpointResolver(
-                    "RabbitMq", 
-                    "protobuf", 
+                    "RabbitMq",
+                    "messagepack", 
                     environment: "lykke")),
 
                 Register.BoundedContext(Self)

@@ -41,6 +41,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
         [UsedImplicitly]
         public async Task<CommandHandlingResult> Handle(EnrollToMatchingEngineCommand command, IEventPublisher publisher)
         {
+#if DEBUG
+            _log.WriteInfo(nameof(EnrollToMatchingEngineCommand), command, "");
+#endif
             // First level deduplication just to reduce traffic to the ME
             if (await _deduplicationRepository.IsExists(command.OperationId))
             {
@@ -67,7 +70,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                 throw new InvalidOperationException("Asset for the blockchain asset is not found");
             }
 
-            ChaosKitty.Meow();
+            ChaosKitty.Meow(command.OperationId);
 
             var cashInResult = await _meClient.CashInOutAsync(
                 command.OperationId.ToString(),
@@ -75,7 +78,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                 asset.Id,
                 (double) command.Amount);
 
-            ChaosKitty.Meow();
+            ChaosKitty.Meow(command.OperationId);
 
             if (cashInResult == null)
             {
@@ -97,11 +100,11 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                     AssetId = asset.Id
                 });
 
-                ChaosKitty.Meow();
+                ChaosKitty.Meow(command.OperationId);
 
                 await _deduplicationRepository.InsertOrReplaceAsync(command.OperationId);
 
-                ChaosKitty.Meow();
+                ChaosKitty.Meow(command.OperationId);
 
                 return CommandHandlingResult.Ok();
             }

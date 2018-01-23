@@ -1,23 +1,23 @@
-﻿using ProtoBuf;
+﻿using MessagePack;
 
 namespace Lykke.Job.BlockchainCashinDetector.Workflow.Events
 {
-    [ProtoContract]
+    [MessagePackObject]
     public class DepositBalanceDetectedEvent
     {
-        [ProtoMember(1)]
+        [Key(0)]
         public string BlockchainType { get; set; }
 
-        [ProtoMember(2)]
+        [Key(1)]
         public string DepositWalletAddress { get; set; }
         
-        [ProtoMember(3)]
+        [Key(2)]
         public string BlockchainAssetId { get; set; }
 
-        [ProtoMember(4)]
+        [Key(3)]
         public decimal Amount { get; set; }
 
-        [ProtoMember(5)]
+        [Key(4)]
         public string HotWalletAddress { get; set; }
     }
 }

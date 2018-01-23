@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Cqrs;
 using Lykke.Job.BlockchainCashinDetector.Core;
@@ -11,7 +12,13 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
     [UsedImplicitly]
     public class RemoveMatchingEngineDeduplicationLockCommandsHandler
     {
+        private readonly ILog _log;
         private readonly IMatchingEngineCallsDeduplicationRepository _deduplicationRepository;
+
+        public RemoveMatchingEngineDeduplicationLockCommandsHandler(ILog log)
+        {
+            _log = log;
+        }
 
         public RemoveMatchingEngineDeduplicationLockCommandsHandler(IMatchingEngineCallsDeduplicationRepository deduplicationRepository)
         {
@@ -21,9 +28,12 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
         [UsedImplicitly]
         public Task<CommandHandlingResult> Handle(RemoveMatchingEngineDeduplicationLockCommand command, IEventPublisher publisher)
         {
+#if DEBUG
+            _log.WriteInfo(nameof(RemoveMatchingEngineDeduplicationLockCommand), command, "");
+#endif
             _deduplicationRepository.TryRemove(command.OperationId);
 
-            ChaosKitty.Meow();
+            ChaosKitty.Meow(command.OperationId);
             
             publisher.PublishEvent(new MatchingEngineDeduplicationLockRemovedEvent
             {

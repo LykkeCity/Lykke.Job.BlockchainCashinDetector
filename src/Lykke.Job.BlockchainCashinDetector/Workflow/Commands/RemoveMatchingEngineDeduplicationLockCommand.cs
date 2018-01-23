@@ -1,12 +1,12 @@
 ﻿using System;
-using ProtoBuf;
+using MessagePack;
 
 namespace Lykke.Job.BlockchainCashinDetector.Workflow.Commands
 {
-    [ProtoContract]
+    [MessagePackObject]
     public class RemoveMatchingEngineDeduplicationLockCommand
     {
-        [ProtoMember(1)]
+        [Key(0)]
         public Guid OperationId { get; set; }
     }
 }

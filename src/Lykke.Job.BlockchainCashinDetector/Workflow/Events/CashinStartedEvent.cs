@@ -1,12 +1,12 @@
 ﻿using System;
-using ProtoBuf;
+using MessagePack;
 
 namespace Lykke.Job.BlockchainCashinDetector.Workflow.Events
 {
-    [ProtoContract]
+    [MessagePackObject]
     public class CashinStartedEvent
     {
-        [ProtoMember(1)]
+        [Key(0)]
         public Guid OperationId { get; set; }
     }
 }
