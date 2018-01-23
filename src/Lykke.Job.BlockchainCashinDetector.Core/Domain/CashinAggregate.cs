@@ -115,7 +115,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             DateTime creationMoment,
             DateTime? startMoment,
             DateTime? matchingEngineEnrollementMoment,
-            DateTime? finishMoment,
+            DateTime? operationFinishMoment,
             DateTime? matchingEngineDeduplicationLockRemovingMoment,
             Guid operationId,
             string blockchainType,
@@ -137,7 +137,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
                 creationMoment,
                 startMoment,
                 matchingEngineEnrollementMoment,
-                finishMoment,
+                operationFinishMoment,
                 matchingEngineDeduplicationLockRemovingMoment,
                 operationId,
                 blockchainType,
@@ -155,21 +155,19 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
 
         public bool Start()
         {
-            if (State != CashinState.Starting)
+            if (!SwitchState(CashinState.Starting, CashinState.Started))
             {
                 return false;
             }
 
             StartMoment = DateTime.UtcNow;
 
-            State = CashinState.Started;
-
             return true;
         }
 
         public bool OnEnrolledToMatchingEngine(Guid clientId, string assetId)
         {
-            if (State != CashinState.Started)
+            if (!SwitchState(CashinState.Started, CashinState.EnrolledToMatchingEnging))
             {
                 return false;
             }
@@ -179,14 +177,12 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             ClientId = clientId;
             AssetId = assetId;
 
-            State = CashinState.EnrolledToMatchingEnging;
-
             return true;
         }
-        
+
         public bool OnOperationComplete(string transactionHash, decimal transactionAmount, decimal fee)
         {
-            if (State != CashinState.EnrolledToMatchingEnging)
+            if (!SwitchState(CashinState.EnrolledToMatchingEnging, CashinState.OperationIsFinished))
             {
                 return false;
             }
@@ -197,7 +193,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             TransactionAmount = transactionAmount;
             Fee = fee;
 
-            State = CashinState.OperationIsFinished;
             Result = CashinResult.Success;
 
             return true;
@@ -205,7 +200,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
 
         public bool OnOperationFailed(string error)
         {
-            if (State != CashinState.EnrolledToMatchingEnging)
+            if (!SwitchState(CashinState.EnrolledToMatchingEnging, CashinState.OperationIsFinished))
             {
                 return false;
             }
@@ -214,7 +209,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
 
             Error = error;
 
-            State = CashinState.OperationIsFinished;
             Result = CashinResult.Failure;
 
             return true;
@@ -222,14 +216,29 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
 
         public bool OnMatchingEngineDeduplicationLockRemoved()
         {
-            if (State != CashinState.OperationIsFinished)
+            if (!SwitchState(CashinState.OperationIsFinished, CashinState.MatchingEngineDeduplicationLockIsRemoved))
             {
                 return false;
             }
 
             MatchingEngineDeduplicationLockRemovingMoment = DateTime.UtcNow;
 
-            State = CashinState.MatchingEngineDeduplicationLockIsRemoved;
+            return true;
+        }
+
+        private bool SwitchState(CashinState expectedState, CashinState nextState)
+        {
+            if (State < expectedState)
+            {
+                // Throws to retry and wait until aggregate will be in the required state
+                throw new InvalidAggregateStateException(State, expectedState, nextState);
+            }
+
+            if (State > expectedState)
+            {
+                // Aggregate already in the next state, so this event can be just ignored
+                return false;
+            }
 
             return true;
         }
