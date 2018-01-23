@@ -47,47 +47,32 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
 
         #region Fields
 
-        [UsedImplicitly]
+        // ReSharper disable MemberCanBePrivate.Global
+
         public CashinState State { get; set; }
-        [UsedImplicitly]
         public CashinResult Result { get; set; }
 
-        [UsedImplicitly]
         public DateTime CreationMoment { get; set; }
-        [UsedImplicitly]
         public DateTime? StartMoment { get; set; }
-        [UsedImplicitly]
         public DateTime? MatchingEngineEnrollementMoment { get; set; }
-        [UsedImplicitly]
         public DateTime? OperationFinishMoment { get; set; }
-        [UsedImplicitly]
         public DateTime? MatchingEngineDeduplicationLockRemovingMoment { get; set; }
 
-        [UsedImplicitly]
         public Guid OperationId { get; set; }
-        [UsedImplicitly]
         public string BlockchainType { get; set; }
-        [UsedImplicitly]
         public string HotWalletAddress { get; set; }
-        [UsedImplicitly]
         public string DepositWalletAddress { get; set; }
-        [UsedImplicitly]
         public string BlockchainAssetId { get; set; }
-        [UsedImplicitly]
         public decimal Amount { get; set; }
 
-        [UsedImplicitly]
         public Guid? ClientId { get; set; }
-        [UsedImplicitly]
         public string AssetId { get; set; }
-        [UsedImplicitly]
         public string TransactionHash { get; set; }
-        [UsedImplicitly]
         public decimal? TransactionAmount { get; set; }
-        [UsedImplicitly]
         public decimal? Fee { get; set; }
-        [UsedImplicitly]
         public string Error { get; set; }
+
+        // ReSharper restore MemberCanBePrivate.Global
 
         #endregion
 

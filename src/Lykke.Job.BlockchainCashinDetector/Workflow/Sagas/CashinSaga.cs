@@ -121,6 +121,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
 
                 if (aggregate.OnEnrolledToMatchingEngine(evt.ClientId, evt.AssetId))
                 {
+                    // TODO: Add tag (cashin/cashout) to the operation, and pass it to the operations executor?
+
                     sender.SendCommand(new BlockchainOperationsExecutor.Contract.Commands.StartOperationExecutionCommand
                         {
                             OperationId = aggregate.OperationId,
@@ -154,15 +156,13 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
             {
                 var aggregate = await _cashinRepository.TryGetAsync(evt.OperationId);
 
-                // TODO: Add tag (cashin/cashiout) to the operation, and pass it to the operations executor?
-
                 if (aggregate == null)
                 {
                     // This is not a cashin operation
                     return;
                 }
 
-                if (aggregate.OnOperationComplete(evt.TransactionHash, evt.TransactionAmount, evt.Fee))
+                if (aggregate.OnOperationCompleted(evt.TransactionHash, evt.TransactionAmount, evt.Fee))
                 {
                     sender.SendCommand(new RemoveMatchingEngineDeduplicationLockCommand
                         {
@@ -191,8 +191,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
             try
             {
                 var aggregate = await _cashinRepository.TryGetAsync(evt.OperationId);
-
-                // TODO: Add tag (cashin/cashout) to the operation, and pass it to the operations executor?
 
                 if (aggregate == null)
                 {

@@ -36,7 +36,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
             });
         }
 
-        public async Task<bool> IsExists(Guid operationId)
+        public async Task<bool> IsExistsAsync(Guid operationId)
         {
             var partitionKey = MatchingEngineCallsDeduplicationEntity.GetPartitionKey(operationId);
             var rowKey = MatchingEngineCallsDeduplicationEntity.GetRowKey(operationId);
@@ -44,7 +44,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
             return await _storage.GetDataAsync(partitionKey, rowKey) != null;
         }
 
-        public Task TryRemove(Guid operationId)
+        public Task TryRemoveAsync(Guid operationId)
         {
             var partitionKey = MatchingEngineCallsDeduplicationEntity.GetPartitionKey(operationId);
             var rowKey = MatchingEngineCallsDeduplicationEntity.GetRowKey(operationId);

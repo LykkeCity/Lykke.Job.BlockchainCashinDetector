@@ -24,12 +24,12 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
         }
 
         [UsedImplicitly]
-        public Task<CommandHandlingResult> Handle(RemoveMatchingEngineDeduplicationLockCommand command, IEventPublisher publisher)
+        public async Task<CommandHandlingResult> Handle(RemoveMatchingEngineDeduplicationLockCommand command, IEventPublisher publisher)
         {
 #if DEBUG
             _log.WriteInfo(nameof(RemoveMatchingEngineDeduplicationLockCommand), command, "");
 #endif
-            _deduplicationRepository.TryRemove(command.OperationId);
+            await _deduplicationRepository.TryRemoveAsync(command.OperationId);
 
             ChaosKitty.Meow(command.OperationId);
             
@@ -38,7 +38,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                 OperationId = command.OperationId
             });
 
-            return Task.FromResult(CommandHandlingResult.Ok());
+            return CommandHandlingResult.Ok();
         }
     }
 }

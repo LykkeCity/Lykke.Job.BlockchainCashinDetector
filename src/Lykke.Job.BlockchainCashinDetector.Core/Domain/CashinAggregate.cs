@@ -180,7 +180,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             return true;
         }
 
-        public bool OnOperationComplete(string transactionHash, decimal transactionAmount, decimal fee)
+        public bool OnOperationCompleted(string transactionHash, decimal transactionAmount, decimal fee)
         {
             if (!SwitchState(CashinState.EnrolledToMatchingEnging, CashinState.OperationIsFinished))
             {

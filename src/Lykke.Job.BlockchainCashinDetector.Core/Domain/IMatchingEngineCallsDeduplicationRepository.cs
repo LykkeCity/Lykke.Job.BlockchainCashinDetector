@@ -6,7 +6,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
     public interface IMatchingEngineCallsDeduplicationRepository
     {
         Task InsertOrReplaceAsync(Guid operationId);
-        Task<bool> IsExists(Guid operationId);
-        Task TryRemove(Guid operationId);
+        Task<bool> IsExistsAsync(Guid operationId);
+        Task TryRemoveAsync(Guid operationId);
     }
 }
