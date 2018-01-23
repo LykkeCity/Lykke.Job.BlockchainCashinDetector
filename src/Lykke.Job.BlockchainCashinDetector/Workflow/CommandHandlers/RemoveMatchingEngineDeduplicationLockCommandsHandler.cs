@@ -15,13 +15,11 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
         private readonly ILog _log;
         private readonly IMatchingEngineCallsDeduplicationRepository _deduplicationRepository;
 
-        public RemoveMatchingEngineDeduplicationLockCommandsHandler(ILog log)
+        public RemoveMatchingEngineDeduplicationLockCommandsHandler(
+            ILog log,
+            IMatchingEngineCallsDeduplicationRepository deduplicationRepository)
         {
             _log = log;
-        }
-
-        public RemoveMatchingEngineDeduplicationLockCommandsHandler(IMatchingEngineCallsDeduplicationRepository deduplicationRepository)
-        {
             _deduplicationRepository = deduplicationRepository;
         }
 

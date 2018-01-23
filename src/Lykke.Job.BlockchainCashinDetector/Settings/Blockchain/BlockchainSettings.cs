@@ -13,7 +13,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Settings.Blockchain
         [UsedImplicitly(ImplicitUseKindFlags.Assign)]
         public string Type { get; set; }
 
-        [HttpCheck("/api/isaive")]
+        [HttpCheck("/api/isalive")]
         [UsedImplicitly(ImplicitUseKindFlags.Assign)]
         public string ApiUrl { get; set; }
 
