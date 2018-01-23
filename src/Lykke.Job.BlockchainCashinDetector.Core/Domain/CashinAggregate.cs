@@ -22,7 +22,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
         public string BlockchainAssetId { get; }
         public decimal Amount { get; }
 
-        public Guid ClientId { get; private set; }
+        public Guid? ClientId { get; private set; }
         public string AssetId { get; private set; }
         public string TransactionHash { get; private set; }
         public decimal? TransactionAmount { get; private set; }
@@ -66,7 +66,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             string depositWalletAddress,
             string blockchainAssetId,
             decimal amount,
-            Guid clientId,
+            Guid? clientId,
             string assetId,
             string transactionHash,
             decimal? transactionAmount,
@@ -123,7 +123,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             string depositWalletAddress,
             string blockchainAssetId,
             decimal amount,
-            Guid clientId,
+            Guid? clientId,
             string assetId,
             string transactionHash,
             decimal? transactionAmount,

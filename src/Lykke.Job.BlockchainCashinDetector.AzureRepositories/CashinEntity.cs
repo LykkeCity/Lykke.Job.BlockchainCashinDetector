@@ -77,7 +77,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
         public decimal Amount { get; set; }
 
         [UsedImplicitly]
-        public Guid ClientId { get; set; }
+        public Guid? ClientId { get; set; }
         [UsedImplicitly]
         public string AssetId { get; set; }
         [UsedImplicitly]
