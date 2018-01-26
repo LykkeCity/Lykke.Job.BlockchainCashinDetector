@@ -19,5 +19,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Events
 
         [Key(4)]
         public string HotWalletAddress { get; set; }
+
+        [Key(5)]
+        public string AssetId { get; set; }
     }
 }

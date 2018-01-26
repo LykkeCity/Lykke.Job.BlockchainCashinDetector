@@ -55,7 +55,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                         evt.HotWalletAddress,
                         evt.DepositWalletAddress,
                         evt.BlockchainAssetId,
-                        evt.Amount));
+                        evt.Amount,
+                        evt.AssetId));
 
                 ChaosKitty.Meow(aggregate.OperationId);
 
@@ -93,7 +94,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                             BlockchainType = aggregate.BlockchainType,
                             DepositWalletAddress = aggregate.DepositWalletAddress,
                             BlockchainAssetId = aggregate.BlockchainAssetId,
-                            Amount = aggregate.Amount
+                            Amount = aggregate.Amount,
+                            AssetId = aggregate.AssetId
                         },
                         Self);
 
@@ -119,7 +121,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
             {
                 var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
 
-                if (aggregate.OnEnrolledToMatchingEngine(evt.ClientId, evt.AssetId))
+                if (aggregate.OnEnrolledToMatchingEngine(evt.ClientId))
                 {
                     // TODO: Add tag (cashin/cashout) to the operation, and pass it to the operations executor?
 
