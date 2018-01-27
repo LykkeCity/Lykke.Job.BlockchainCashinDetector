@@ -2,6 +2,7 @@
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Common.Log;
+using Lykke.Common.Chaos;
 using Lykke.Job.BlockchainCashinDetector.Core.Services;
 using Lykke.Job.BlockchainCashinDetector.Services;
 using Lykke.Job.BlockchainCashinDetector.Settings.Assets;
@@ -16,16 +17,19 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
     {
         private readonly MatchingEngineSettings _meSettings;
         private readonly AssetsSettings _assetsSettings;
+        private readonly ChaosSettings _chaosSettings;
         private readonly ILog _log;
         private readonly ServiceCollection _services;
 
         public JobModule(
             MatchingEngineSettings meSettings,
             AssetsSettings assetsSettings,
+            ChaosSettings chaosSettings,
             ILog log)
         {
             _meSettings = meSettings;
             _assetsSettings = assetsSettings;
+            _chaosSettings = chaosSettings;
             _log = log;
             _services = new ServiceCollection();
         }
@@ -54,6 +58,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
             });
 
             RegisterMatchingEngine(builder);
+
+            builder.RegisterChaosKitty(_chaosSettings);
 
             builder.Populate(_services);
         }

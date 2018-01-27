@@ -2,8 +2,8 @@
 using System.Threading.Tasks;
 using Common.Log;
 using JetBrains.Annotations;
+using Lykke.Common.Chaos;
 using Lykke.Cqrs;
-using Lykke.Job.BlockchainCashinDetector.Core;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Commands;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Events;
@@ -16,17 +16,20 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
     [UsedImplicitly]
     public class EnrollToMatchingEngineCommandsHandler
     {
+        private readonly IChaosKitty _chaosKitty;
         private readonly ILog _log;
         private readonly IBlockchainWalletsClient _walletsClient;
         private readonly IMatchingEngineCallsDeduplicationRepository _deduplicationRepository;
         private readonly IMatchingEngineClient _meClient;
 
         public EnrollToMatchingEngineCommandsHandler(
+            IChaosKitty chaosKitty,
             ILog log,
             IBlockchainWalletsClient walletsClient,
             IMatchingEngineCallsDeduplicationRepository deduplicationRepository, 
             IMatchingEngineClient meClient)
         {
+            _chaosKitty = chaosKitty;
             _log = log;
             _walletsClient = walletsClient;
             _deduplicationRepository = deduplicationRepository;
@@ -55,7 +58,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                 throw new InvalidOperationException("Client ID for the blockchain deposit wallet address is not found");
             }
 
-            ChaosKitty.Meow(command.OperationId);
+            _chaosKitty.Meow(command.OperationId);
 
             var cashInResult = await _meClient.CashInOutAsync(
                 command.OperationId.ToString(),
@@ -63,7 +66,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                 command.AssetId,
                 (double) command.Amount);
 
-            ChaosKitty.Meow(command.OperationId);
+            _chaosKitty.Meow(command.OperationId);
 
             if (cashInResult == null)
             {
@@ -84,11 +87,11 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                     ClientId = clientId.Value
                 });
 
-                ChaosKitty.Meow(command.OperationId);
+                _chaosKitty.Meow(command.OperationId);
 
                 await _deduplicationRepository.InsertOrReplaceAsync(command.OperationId);
 
-                ChaosKitty.Meow(command.OperationId);
+                _chaosKitty.Meow(command.OperationId);
 
                 return CommandHandlingResult.Ok();
             }

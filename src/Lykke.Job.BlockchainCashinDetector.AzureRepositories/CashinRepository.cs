@@ -5,6 +5,7 @@ using AzureStorage;
 using AzureStorage.Tables;
 using Common.Log;
 using JetBrains.Annotations;
+using Lykke.Common.Chaos;
 using Lykke.Job.BlockchainCashinDetector.Core;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain;
 using Lykke.SettingsReader;
@@ -18,8 +19,9 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
         private readonly ILog _log;
         private readonly INoSQLTableStorage<CashinEntity> _storage;
         private readonly INoSQLTableStorage<CashinEntity.Indices.Started> _indexByStartedStorage;
+        private readonly IChaosKitty _chaosKitty;
 
-        public static ICashinRepository Create(IReloadingManager<string> connectionString, ILog log)
+        public static ICashinRepository Create(IReloadingManager<string> connectionString, ILog log, IChaosKitty chaosKitty)
         {
             var storage = AzureTableStorage<CashinEntity>.Create(
                 connectionString,
@@ -31,17 +33,19 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 "CashinIdxByStarted",
                 log);
 
-            return new CashinRepository(log, storage, indexByStartedStorage);
+            return new CashinRepository(log, storage, indexByStartedStorage, chaosKitty);
         }
 
         private CashinRepository(
-            ILog log,
-            INoSQLTableStorage<CashinEntity> storage,
-            INoSQLTableStorage<CashinEntity.Indices.Started> indexByStartedStorage)
+            ILog log, 
+            INoSQLTableStorage<CashinEntity> storage, 
+            INoSQLTableStorage<CashinEntity.Indices.Started> indexByStartedStorage, 
+            IChaosKitty chaosKitty)
         {
             _log = log;
             _storage = storage;
             _indexByStartedStorage = indexByStartedStorage;
+            _chaosKitty = chaosKitty;
         }
 
         public async Task<CashinAggregate> GetOrAddAsync(
@@ -78,7 +82,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
             var partitionKey = CashinEntity.GetPartitionKey(indexByStarted.OperationId);
             var rowKey = CashinEntity.GetRowKey(indexByStarted.OperationId);
 
-            ChaosKitty.Meow(indexByStarted.OperationId);
+            _chaosKitty.Meow(indexByStarted.OperationId);
 
             // Gets existing started or inserts new cashin
 
@@ -168,7 +172,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 }
             }
 
-            ChaosKitty.Meow(aggregate.OperationId);
+            _chaosKitty.Meow(aggregate.OperationId);
 
             var entity = CashinEntity.FromDomain(aggregate);
             

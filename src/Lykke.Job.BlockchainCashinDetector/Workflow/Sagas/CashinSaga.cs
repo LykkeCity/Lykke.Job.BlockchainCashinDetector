@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Common.Log;
 using JetBrains.Annotations;
+using Lykke.Common.Chaos;
 using Lykke.Cqrs;
 using Lykke.Job.BlockchainCashinDetector.Contract;
 using Lykke.Job.BlockchainCashinDetector.Core;
@@ -30,11 +31,16 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         private static readonly string Self = BlockchainCashinDetectorBoundedContext.Name;
 
         private readonly ILog _log;
+        private readonly IChaosKitty _chaosKitty;
         private readonly ICashinRepository _cashinRepository;
 
-        public CashinSaga(ILog log, ICashinRepository cashinRepository)
+        public CashinSaga(
+            IChaosKitty chaosKitty,
+            ILog log, 
+            ICashinRepository cashinRepository)
         {
             _log = log.CreateComponentScope(nameof(CashinSaga));
+            _chaosKitty = chaosKitty;
             _cashinRepository = cashinRepository;
         }
 
@@ -58,7 +64,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                         evt.Amount,
                         evt.AssetId));
 
-                ChaosKitty.Meow(aggregate.OperationId);
+                _chaosKitty.Meow(aggregate.OperationId);
 
                 if (aggregate.State == CashinState.Starting)
                 {
@@ -99,7 +105,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                         },
                         Self);
 
-                    ChaosKitty.Meow(evt.OperationId);
+                    _chaosKitty.Meow(evt.OperationId);
 
                     await _cashinRepository.SaveAsync(aggregate);
                 }
@@ -136,7 +142,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                         },
                         BlockchainOperationsExecutorBoundedContext.Name);
 
-                    ChaosKitty.Meow(evt.OperationId);
+                    _chaosKitty.Meow(evt.OperationId);
 
                     await _cashinRepository.SaveAsync(aggregate);
                 }
@@ -172,7 +178,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                         },
                         Self);
 
-                    ChaosKitty.Meow(evt.OperationId);
+                    _chaosKitty.Meow(evt.OperationId);
 
                     await _cashinRepository.SaveAsync(aggregate);
                 }
@@ -208,7 +214,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                         },
                         Self);
 
-                    ChaosKitty.Meow(evt.OperationId);
+                    _chaosKitty.Meow(evt.OperationId);
 
                     await _cashinRepository.SaveAsync(aggregate);
                 }
@@ -232,7 +238,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
 
                 if (aggregate.OnMatchingEngineDeduplicationLockRemoved())
                 {
-                    ChaosKitty.Meow(evt.OperationId);
+                    _chaosKitty.Meow(evt.OperationId);
 
                     await _cashinRepository.SaveAsync(aggregate);
                 }

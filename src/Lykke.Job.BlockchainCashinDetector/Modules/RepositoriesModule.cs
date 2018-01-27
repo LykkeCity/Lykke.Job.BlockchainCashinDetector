@@ -1,5 +1,6 @@
 ﻿using Autofac;
 using Common.Log;
+using Lykke.Common.Chaos;
 using Lykke.Job.BlockchainCashinDetector.AzureRepositories;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain;
 using Lykke.Job.BlockchainCashinDetector.Settings.JobSettings;
@@ -25,7 +26,10 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
             builder.Register(c => MatchingEngineCallsDeduplicationRepository.Create(_dbSettings.Nested(x => x.DataConnString), _log))
                 .As<IMatchingEngineCallsDeduplicationRepository>();
 
-            builder.Register(c => CashinRepository.Create(_dbSettings.Nested(x => x.DataConnString), _log))
+            builder.Register(c => CashinRepository.Create(
+                    _dbSettings.Nested(x => x.DataConnString),
+                    _log,
+                    c.Resolve<IChaosKitty>()))
                 .As<ICashinRepository>();
         }
     }

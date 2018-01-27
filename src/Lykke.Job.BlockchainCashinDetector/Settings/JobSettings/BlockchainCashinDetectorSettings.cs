@@ -1,4 +1,5 @@
 ﻿using JetBrains.Annotations;
+using Lykke.Common.Chaos;
 using Lykke.SettingsReader.Attributes;
 
 namespace Lykke.Job.BlockchainCashinDetector.Settings.JobSettings

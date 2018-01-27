@@ -7,7 +7,6 @@ using Inceptum.Messaging.Contract;
 using Inceptum.Messaging.RabbitMq;
 using Lykke.Cqrs;
 using Lykke.Job.BlockchainCashinDetector.Contract;
-using Lykke.Job.BlockchainCashinDetector.Core;
 using Lykke.Job.BlockchainCashinDetector.Settings.JobSettings;
 using Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Commands;
@@ -23,23 +22,16 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
         private static readonly string Self = BlockchainCashinDetectorBoundedContext.Name;
 
         private readonly CqrsSettings _settings;
-        private readonly ChaosSettings _chaosSettings;
         private readonly ILog _log;
 
-        public CqrsModule(CqrsSettings settings, ChaosSettings chaosSettings, ILog log)
+        public CqrsModule(CqrsSettings settings, ILog log)
         {
             _settings = settings;
-            _chaosSettings = chaosSettings;
             _log = log;
         }
 
         protected override void Load(ContainerBuilder builder)
         {
-            if (_chaosSettings != null)
-            {
-                ChaosKitty.StateOfChaos = _chaosSettings.StateOfChaos;
-            }
-
             builder.Register(context => new AutofacDependencyResolver(context)).As<IDependencyResolver>().SingleInstance();
 
             var rabbitMqSettings = new RabbitMQ.Client.ConnectionFactory
