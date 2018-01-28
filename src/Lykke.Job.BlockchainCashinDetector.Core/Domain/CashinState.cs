@@ -4,7 +4,7 @@
     {
         Starting,
         Started,
-        EnrolledToMatchingEnging,
+        EnrolledToMatchingEngine,
         OperationIsFinished,
         MatchingEngineDeduplicationLockIsRemoved
     }

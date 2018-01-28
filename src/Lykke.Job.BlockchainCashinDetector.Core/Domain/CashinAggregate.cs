@@ -170,7 +170,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
 
         public bool OnEnrolledToMatchingEngine(Guid clientId)
         {
-            if (!SwitchState(CashinState.Started, CashinState.EnrolledToMatchingEnging))
+            if (!SwitchState(CashinState.Started, CashinState.EnrolledToMatchingEngine))
             {
                 return false;
             }
@@ -184,7 +184,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
 
         public bool OnOperationCompleted(string transactionHash, decimal transactionAmount, decimal fee)
         {
-            if (!SwitchState(CashinState.EnrolledToMatchingEnging, CashinState.OperationIsFinished))
+            if (!SwitchState(CashinState.EnrolledToMatchingEngine, CashinState.OperationIsFinished))
             {
                 return false;
             }
@@ -202,7 +202,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
 
         public bool OnOperationFailed(string error)
         {
-            if (!SwitchState(CashinState.EnrolledToMatchingEnging, CashinState.OperationIsFinished))
+            if (!SwitchState(CashinState.EnrolledToMatchingEngine, CashinState.OperationIsFinished))
             {
                 return false;
             }
