@@ -55,6 +55,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
         public DateTime CreationMoment { get; set; }
         public DateTime? StartMoment { get; set; }
         public DateTime? MatchingEngineEnrollementMoment { get; set; }
+        public DateTime? ClientOperationRegistrationMoment { get; set; }
         public DateTime? OperationFinishMoment { get; set; }
         public DateTime? MatchingEngineDeduplicationLockRemovingMoment { get; set; }
 
@@ -109,6 +110,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 CreationMoment = aggregate.CreationMoment,
                 StartMoment = aggregate.StartMoment,
                 MatchingEngineEnrollementMoment = aggregate.MatchingEngineEnrollementMoment,
+                ClientOperationRegistrationMoment = aggregate.ClientOperationRegistrationMoment,
                 MatchingEngineDeduplicationLockRemovingMoment = aggregate.MatchingEngineDeduplicationLockRemovingMoment,
                 OperationFinishMoment = aggregate.OperationFinishMoment,
                 OperationId = operationId,
@@ -140,6 +142,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 CreationMoment,
                 StartMoment,
                 MatchingEngineEnrollementMoment,
+                ClientOperationRegistrationMoment, 
                 OperationFinishMoment,
                 MatchingEngineDeduplicationLockRemovingMoment,
                 OperationId,

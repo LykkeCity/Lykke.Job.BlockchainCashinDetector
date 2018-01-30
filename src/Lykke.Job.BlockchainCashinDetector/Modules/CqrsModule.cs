@@ -55,6 +55,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
             // Command handlers
             builder.RegisterType<StartCashinCommandsHandler>();
             builder.RegisterType<EnrollToMatchingEngineCommandsHandler>();
+            builder.RegisterType<RegisterClientOperationCommandsHandler>();
             builder.RegisterType<DetectDepositBalanceCommandHandler>();
             builder.RegisterType<RemoveMatchingEngineDeduplicationLockCommandsHandler>();
 
@@ -104,6 +105,12 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .PublishingEvents(typeof(CashinEnrolledToMatchingEngineEvent))
                     .With(defaultPipeline)
 
+                    .ListeningCommands(typeof(RegisterClientOperationStartCommand))
+                    .On(defaultRoute)
+                    .WithCommandsHandler<RegisterClientOperationCommandsHandler>()
+                    .PublishingEvents(typeof(ClientOperationRegisteredEvent))
+                    .With(defaultPipeline)
+
                     .ListeningCommands(typeof(RemoveMatchingEngineDeduplicationLockCommand))
                     .On(defaultRoute)
                     .WithCommandsHandler<RemoveMatchingEngineDeduplicationLockCommandsHandler>()
@@ -128,6 +135,13 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .With(defaultPipeline)
 
                     .ListeningEvents(typeof(CashinEnrolledToMatchingEngineEvent))
+                    .From(Self)
+                    .On(defaultRoute)
+                    .PublishingCommands(typeof(RegisterClientOperationStartCommand))
+                    .To(Self)
+                    .With(defaultPipeline)
+
+                    .ListeningEvents(typeof(ClientOperationRegisteredEvent))
                     .From(Self)
                     .On(defaultRoute)
                     .PublishingCommands(typeof(BlockchainOperationsExecutor.Contract.Commands.StartOperationExecutionCommand))
