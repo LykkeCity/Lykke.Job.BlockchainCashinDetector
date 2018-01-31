@@ -35,6 +35,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
 #endif
             await _clientOperationsRepositoryClient.RegisterAsync(new CashInOutOperation(
                 id: command.OperationId.ToString(),
+                transactionId: command.OperationId.ToString(),
                 dateTime: command.Moment,
                 amount: (double)command.Amount,
                 assetId: command.AssetId,
@@ -48,13 +49,19 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
 
                 // These fields are not used
 
-                transactionId: "",
                 feeType: FeeType.Unknown,
                 feeSize: 0,
                 isRefund: false,
                 multisig: "",
                 isHidden: false
             ));
+
+            _chaosKitty.Meow(command.OperationId);
+
+            await _clientOperationsRepositoryClient.UpdateBlockchainHashAsync(
+                command.ClientId.ToString(),
+                command.OperationId.ToString(),
+                command.TransactionHash);
 
             _chaosKitty.Meow(command.OperationId);
 
