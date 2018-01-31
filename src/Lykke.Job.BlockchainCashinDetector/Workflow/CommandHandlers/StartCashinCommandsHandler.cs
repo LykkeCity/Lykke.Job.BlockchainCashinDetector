@@ -20,9 +20,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
         [UsedImplicitly]
         public Task<CommandHandlingResult> Handle(StartCashinCommand command, IEventPublisher publisher)
         {
-#if DEBUG
+
             _log.WriteInfo(nameof(StartCashinCommand), command, "");
-#endif
+
             // This command handler shouldn't contain any dependencies to make saga switching to the Stated
             // state fast and reliable as posible
 

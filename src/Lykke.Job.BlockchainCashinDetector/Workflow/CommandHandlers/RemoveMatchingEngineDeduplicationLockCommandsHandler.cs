@@ -29,9 +29,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
         [UsedImplicitly]
         public async Task<CommandHandlingResult> Handle(RemoveMatchingEngineDeduplicationLockCommand command, IEventPublisher publisher)
         {
-#if DEBUG
+
             _log.WriteInfo(nameof(RemoveMatchingEngineDeduplicationLockCommand), command, "");
-#endif
+
             await _deduplicationRepository.TryRemoveAsync(command.OperationId);
 
             _chaosKitty.Meow(command.OperationId);

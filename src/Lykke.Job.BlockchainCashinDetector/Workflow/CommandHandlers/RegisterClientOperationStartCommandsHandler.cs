@@ -11,13 +11,13 @@ using Lykke.Service.OperationsRepository.Client.Abstractions.CashOperations;
 namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
 {
     [UsedImplicitly]
-    public class RegisterClientOperationCommandsHandler
+    public class RegisterClientOperationStartCommandsHandler
     {
         private readonly ILog _log;
         private readonly ICashOperationsRepositoryClient _clientOperationsRepositoryClient;
         private readonly IChaosKitty _chaosKitty;
 
-        public RegisterClientOperationCommandsHandler(
+        public RegisterClientOperationStartCommandsHandler(
             ILog log,
             ICashOperationsRepositoryClient clientOperationsRepositoryClient,
             IChaosKitty chaosKitty)
@@ -28,24 +28,25 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
         }
 
         [UsedImplicitly]
-        public async Task<CommandHandlingResult> Handle(RegisterClientOperationStartCommand command, IEventPublisher publisher)
+        public async Task<CommandHandlingResult> Handle(RegisterClientOperationStartCommand command,
+            IEventPublisher publisher)
         {
-#if DEBUG
-            _log.WriteInfo(nameof(RemoveMatchingEngineDeduplicationLockCommand), command, "");
-#endif
+
+            _log.WriteInfo(nameof(RegisterClientOperationStartCommand), command, "");
+
             await _clientOperationsRepositoryClient.RegisterAsync(new CashInOutOperation(
                 id: command.OperationId.ToString(),
                 transactionId: command.OperationId.ToString(),
                 dateTime: command.Moment,
-                amount: (double)command.Amount,
+                amount: (double) command.Amount,
                 assetId: command.AssetId,
                 clientId: command.ClientId.ToString(),
                 addressFrom: command.DepositWalletAddress,
                 addressTo: command.HotWalletAddress,
                 type: CashOperationType.ForwardCashIn,
-                state: TransactionStates.SettledOnchain,
-                isSettled: true,
-                blockChainHash: command.TransactionHash,
+                state: TransactionStates.InProcessOnchain,
+                isSettled: false,
+                blockChainHash: "",
 
                 // These fields are not used
 
@@ -58,14 +59,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
 
             _chaosKitty.Meow(command.OperationId);
 
-            await _clientOperationsRepositoryClient.UpdateBlockchainHashAsync(
-                command.ClientId.ToString(),
-                command.OperationId.ToString(),
-                command.TransactionHash);
-
-            _chaosKitty.Meow(command.OperationId);
-
-            publisher.PublishEvent(new ClientOperationRegisteredEvent
+            publisher.PublishEvent(new ClientOperationStartRegisteredEvent
             {
                 OperationId = command.OperationId
             });

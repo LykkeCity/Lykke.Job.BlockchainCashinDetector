@@ -8,24 +8,18 @@ namespace Lykke.Job.BlockchainCashinDetector.Settings.MeSettings
     public class IpEndpointSettings
     {
         [TcpCheck("Port")]
-        [UsedImplicitly(ImplicitUseKindFlags.Assign)]
-        public string InternalHost { get; set; }
-
-        [TcpCheck("Port")]
-        [UsedImplicitly(ImplicitUseKindFlags.Assign)]
+        [UsedImplicitly]
         public string Host { get; set; }
 
-        [UsedImplicitly(ImplicitUseKindFlags.Assign)]
+        [UsedImplicitly]
         public int Port { get; set; }
 
-        public IPEndPoint GetClientIpEndPoint(bool useInternal = false)
+        public IPEndPoint GetClientIpEndPoint()
         {
-            var host = useInternal ? InternalHost : Host;
-
-            if (IPAddress.TryParse(host, out var ipAddress))
+            if (IPAddress.TryParse(Host, out var ipAddress))
                 return new IPEndPoint(ipAddress, Port);
 
-            var addresses = Dns.GetHostAddressesAsync(host).Result;
+            var addresses = Dns.GetHostAddressesAsync(Host).Result;
             return new IPEndPoint(addresses[0], Port);
         }
     }
