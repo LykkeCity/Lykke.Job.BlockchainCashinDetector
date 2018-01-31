@@ -39,10 +39,12 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                 amount: (double)command.Amount,
                 assetId: command.AssetId,
                 clientId: command.ClientId.ToString(),
-                addressTo: command.DepositWalletAddress,
+                addressFrom: command.DepositWalletAddress,
+                addressTo: command.HotWalletAddress,
                 type: CashOperationType.ForwardCashIn,
-                state: TransactionStates.SettledNoChain,
+                state: TransactionStates.SettledOnchain,
                 isSettled: true,
+                blockChainHash: command.TransactionHash,
 
                 // These fields are not used
 
@@ -51,12 +53,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                 feeSize: 0,
                 isRefund: false,
                 multisig: "",
-                isHidden: false,
-
-                // These fields will set later by transactions history detector job
-
-                addressFrom: "",
-                blockChainHash: ""
+                isHidden: false
             ));
 
             _chaosKitty.Meow(command.OperationId);

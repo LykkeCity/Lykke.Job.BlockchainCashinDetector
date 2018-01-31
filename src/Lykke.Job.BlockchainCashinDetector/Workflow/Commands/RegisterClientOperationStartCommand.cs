@@ -23,5 +23,11 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Commands
 
         [Key(5)]
         public string DepositWalletAddress { get; set; }
+
+        [Key(6)]
+        public string HotWalletAddress { get; set; }
+
+        [Key(7)]
+        public string TransactionHash { get; set; }
     }
 }

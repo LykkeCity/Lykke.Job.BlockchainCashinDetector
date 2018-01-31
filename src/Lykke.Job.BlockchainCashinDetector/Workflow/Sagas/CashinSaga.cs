@@ -145,9 +145,11 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                             ClientId = aggregate.ClientId.Value,
                             AssetId = aggregate.AssetId,
                             DepositWalletAddress = aggregate.DepositWalletAddress,
+                            HotWalletAddress = aggregate.HotWalletAddress,
                             Amount = aggregate.Amount,
-                            Moment = aggregate.StartMoment.Value},
-                        Self);
+                            Moment = aggregate.StartMoment.Value,
+                            TransactionHash = aggregate.TransactionHash
+                        }, Self);
 
                     _chaosKitty.Meow(evt.OperationId);
 
