@@ -6,7 +6,6 @@ using AzureStorage.Tables;
 using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Common.Chaos;
-using Lykke.Job.BlockchainCashinDetector.Core;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain;
 using Lykke.SettingsReader;
 using Microsoft.WindowsAzure.Storage;

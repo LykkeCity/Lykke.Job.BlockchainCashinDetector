@@ -9,6 +9,7 @@ using Lykke.Job.BlockchainCashinDetector.Settings.Assets;
 using Lykke.Job.BlockchainCashinDetector.Settings.MeSettings;
 using Lykke.MatchingEngine.Connector.Services;
 using Lykke.Service.Assets.Client;
+using Lykke.Service.OperationsRepository.Client;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Lykke.Job.BlockchainCashinDetector.Modules
@@ -18,6 +19,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
         private readonly MatchingEngineSettings _meSettings;
         private readonly AssetsSettings _assetsSettings;
         private readonly ChaosSettings _chaosSettings;
+        private readonly Settings.OperationsRepositoryServiceClientSettings _operationsRepositoryServiceSettings;
         private readonly ILog _log;
         private readonly ServiceCollection _services;
 
@@ -25,11 +27,13 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
             MatchingEngineSettings meSettings,
             AssetsSettings assetsSettings,
             ChaosSettings chaosSettings,
+            Settings.OperationsRepositoryServiceClientSettings operationsRepositoryServiceSettings,
             ILog log)
         {
             _meSettings = meSettings;
             _assetsSettings = assetsSettings;
             _chaosSettings = chaosSettings;
+            _operationsRepositoryServiceSettings = operationsRepositoryServiceSettings;
             _log = log;
             _services = new ServiceCollection();
         }
@@ -56,6 +60,12 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                 AssetsCacheExpirationPeriod = _assetsSettings.CacheExpirationPeriod,
                 AssetPairsCacheExpirationPeriod = _assetsSettings.CacheExpirationPeriod
             });
+
+            builder.RegisterOperationsRepositoryClients(new OperationsRepositoryServiceClientSettings
+            {
+                ServiceUrl = _operationsRepositoryServiceSettings.ServiceUrl,
+                RequestTimeout = _operationsRepositoryServiceSettings.RequestTimeout
+            }, _log);
 
             RegisterMatchingEngine(builder);
 

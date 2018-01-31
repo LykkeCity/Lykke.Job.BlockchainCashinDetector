@@ -5,6 +5,7 @@ using Lykke.Job.BlockchainCashinDetector.Settings.JobSettings;
 using Lykke.Job.BlockchainCashinDetector.Settings.MeSettings;
 using Lykke.Job.BlockchainCashinDetector.Settings.SlackNotifications;
 
+
 namespace Lykke.Job.BlockchainCashinDetector.Settings
 {
     [UsedImplicitly]
@@ -27,5 +28,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Settings
 
         [UsedImplicitly(ImplicitUseKindFlags.Assign)]
         public BlockchainWalletsServiceClientSettings BlockchainWalletsServiceClient { get; set; }
+
+        [UsedImplicitly(ImplicitUseKindFlags.Assign)]
+        public OperationsRepositoryServiceClientSettings OperationsRepositoryServiceClient { get; set; }
     }
 }

@@ -25,9 +25,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
         [UsedImplicitly]
         public Task<CommandHandlingResult> Handle(DetectDepositBalanceCommand command, IEventPublisher publisher)
         {
-#if DEBUG
+
             _log.WriteInfo(nameof(DetectDepositBalanceCommand), command, "");
-#endif
+
             var hotWalletAddress = _hotWalletsProvider.GetHotWalletAddress(command.BlockchainType);
 
             publisher.PublishEvent(new DepositBalanceDetectedEvent

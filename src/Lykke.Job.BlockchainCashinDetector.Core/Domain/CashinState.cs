@@ -5,7 +5,9 @@
         Starting,
         Started,
         EnrolledToMatchingEngine,
+        ClientOperationStartIsRegistered,
         OperationIsFinished,
-        MatchingEngineDeduplicationLockIsRemoved
+        MatchingEngineDeduplicationLockIsRemoved,
+        ClientOperationFinishtIsRegistered
     }
 }
