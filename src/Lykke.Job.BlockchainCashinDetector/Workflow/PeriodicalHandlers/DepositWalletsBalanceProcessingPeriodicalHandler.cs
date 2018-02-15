@@ -8,6 +8,7 @@ using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Cqrs;
 using Lykke.Job.BlockchainCashinDetector.Contract;
+using Lykke.Job.BlockchainCashinDetector.Core.Domain;
 using Lykke.Job.BlockchainCashinDetector.Core.Services.BLockchains;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Commands;
 using Lykke.Service.Assets.Client;
@@ -23,6 +24,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
         private readonly IBlockchainApiClient _blockchainApiClient;
         private readonly ICqrsEngine _cqrsEngine;
         private readonly IAssetsServiceWithCache _assetsService;
+        private readonly IDepositBalanceDetectionsDeduplicationRepository _deduplicationRepository;
 
         public DepositWalletsBalanceProcessingPeriodicalHandler(
             ILog log, 
@@ -31,7 +33,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
             string blockchainType,
             IBlockchainApiClientProvider blockchainApiClientProvider,
             ICqrsEngine cqrsEngine, 
-            IAssetsServiceWithCache assetsService) :
+            IAssetsServiceWithCache assetsService,
+            IDepositBalanceDetectionsDeduplicationRepository deduplicationRepository) :
 
             base(
                 nameof(DepositWalletsBalanceProcessingPeriodicalHandler), 
@@ -43,6 +46,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
             _blockchainApiClient = blockchainApiClientProvider.Get(blockchainType);
             _cqrsEngine = cqrsEngine;
             _assetsService = assetsService;
+            _deduplicationRepository = deduplicationRepository;
         }
 
         public override async Task Execute()
@@ -80,10 +84,16 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
 
                     return asset.Accuracy;
                 },
-                batch =>
+                async batch =>
                 {
                     foreach (var balance in batch)
                     {
+                        var latestTransactionBlock = await _deduplicationRepository.TryGetAsync(_blockchainType, balance.AssetId, balance.Address) ?? 0;
+                        if (latestTransactionBlock >= balance.Block)
+                        {
+                            continue;
+                        }
+
                         if (assets.TryGetValue(balance.AssetId, out var asset))
                         {
                             if (balance.Balance < (decimal)asset.CashinMinimalAmount)
@@ -116,7 +126,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
                         wallets.Add(balance.Address);
                     }
 
-                    return Task.FromResult(true);
+                    return true;
                 });
 
             if (statistics.ItemsCount > 0)

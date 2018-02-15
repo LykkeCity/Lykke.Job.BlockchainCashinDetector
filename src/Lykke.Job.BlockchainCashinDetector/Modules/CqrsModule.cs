@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
 using Autofac;
 using Common.Log;
-using Inceptum.Cqrs.Configuration;
 using Inceptum.Messaging;
 using Inceptum.Messaging.Contract;
 using Inceptum.Messaging.RabbitMq;
 using Lykke.Cqrs;
+using Lykke.Cqrs.Configuration;
 using Lykke.Job.BlockchainCashinDetector.Contract;
 using Lykke.Job.BlockchainCashinDetector.Settings.JobSettings;
 using Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers;
@@ -122,6 +122,12 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .On(defaultRoute)
                     .WithCommandsHandler<RegisterClientOperationFinishCommandsHandler>()
                     .PublishingEvents(typeof(ClientOperationFinishRegisteredEvent))
+                    .With(defaultPipeline)
+
+                    .ListeningCommands(typeof(UpdateDepositBalanceDetectionsDeduplicationLockCommand))
+                    .On(defaultRoute)
+                    .WithCommandsHandler<UpdateDepositBalanceDetectionsDeduplicationLockCommandBalanceHandler>()
+                    .PublishingEvents(typeof(DepositBalanceDetectionsDeduplicationLockUpdatedEvent))
                     .With(defaultPipeline)
 
                     .ProcessingOptions(defaultRoute).MultiThreaded(8).QueueCapacity(1024),
