@@ -59,6 +59,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
             builder.RegisterType<DetectDepositBalanceCommandHandler>();
             builder.RegisterType<RemoveMatchingEngineDeduplicationLockCommandsHandler>();
             builder.RegisterType<RegisterClientOperationFinishCommandsHandler>();
+            builder.RegisterType<UpdateDepositBalanceDetectionsDeduplicationLockCommandBalanceHandler>();
 
             builder.Register(ctx => CreateEngine(ctx, messagingEngine))
                 .As<ICqrsEngine>()
