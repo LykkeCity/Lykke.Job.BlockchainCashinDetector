@@ -7,6 +7,7 @@ using Common;
 using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Cqrs;
+using Lykke.Job.BlockchainCashinDetector.AzureRepositories;
 using Lykke.Job.BlockchainCashinDetector.Contract;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain;
 using Lykke.Job.BlockchainCashinDetector.Core.Services.BLockchains;
@@ -86,14 +87,23 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
                 },
                 async batch =>
                 {
+                    var walletKeys = batch.Select(x => new DepositWalletKeyDto
+                    {
+                        BlockchainAssetId = x.AssetId,
+                        BlockchainType = _blockchainType,
+                        DepositWalletAddress = x.Address
+                    });
+
+                    var deduplicationLocks = (await _deduplicationRepository.GetAsync(walletKeys))
+                        .ToDictionary(x => x.DepositWalletAddress, y => y.Block);
+
                     foreach (var balance in batch)
                     {
-                        var latestTransactionBlock = await _deduplicationRepository.TryGetAsync(_blockchainType, balance.AssetId, balance.Address) ?? 0;
-                        if (latestTransactionBlock >= balance.Block)
+                        if (deduplicationLocks.TryGetValue(balance.Address, out var latestTransactionBlock) && latestTransactionBlock >= balance.Block)
                         {
                             continue;
                         }
-
+                        
                         if (assets.TryGetValue(balance.AssetId, out var asset))
                         {
                             if (balance.Balance < (decimal)asset.CashinMinimalAmount)

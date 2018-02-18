@@ -1,4 +1,7 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using AzureStorage;
 using AzureStorage.Tables;
 using Common.Log;
@@ -26,6 +29,16 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
             _storage = storage;
         }
 
+        public async Task<IEnumerable<IDepositBalanceDetectionsDeduplicationLock>> GetAsync(IEnumerable<IDepositWalletKey> keys)
+        {
+            return await _storage.GetDataAsync(keys.Select(x => new Tuple<string, string>
+                (
+                    DepositBalanceDetectionsDeduplicationEntity.GetPartitionKey(x.BlockchainType, x.BlockchainAssetId, x.DepositWalletAddress),
+                    DepositBalanceDetectionsDeduplicationEntity.GetRowKey(x.DepositWalletAddress)
+                )
+            ));
+        }
+
         public async Task InsertOrReplaceAsync(string blockchainType, string blockchainAssetId, string depositWalletAddress, long block)
         {
             var entity = new DepositBalanceDetectionsDeduplicationEntity
@@ -40,17 +53,6 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
             };
 
             await _storage.InsertOrReplaceAsync(entity);
-        }
-
-        public async Task<long?> TryGetAsync(string blockchainType, string blockchainAssetId, string depositWalletAddress)
-        {
-            var entity = await _storage.GetDataAsync
-            (
-                DepositBalanceDetectionsDeduplicationEntity.GetPartitionKey(blockchainType, blockchainAssetId, depositWalletAddress),
-                DepositBalanceDetectionsDeduplicationEntity.GetRowKey(depositWalletAddress)
-            );
-
-            return entity?.Block;
         }
     }
 }

@@ -1,10 +1,11 @@
 ﻿using System;
 using Common;
 using Lykke.AzureStorage.Tables;
+using Lykke.Job.BlockchainCashinDetector.Core.Domain;
 
 namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
 {
-    public class DepositBalanceDetectionsDeduplicationEntity : AzureTableEntity
+    public class DepositBalanceDetectionsDeduplicationEntity : AzureTableEntity, IDepositBalanceDetectionsDeduplicationLock
     {
         public string BlockchainType { get; set; }
 
