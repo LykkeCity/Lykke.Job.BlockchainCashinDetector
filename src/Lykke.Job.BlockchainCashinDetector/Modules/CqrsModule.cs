@@ -167,7 +167,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                         typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent))
                     .From(BlockchainOperationsExecutorBoundedContext.Name)
                     .On(defaultRoute)
-                    .PublishingCommands(typeof(RemoveMatchingEngineDeduplicationLockCommand))
+                    .PublishingCommands(
+                        typeof(RemoveMatchingEngineDeduplicationLockCommand),
+                        typeof(UpdateDepositBalanceDetectionsDeduplicationLockCommand))
                     .To(Self)
                     .With(defaultPipeline)
 
