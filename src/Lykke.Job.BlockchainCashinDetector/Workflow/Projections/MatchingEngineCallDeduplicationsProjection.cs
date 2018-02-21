@@ -18,7 +18,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
             IMatchingEngineCallsDeduplicationRepository deduplicationRepository,
             IChaosKitty chaosKitty)
         {
-            _log = log;
+            _log = log.CreateComponentScope(nameof(MatchingEngineCallDeduplicationsProjection));
             _deduplicationRepository = deduplicationRepository;
             _chaosKitty = chaosKitty;
         }
