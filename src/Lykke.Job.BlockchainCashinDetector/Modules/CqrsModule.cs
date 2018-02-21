@@ -1,19 +1,19 @@
 ﻿using System.Collections.Generic;
 using Autofac;
 using Common.Log;
-using Inceptum.Cqrs.Configuration;
-using Inceptum.Messaging;
-using Inceptum.Messaging.Contract;
-using Inceptum.Messaging.RabbitMq;
 using Lykke.Cqrs;
+using Lykke.Cqrs.Configuration;
 using Lykke.Job.BlockchainCashinDetector.Contract;
 using Lykke.Job.BlockchainCashinDetector.Settings.JobSettings;
 using Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Commands;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Events;
+using Lykke.Job.BlockchainCashinDetector.Workflow.Projections;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Sagas;
 using Lykke.Job.BlockchainOperationsExecutor.Contract;
 using Lykke.Messaging;
+using Lykke.Messaging.Contract;
+using Lykke.Messaging.RabbitMq;
 
 namespace Lykke.Job.BlockchainCashinDetector.Modules
 {
@@ -59,6 +59,10 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
             builder.RegisterType<DetectDepositBalanceCommandHandler>();
             builder.RegisterType<RemoveMatchingEngineDeduplicationLockCommandsHandler>();
             builder.RegisterType<RegisterClientOperationFinishCommandsHandler>();
+
+            // Projections
+            builder.RegisterType<ClientOperationsProjection>();
+            builder.RegisterType<MatchingEngineCallDeduplicationsProjection>();
 
             builder.Register(ctx => CreateEngine(ctx, messagingEngine))
                 .As<ICqrsEngine>()
@@ -123,6 +127,23 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .WithCommandsHandler<RegisterClientOperationFinishCommandsHandler>()
                     .PublishingEvents(typeof(ClientOperationFinishRegisteredEvent))
                     .With(defaultPipeline)
+
+                    .ListeningEvents(typeof(CashinStartedEvent))
+                    .From(Self)
+                    .On("client-operations")
+                    .WithProjection(typeof(ClientOperationsProjection), Self)
+
+                    .ListeningEvents(typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent))
+                    .From(BlockchainOperationsExecutorBoundedContext.Name)
+                    .On("client-operations")
+                    .WithProjection(typeof(ClientOperationsProjection), Self)
+
+                    .ListeningEvents(
+                            typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent),
+                            typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent))
+                    .From(BlockchainOperationsExecutorBoundedContext.Name)
+                    .On("me-deduplication")
+                    .WithProjection(typeof(MatchingEngineCallDeduplicationsProjection), Self)
 
                     .ProcessingOptions(defaultRoute).MultiThreaded(8).QueueCapacity(1024),
 
