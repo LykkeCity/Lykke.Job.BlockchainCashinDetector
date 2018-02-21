@@ -28,7 +28,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
             ICashOperationsRepositoryClient clientOperationsRepositoryClient,
             IChaosKitty chaosKitty)
         {
-            _log = log;
+            _log = log.CreateComponentScope(nameof(ClientOperationsProjection));
             _cashinRepository = cashinRepository;
             _walletsClient = walletsClient;
             _clientOperationsRepositoryClient = clientOperationsRepositoryClient;
@@ -57,8 +57,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
 
                 if (clientId == null)
                 {
-                    throw new InvalidOperationException(
-                        "Client ID for the blockchain deposit wallet address is not found");
+                    throw new InvalidOperationException("Client ID for the blockchain deposit wallet address is not found");
                 }
 
                 await _clientOperationsRepositoryClient.RegisterAsync(new CashInOutOperation(
