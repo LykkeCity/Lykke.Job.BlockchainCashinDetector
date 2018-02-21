@@ -51,14 +51,17 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                 return CommandHandlingResult.Ok();
             }
 
-            var clientId = await _walletsClient.TryGetClientIdAsync(command.BlockchainType, command.BlockchainAssetId, command.DepositWalletAddress);
+            // TODO: Add client cache for the walletsClient
+
+            var clientId = await _walletsClient.TryGetClientIdAsync(
+                command.BlockchainType, 
+                command.BlockchainAssetId, 
+                command.DepositWalletAddress);
 
             if (clientId == null)
             {
                 throw new InvalidOperationException("Client ID for the blockchain deposit wallet address is not found");
             }
-
-            _chaosKitty.Meow(command.OperationId);
 
             var cashInResult = await _meClient.CashInOutAsync(
                 command.OperationId.ToString(),

@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
 {
@@ -12,12 +14,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
         public DateTime CreationMoment { get; }
         public DateTime? StartMoment { get; private set; }
         public DateTime? MatchingEngineEnrollementMoment { get; private set; }
-        public DateTime? ClientOperationStartRegistrationMoment { get; private set; }
         public DateTime? OperationFinishMoment { get; private set; }
-        public DateTime? MatchingEngineDeduplicationLockRemovingMoment { get; private set; }
         public DateTime? DepositBalanceDetectionsDeduplicationLockUpdatingMoment { get; private set; }
-        public DateTime? ClientOperationFinishRegistrationMoment { get; private set; }
-
 
         public Guid OperationId { get; }
         public string BlockchainType { get; }
@@ -65,11 +63,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             DateTime creationMoment,
             DateTime? startMoment,
             DateTime? matchingEngineEnrollementMoment,
-            DateTime? clientOperationStartRegistrationMoment,
             DateTime? operationFinishMoment,
-            DateTime? matchingEngineDeduplicationLockRemovingMoment,
             DateTime? depositBalanceDetectionsDeduplicationLockUpdatingMoment,
-            DateTime? clientOperationFinishRegistrationMoment,
             Guid operationId,
             string blockchainType,
             string hotWalletAddress,
@@ -91,11 +86,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             CreationMoment = creationMoment;
             StartMoment = startMoment;
             MatchingEngineEnrollementMoment = matchingEngineEnrollementMoment;
-            ClientOperationStartRegistrationMoment = clientOperationStartRegistrationMoment;
             OperationFinishMoment = operationFinishMoment;
-            MatchingEngineDeduplicationLockRemovingMoment = matchingEngineDeduplicationLockRemovingMoment;
             DepositBalanceDetectionsDeduplicationLockUpdatingMoment = depositBalanceDetectionsDeduplicationLockUpdatingMoment;
-            ClientOperationFinishRegistrationMoment = clientOperationFinishRegistrationMoment;
 
             OperationId = operationId;
             BlockchainType = blockchainType;
@@ -131,11 +123,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             DateTime creationMoment,
             DateTime? startMoment,
             DateTime? matchingEngineEnrollementMoment,
-            DateTime? clientOperationStartRegistrationMoment,
             DateTime? operationFinishMoment,
-            DateTime? matchingEngineDeduplicationLockRemovingMoment,
             DateTime? depositBalanceDetectionsDeduplicationLockUpdatingMoment,
-            DateTime? clientOperationFinishRegistrationMoment,
             Guid operationId,
             string blockchainType,
             string hotWalletAddress,
@@ -157,11 +146,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
                 creationMoment,
                 startMoment,
                 matchingEngineEnrollementMoment,
-                clientOperationStartRegistrationMoment,
                 operationFinishMoment,
-                matchingEngineDeduplicationLockRemovingMoment,
                 depositBalanceDetectionsDeduplicationLockUpdatingMoment,
-                clientOperationFinishRegistrationMoment,
                 operationId,
                 blockchainType,
                 hotWalletAddress,
@@ -210,14 +196,14 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
                 return false;
             }
 
-            ClientOperationStartRegistrationMoment = DateTime.UtcNow;
-
             return true;
         }
 
         public bool OnOperationCompleted(string transactionHash, long transactionBlock, decimal transactionAmount, decimal fee)
         {
-            if (!SwitchState(CashinState.ClientOperationStartIsRegistered, CashinState.OperationIsFinished))
+            if (!SwitchState(
+                new[] {CashinState.ClientOperationStartIsRegistered, CashinState.EnrolledToMatchingEngine},
+                CashinState.OperationIsFinished))
             {
                 return false;
             }
@@ -236,7 +222,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
 
         public bool OnOperationFailed(string error)
         {
-            if (!SwitchState(CashinState.ClientOperationStartIsRegistered, CashinState.OperationIsFinished))
+            if (!SwitchState(
+                new[] {CashinState.ClientOperationStartIsRegistered, CashinState.EnrolledToMatchingEngine},
+                CashinState.OperationIsFinished))
             {
                 return false;
             }
@@ -273,40 +261,36 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
                 return false;
             }
 
-            MatchingEngineDeduplicationLockRemovingMoment = DateTime.UtcNow;
-
-            return true;
-        }
-
-        public bool OnClientOperationFinishRegistered()
-        {
-            if (!SwitchState(CashinState.MatchingEngineDeduplicationLockIsRemoved, CashinState.ClientOperationFinishtIsRegistered))
-            {
-                return false;
-            }
-
-            ClientOperationFinishRegistrationMoment = DateTime.UtcNow;
-
             return true;
         }
 
         private bool SwitchState(CashinState expectedState, CashinState nextState)
         {
-            if (State < expectedState)
+            return SwitchState(new[] {expectedState}, nextState);
+        }
+
+        private bool SwitchState(IList<CashinState> expectedStates, CashinState nextState)
+        {
+            if (expectedStates.Contains(State))
             {
-                // Throws to retry and wait until aggregate will be in the required state
-                throw new InvalidAggregateStateException(State, expectedState, nextState);
+                State = nextState;
+
+                return true;
             }
 
-            if (State > expectedState)
+            if (State < expectedStates.Max())
+            {
+                // Throws to retry and wait until aggregate will be in the required state
+                throw new InvalidAggregateStateException(State, expectedStates, nextState);
+            }
+
+            if (State > expectedStates.Min())
             {
                 // Aggregate already in the next state, so this event can be just ignored
                 return false;
             }
 
-            State = nextState;
-
-            return true;
+            throw new InvalidOperationException("This shouldn't be happened");
         }
     }
 }
