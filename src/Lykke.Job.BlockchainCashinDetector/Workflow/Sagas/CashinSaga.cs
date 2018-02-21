@@ -202,6 +202,17 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
 
                 if (aggregate.OnOperationCompleted(evt.TransactionHash, evt.TransactionAmount, evt.Fee))
                 {
+                    sender.SendCommand(new UpdateDepositBalanceDetectionsDeduplicationLockCommand
+                        {
+                            Block = evt.Block,
+                            BlockchainAssetId = aggregate.BlockchainAssetId,
+                            BlockchainType = aggregate.BlockchainType,
+                            DepositWalletAddress = aggregate.DepositWalletAddress
+                        },
+                        Self);
+                    
+                    _chaosKitty.Meow(evt.OperationId);
+
                     await _cashinRepository.SaveAsync(aggregate);
                 }
             }

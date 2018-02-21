@@ -59,6 +59,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
             builder.RegisterType<DetectDepositBalanceCommandHandler>();
             builder.RegisterType<RemoveMatchingEngineDeduplicationLockCommandsHandler>();
             builder.RegisterType<RegisterClientOperationFinishCommandsHandler>();
+            builder.RegisterType<UpdateDepositBalanceDetectionsDeduplicationLockCommandBalanceHandler>();
 
             // Projections
             builder.RegisterType<ClientOperationsProjection>();
@@ -128,6 +129,12 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .PublishingEvents(typeof(ClientOperationFinishRegisteredEvent))
                     .With(defaultPipeline)
 
+                    .ListeningCommands(typeof(UpdateDepositBalanceDetectionsDeduplicationLockCommand))
+                    .On(defaultRoute)
+                    .WithCommandsHandler<UpdateDepositBalanceDetectionsDeduplicationLockCommandBalanceHandler>()
+                    .PublishingEvents(typeof(DepositBalanceDetectionsDeduplicationLockUpdatedEvent))
+                    .With(defaultPipeline)
+
                     .ListeningEvents(typeof(CashinStartedEvent))
                     .From(Self)
                     .On("client-operations")
@@ -181,7 +188,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                         typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent))
                     .From(BlockchainOperationsExecutorBoundedContext.Name)
                     .On(defaultRoute)
-                    .PublishingCommands(typeof(RemoveMatchingEngineDeduplicationLockCommand))
+                    .PublishingCommands(
+                        typeof(RemoveMatchingEngineDeduplicationLockCommand),
+                        typeof(UpdateDepositBalanceDetectionsDeduplicationLockCommand))
                     .To(Self)
                     .With(defaultPipeline)
 

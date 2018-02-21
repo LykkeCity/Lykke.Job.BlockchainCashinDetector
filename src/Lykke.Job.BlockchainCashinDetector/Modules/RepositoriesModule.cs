@@ -23,14 +23,20 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
 
         protected override void Load(ContainerBuilder builder)
         {
+            builder.Register(c => DepositBalanceDetectionsDeduplicationRepository.Create(_dbSettings.Nested(x => x.DataConnString), _log))
+                .As<IDepositBalanceDetectionsDeduplicationRepository>()
+                .SingleInstance();
+
             builder.Register(c => MatchingEngineCallsDeduplicationRepository.Create(_dbSettings.Nested(x => x.DataConnString), _log))
-                .As<IMatchingEngineCallsDeduplicationRepository>();
+                .As<IMatchingEngineCallsDeduplicationRepository>()
+                .SingleInstance();
 
             builder.Register(c => CashinRepository.Create(
                     _dbSettings.Nested(x => x.DataConnString),
                     _log,
                     c.Resolve<IChaosKitty>()))
-                .As<ICashinRepository>();
+                .As<ICashinRepository>()
+                .SingleInstance();
         }
     }
 }
