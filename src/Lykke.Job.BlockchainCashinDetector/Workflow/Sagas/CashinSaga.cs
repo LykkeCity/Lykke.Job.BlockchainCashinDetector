@@ -210,7 +210,13 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                             DepositWalletAddress = aggregate.DepositWalletAddress
                         },
                         Self);
-                    
+
+                    sender.SendCommand(new RemoveMatchingEngineDeduplicationLockCommand
+                        {
+                            OperationId = aggregate.OperationId
+                        },
+                        Self);
+
                     _chaosKitty.Meow(evt.OperationId);
 
                     await _cashinRepository.SaveAsync(aggregate);
@@ -240,6 +246,14 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
 
                 if (aggregate.OnOperationFailed(evt.Error))
                 {
+                    sender.SendCommand(new RemoveMatchingEngineDeduplicationLockCommand
+                        {
+                            OperationId = aggregate.OperationId
+                        },
+                        Self);
+
+                    _chaosKitty.Meow(evt.OperationId);
+
                     await _cashinRepository.SaveAsync(aggregate);
                 }
             }
