@@ -39,14 +39,15 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                 command.Block
             );
 
-            _chaosKitty.Meow($"{command.BlockchainType}-{command.BlockchainAssetId}-{command.DepositWalletAddress}");
+            _chaosKitty.Meow(command.OperationId);
 
             publisher.PublishEvent(new DepositBalanceDetectionsDeduplicationLockUpdatedEvent
             {
                 Block = command.Block,
                 BlockchainAssetId = command.BlockchainAssetId,
                 BlockchainType = command.BlockchainType,
-                DepositWalletAddress = command.DepositWalletAddress
+                DepositWalletAddress = command.DepositWalletAddress,
+                OperationId = command.OperationId
             });
 
             return CommandHandlingResult.Ok();
