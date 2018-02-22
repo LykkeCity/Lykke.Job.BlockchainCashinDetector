@@ -17,6 +17,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
         public DateTime? MatchingEngineDeduplicationLockRemovingMoment { get; private set; }
         public DateTime? ClientOperationFinishRegistrationMoment { get; private set; }
 
+
         public Guid OperationId { get; }
         public string BlockchainType { get; }
         public string HotWalletAddress { get; }
@@ -28,6 +29,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
         public Guid? ClientId { get; private set; }
         public string TransactionHash { get; private set; }
         public decimal? TransactionAmount { get; private set; }
+        public long? TransactionBlock { get; private set; }
         public decimal? Fee { get; private set; }
         public string Error { get; private set; }
 
@@ -76,6 +78,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             string assetId,
             string transactionHash,
             decimal? transactionAmount,
+            long? transactionBlock,
             decimal? fee,
             string error)
         {
@@ -102,6 +105,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             AssetId = assetId;
             TransactionHash = transactionHash;
             TransactionAmount = transactionAmount;
+            TransactionBlock = transactionBlock;
             Fee = fee;
             Error = error;
         }
@@ -138,6 +142,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             string assetId,
             string transactionHash,
             decimal? transactionAmount,
+            long? transactionBlock,
             decimal? fee,
             string error)
         {
@@ -162,6 +167,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
                 assetId,
                 transactionHash,
                 transactionAmount,
+                transactionBlock,
                 fee,
                 error);
         }
@@ -204,7 +210,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             return true;
         }
 
-        public bool OnOperationCompleted(string transactionHash, decimal transactionAmount, decimal fee)
+        public bool OnOperationCompleted(string transactionHash, long transactionBlock, decimal transactionAmount, decimal fee)
         {
             if (!SwitchState(CashinState.ClientOperationStartIsRegistered, CashinState.OperationIsFinished))
             {
@@ -212,9 +218,10 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             }
 
             OperationFinishMoment = DateTime.UtcNow;
-
+            
             TransactionHash = transactionHash;
             TransactionAmount = transactionAmount;
+            TransactionBlock = transactionBlock;
             Fee = fee;
 
             Result = CashinResult.Success;
