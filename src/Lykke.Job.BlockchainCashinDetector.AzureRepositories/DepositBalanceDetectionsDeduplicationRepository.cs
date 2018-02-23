@@ -29,17 +29,25 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
             _storage = storage;
         }
 
-        public async Task<IEnumerable<IDepositBalanceDetectionsDeduplicationLock>> GetAsync(IEnumerable<IDepositWalletKey> keys)
+        public async Task<IEnumerable<DepositBalanceDetectionsDeduplicationLock>> GetAsync(IEnumerable<DepositWalletKey> keys)
         {
-            return await _storage.GetDataAsync(keys.Select(x => new Tuple<string, string>
+            var entities = await _storage.GetDataAsync(keys.Select(x => new Tuple<string, string>
                 (
                     DepositBalanceDetectionsDeduplicationEntity.GetPartitionKey(x.BlockchainType, x.BlockchainAssetId, x.DepositWalletAddress),
                     DepositBalanceDetectionsDeduplicationEntity.GetRowKey(x.DepositWalletAddress)
                 )
             ));
+
+            return entities.Select(x => new DepositBalanceDetectionsDeduplicationLock
+            (
+                block: x.Block,
+                blockchainType: x.BlockchainType,
+                blockchainAssetId: x.BlockchainAssetId,
+                depositWalletAddress: x.DepositWalletAddress
+            ));
         }
 
-        public async Task InsertOrReplaceAsync(string blockchainType, string blockchainAssetId, string depositWalletAddress, long block)
+        public async Task InсreaseBlockNumberAsync(string blockchainType, string blockchainAssetId, string depositWalletAddress, long block)
         {
             var entity = new DepositBalanceDetectionsDeduplicationEntity
             {
@@ -52,7 +60,14 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 RowKey = DepositBalanceDetectionsDeduplicationEntity.GetRowKey(depositWalletAddress)
             };
 
-            await _storage.InsertOrReplaceAsync(entity);
+            await _storage.InsertOrModifyAsync
+            (
+                entity.PartitionKey,
+                entity.RowKey,
+                () => entity,
+                // Ensure, that new block number is higher, that old one.
+                x => entity.Block > x.Block ? entity : x
+            );
         }
     }
 }

@@ -273,17 +273,20 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
 
             try
             {
-                var aggregate = await _cashinRepository.TryGetAsync(evt.OperationId);
+                var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
 
-                sender.SendCommand(new RemoveMatchingEngineDeduplicationLockCommand
-                    {
-                        OperationId = aggregate.OperationId
-                    },
-                    Self);
+                if (aggregate.OnDepositBalanceDetectionsDeduplicationLockUpdated())
+                {
+                    sender.SendCommand(new RemoveMatchingEngineDeduplicationLockCommand
+                        {
+                            OperationId = aggregate.OperationId
+                        },
+                        Self);
 
-                _chaosKitty.Meow(evt.OperationId);
+                    _chaosKitty.Meow(evt.OperationId);
 
-                await _cashinRepository.SaveAsync(aggregate);
+                    await _cashinRepository.SaveAsync(aggregate);
+                }
             }
             catch (Exception ex)
             {
