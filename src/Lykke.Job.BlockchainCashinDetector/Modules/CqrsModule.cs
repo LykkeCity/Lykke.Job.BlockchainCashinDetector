@@ -144,14 +144,14 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .ListeningEvents(typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent))
                     .From(BlockchainOperationsExecutorBoundedContext.Name)
                     .On("client-operations")
-                    .WithProjection(typeof(ClientOperationsProjection), Self)
+                    .WithProjection(typeof(ClientOperationsProjection), BlockchainOperationsExecutorBoundedContext.Name)
 
                     .ListeningEvents(
                             typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent),
                             typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent))
                     .From(BlockchainOperationsExecutorBoundedContext.Name)
                     .On("me-deduplication")
-                    .WithProjection(typeof(MatchingEngineCallDeduplicationsProjection), Self)
+                    .WithProjection(typeof(MatchingEngineCallDeduplicationsProjection), BlockchainOperationsExecutorBoundedContext.Name)
 
                     .ProcessingOptions(defaultRoute).MultiThreaded(8).QueueCapacity(1024),
 
