@@ -87,12 +87,12 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
                 },
                 async batch =>
                 {
-                    var walletKeys = batch.Select(x => new DepositWalletKeyDto
-                    {
-                        BlockchainAssetId = x.AssetId,
-                        BlockchainType = _blockchainType,
-                        DepositWalletAddress = x.Address
-                    });
+                    var walletKeys = batch.Select(x => new DepositWalletKey
+                    (
+                        blockchainAssetId: x.AssetId,
+                        blockchainType: _blockchainType,
+                        depositWalletAddress: x.Address
+                    ));
 
                     var deduplicationLocks = (await _deduplicationRepository.GetAsync(walletKeys))
                         .ToDictionary(x => x.DepositWalletAddress, y => y.Block);

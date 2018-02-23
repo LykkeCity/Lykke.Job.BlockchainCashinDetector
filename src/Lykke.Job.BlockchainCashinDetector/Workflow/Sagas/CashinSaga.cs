@@ -20,7 +20,13 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
     ///     -> EnrollToMatchingEngineCommand
     /// -> CashinEnrolledToMatchingEngineEvent
     ///     -> BlockchainOperationsExecutor : StartOperationCommand
-    /// -> BlockchainOperationsExecutor : OperationCompleted | OperationFailed
+    /// -> BlockchainOperationsExecutor : OperationCompleted          | -> BlockchainOperationsExecutor : OperationFailed
+    ///     -> UpdateDepositBalanceDetectionsDeduplicationLockCommand |     -> RemoveMatchingEngineDeduplicationLockCommand
+    /// -> DepositBalanceDetectionsDeduplicationLockUpdatedEvent      |
+    ///     -> RemoveMatchingEngineDeduplicationLockCommand           |
+    /// -> MatchingEngineDeduplicationLockRemovedEvent
+    ///     -> RegisterClientOperationFinishCommand
+    /// -> ClientOperationFinishRegisteredEvent
     /// </summary>
     [UsedImplicitly]
     public class CashinSaga
@@ -200,19 +206,14 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                     return;
                 }
 
-                if (aggregate.OnOperationCompleted(evt.TransactionHash, evt.TransactionAmount, evt.Fee))
+                if (aggregate.OnOperationCompleted(evt.TransactionHash, evt.Block, evt.TransactionAmount, evt.Fee))
                 {
                     sender.SendCommand(new UpdateDepositBalanceDetectionsDeduplicationLockCommand
                         {
                             Block = evt.Block,
                             BlockchainAssetId = aggregate.BlockchainAssetId,
                             BlockchainType = aggregate.BlockchainType,
-                            DepositWalletAddress = aggregate.DepositWalletAddress
-                        },
-                        Self);
-
-                    sender.SendCommand(new RemoveMatchingEngineDeduplicationLockCommand
-                        {
+                            DepositWalletAddress = aggregate.DepositWalletAddress,
                             OperationId = aggregate.OperationId
                         },
                         Self);
@@ -228,7 +229,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                 throw;
             }
         }
-
+        
         [UsedImplicitly]
         private async Task Handle(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent evt, ICommandSender sender)
         {
@@ -265,6 +266,35 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         }
 
         [Obsolete("Should be removed with next release")]
+        [UsedImplicitly]
+        private async Task Handle(DepositBalanceDetectionsDeduplicationLockUpdatedEvent evt, ICommandSender sender)
+        {
+            _log.WriteInfo(nameof(DepositBalanceDetectionsDeduplicationLockUpdatedEvent), evt, "");
+
+            try
+            {
+                var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
+
+                if (aggregate.OnDepositBalanceDetectionsDeduplicationLockUpdated())
+                {
+                    sender.SendCommand(new RemoveMatchingEngineDeduplicationLockCommand
+                        {
+                            OperationId = aggregate.OperationId
+                        },
+                        Self);
+
+                    _chaosKitty.Meow(evt.OperationId);
+
+                    await _cashinRepository.SaveAsync(aggregate);
+                }
+            }
+            catch (Exception ex)
+            {
+                _log.WriteError(nameof(DepositBalanceDetectionsDeduplicationLockUpdatedEvent), evt, ex);
+                throw;
+            }
+        }
+
         [UsedImplicitly]
         private async Task Handle(MatchingEngineDeduplicationLockRemovedEvent evt, ICommandSender sender)
         {

@@ -183,14 +183,24 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .To(BlockchainOperationsExecutorBoundedContext.Name)
                     .With(defaultPipeline)
 
-                    .ListeningEvents(
-                        typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent),
-                        typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent))
+                    .ListeningEvents(typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent))
                     .From(BlockchainOperationsExecutorBoundedContext.Name)
                     .On(defaultRoute)
-                    .PublishingCommands(
-                        typeof(RemoveMatchingEngineDeduplicationLockCommand),
-                        typeof(UpdateDepositBalanceDetectionsDeduplicationLockCommand))
+                    .PublishingCommands(typeof(UpdateDepositBalanceDetectionsDeduplicationLockCommand))
+                    .To(Self)
+                    .With(defaultPipeline)
+
+                    .ListeningEvents(typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent))
+                    .From(BlockchainOperationsExecutorBoundedContext.Name)
+                    .On(defaultRoute)
+                    .PublishingCommands(typeof(RemoveMatchingEngineDeduplicationLockCommand))
+                    .To(Self)
+                    .With(defaultPipeline)
+
+                    .ListeningEvents(typeof(DepositBalanceDetectionsDeduplicationLockUpdatedEvent))
+                    .From(BlockchainOperationsExecutorBoundedContext.Name)
+                    .On(defaultRoute)
+                    .PublishingCommands(typeof(RemoveMatchingEngineDeduplicationLockCommand))
                     .To(Self)
                     .With(defaultPipeline)
 

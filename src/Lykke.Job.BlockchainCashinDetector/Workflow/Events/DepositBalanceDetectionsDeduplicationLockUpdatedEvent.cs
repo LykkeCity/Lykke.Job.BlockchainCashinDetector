@@ -1,4 +1,5 @@
-﻿using MessagePack;
+﻿using System;
+using MessagePack;
 
 namespace Lykke.Job.BlockchainCashinDetector.Workflow.Events
 {
@@ -16,5 +17,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Events
 
         [Key(3)]
         public string DepositWalletAddress { get; set; }
+
+        [Key(4)]
+        public Guid OperationId { get; set; }
     }
 }

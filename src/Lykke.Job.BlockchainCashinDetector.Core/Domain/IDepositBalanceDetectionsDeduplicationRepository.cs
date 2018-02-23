@@ -5,8 +5,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
 {
     public interface IDepositBalanceDetectionsDeduplicationRepository
     {
-        Task<IEnumerable<IDepositBalanceDetectionsDeduplicationLock>> GetAsync(IEnumerable<IDepositWalletKey> keys);
+        Task<IEnumerable<DepositBalanceDetectionsDeduplicationLock>> GetAsync(IEnumerable<DepositWalletKey> keys);
 
-        Task InsertOrReplaceAsync(string blockchainType, string blockchainAssetId, string depositWalletAddress, long block);
+        Task InсreaseBlockNumberAsync(string blockchainType, string blockchainAssetId, string depositWalletAddress, long block);
     }
 }
