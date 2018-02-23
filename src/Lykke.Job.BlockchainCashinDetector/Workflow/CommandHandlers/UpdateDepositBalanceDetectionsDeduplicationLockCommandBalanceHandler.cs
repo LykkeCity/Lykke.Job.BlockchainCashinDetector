@@ -31,7 +31,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
 
             _log.WriteInfo(nameof(UpdateDepositBalanceDetectionsDeduplicationLockCommand), command, "");
 
-            await _deduplicationRepository.InsertOrReplaceAsync
+            await _deduplicationRepository.InсreaseBlockNumberAsync
             (
                 command.BlockchainType,
                 command.BlockchainAssetId,

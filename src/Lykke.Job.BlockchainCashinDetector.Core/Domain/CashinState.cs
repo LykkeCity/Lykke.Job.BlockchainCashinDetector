@@ -7,6 +7,7 @@
         EnrolledToMatchingEngine,
         ClientOperationStartIsRegistered,
         OperationIsFinished,
+        DepositBalanceDetectionsDeduplicationLockIsUpdated,
         MatchingEngineDeduplicationLockIsRemoved,
         ClientOperationFinishtIsRegistered
     }

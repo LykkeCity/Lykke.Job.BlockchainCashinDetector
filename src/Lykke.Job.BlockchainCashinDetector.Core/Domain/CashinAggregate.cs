@@ -15,6 +15,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
         public DateTime? ClientOperationStartRegistrationMoment { get; private set; }
         public DateTime? OperationFinishMoment { get; private set; }
         public DateTime? MatchingEngineDeduplicationLockRemovingMoment { get; private set; }
+        public DateTime? DepositBalanceDetectionsDeduplicationLockUpdatingMoment { get; private set; }
         public DateTime? ClientOperationFinishRegistrationMoment { get; private set; }
 
 
@@ -67,6 +68,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             DateTime? clientOperationStartRegistrationMoment,
             DateTime? operationFinishMoment,
             DateTime? matchingEngineDeduplicationLockRemovingMoment,
+            DateTime? depositBalanceDetectionsDeduplicationLockUpdatingMoment,
             DateTime? clientOperationFinishRegistrationMoment,
             Guid operationId,
             string blockchainType,
@@ -92,6 +94,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             ClientOperationStartRegistrationMoment = clientOperationStartRegistrationMoment;
             OperationFinishMoment = operationFinishMoment;
             MatchingEngineDeduplicationLockRemovingMoment = matchingEngineDeduplicationLockRemovingMoment;
+            DepositBalanceDetectionsDeduplicationLockUpdatingMoment = depositBalanceDetectionsDeduplicationLockUpdatingMoment;
             ClientOperationFinishRegistrationMoment = clientOperationFinishRegistrationMoment;
 
             OperationId = operationId;
@@ -131,6 +134,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             DateTime? clientOperationStartRegistrationMoment,
             DateTime? operationFinishMoment,
             DateTime? matchingEngineDeduplicationLockRemovingMoment,
+            DateTime? depositBalanceDetectionsDeduplicationLockUpdatingMoment,
             DateTime? clientOperationFinishRegistrationMoment,
             Guid operationId,
             string blockchainType,
@@ -156,6 +160,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
                 clientOperationStartRegistrationMoment,
                 operationFinishMoment,
                 matchingEngineDeduplicationLockRemovingMoment,
+                depositBalanceDetectionsDeduplicationLockUpdatingMoment,
                 clientOperationFinishRegistrationMoment,
                 operationId,
                 blockchainType,
@@ -245,9 +250,25 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             return true;
         }
 
+        public bool OnDepositBalanceDetectionsDeduplicationLockUpdated()
+        {
+            if (!SwitchState(CashinState.OperationIsFinished, CashinState.DepositBalanceDetectionsDeduplicationLockIsUpdated))
+            {
+                return false;
+            }
+
+            DepositBalanceDetectionsDeduplicationLockUpdatingMoment = DateTime.UtcNow;
+
+            return true;
+        }
+
         public bool OnMatchingEngineDeduplicationLockRemoved()
         {
-            if (!SwitchState(CashinState.OperationIsFinished, CashinState.MatchingEngineDeduplicationLockIsRemoved))
+            var expectedState = Result == CashinResult.Success
+                ? CashinState.DepositBalanceDetectionsDeduplicationLockIsUpdated
+                : CashinState.OperationIsFinished;
+            
+            if (!SwitchState(expectedState, CashinState.MatchingEngineDeduplicationLockIsRemoved))
             {
                 return false;
             }
