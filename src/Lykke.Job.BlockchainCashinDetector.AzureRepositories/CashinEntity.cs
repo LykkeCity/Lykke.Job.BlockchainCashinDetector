@@ -112,7 +112,6 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 CreationMoment = aggregate.CreationMoment,
                 StartMoment = aggregate.StartMoment,
                 MatchingEngineEnrollementMoment = aggregate.MatchingEngineEnrollementMoment,
-                ClientOperationStartRegistrationMoment = aggregate.ClientOperationStartRegistrationMoment,
                 MatchingEngineDeduplicationLockRemovingMoment = aggregate.MatchingEngineDeduplicationLockRemovingMoment,
                 DepositBalanceDetectionsDeduplicationLockUpdatingMoment = aggregate.DepositBalanceDetectionsDeduplicationLockUpdatingMoment,
                 ClientOperationFinishRegistrationMoment = aggregate.ClientOperationFinishRegistrationMoment,
