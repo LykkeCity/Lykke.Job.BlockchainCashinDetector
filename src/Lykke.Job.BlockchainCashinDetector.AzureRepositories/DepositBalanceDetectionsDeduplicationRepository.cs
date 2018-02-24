@@ -66,7 +66,17 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 entity.RowKey,
                 () => entity,
                 // Ensure, that new block number is higher, that old one.
-                x => entity.Block > x.Block ? entity : x
+                x =>
+                {
+                    if (entity.Block > x.Block)
+                    {
+                        entity.ETag = x.ETag;
+
+                        return entity;
+                    }
+
+                    return x;
+                }
             );
         }
     }
