@@ -60,13 +60,10 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 RowKey = DepositBalanceDetectionsDeduplicationEntity.GetRowKey(depositWalletAddress)
             };
 
-            await _storage.InsertOrModifyAsync
+            await _storage.InsertOrReplaceAsync
             (
-                entity.PartitionKey,
-                entity.RowKey,
-                () => entity,
-                // Ensure, that new block number is higher, that old one.
-                x => entity.Block > x.Block ? entity : x
+                entity,
+                x => entity.Block > x.Block
             );
         }
     }

@@ -15,6 +15,7 @@ using Lykke.Messaging;
 using Lykke.Messaging.Contract;
 using Lykke.Messaging.RabbitMq;
 
+
 namespace Lykke.Job.BlockchainCashinDetector.Modules
 {
     public class CqrsModule : Module
