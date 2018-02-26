@@ -99,7 +99,13 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
 
             try
             {
-                var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
+                var aggregate = await _cashinRepository.TryGetAsync(evt.OperationId);
+
+                if (aggregate == null)
+                {
+                    // This is not a cashin operation
+                    return;
+                }
 
                 // Obtains clientId directly from the wallets, but not aggregate,
                 // to make projection independent on the aggregate state, since
@@ -114,8 +120,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
 
                 if (clientId == null)
                 {
-                    throw new InvalidOperationException(
-                        "Client ID for the blockchain deposit wallet address is not found");
+                    throw new InvalidOperationException("Client ID for the blockchain deposit wallet address is not found");
                 }
 
                 await _clientOperationsRepositoryClient.UpdateBlockchainHashAsync(
