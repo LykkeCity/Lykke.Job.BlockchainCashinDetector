@@ -1,9 +1,6 @@
 ﻿using System.Collections.Generic;
 using Autofac;
 using Common.Log;
-using Inceptum.Messaging;
-using Inceptum.Messaging.Contract;
-using Inceptum.Messaging.RabbitMq;
 using Lykke.Cqrs;
 using Lykke.Cqrs.Configuration;
 using Lykke.Job.BlockchainCashinDetector.Contract;
@@ -14,6 +11,9 @@ using Lykke.Job.BlockchainCashinDetector.Workflow.Events;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Sagas;
 using Lykke.Job.BlockchainOperationsExecutor.Contract;
 using Lykke.Messaging;
+using Lykke.Messaging.Contract;
+using Lykke.Messaging.RabbitMq;
+
 
 namespace Lykke.Job.BlockchainCashinDetector.Modules
 {
