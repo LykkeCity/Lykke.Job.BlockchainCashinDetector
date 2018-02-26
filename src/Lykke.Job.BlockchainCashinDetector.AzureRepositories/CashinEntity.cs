@@ -58,6 +58,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
         public DateTime? ClientOperationStartRegistrationMoment { get; set; }
         public DateTime? OperationFinishMoment { get; set; }
         public DateTime? MatchingEngineDeduplicationLockRemovingMoment { get; set; }
+        public DateTime? DepositBalanceDetectionsDeduplicationLockUpdatingMoment { get; set; }
         public DateTime? ClientOperationFinishRegistrationMoment { get; set; }
 
         public Guid OperationId { get; set; }
@@ -71,6 +72,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
         public string AssetId { get; set; }
         public string TransactionHash { get; set; }
         public decimal? TransactionAmount { get; set; }
+        public long? TransactionBlock { get; set; }
         public decimal? Fee { get; set; }
         public string Error { get; set; }
 
@@ -113,6 +115,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 MatchingEngineEnrollementMoment = aggregate.MatchingEngineEnrollementMoment,
                 ClientOperationStartRegistrationMoment = aggregate.ClientOperationStartRegistrationMoment,
                 MatchingEngineDeduplicationLockRemovingMoment = aggregate.MatchingEngineDeduplicationLockRemovingMoment,
+                DepositBalanceDetectionsDeduplicationLockUpdatingMoment = aggregate.DepositBalanceDetectionsDeduplicationLockUpdatingMoment,
                 ClientOperationFinishRegistrationMoment = aggregate.ClientOperationFinishRegistrationMoment,
                 OperationFinishMoment = aggregate.OperationFinishMoment,
                 OperationId = operationId,
@@ -125,6 +128,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 AssetId = aggregate.AssetId,
                 TransactionHash = aggregate.TransactionHash,
                 TransactionAmount = aggregate.TransactionAmount,
+                TransactionBlock = aggregate.TransactionBlock,
                 Fee = aggregate.Fee,
                 Error = aggregate.Error
             };
@@ -147,6 +151,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 ClientOperationStartRegistrationMoment, 
                 OperationFinishMoment,
                 MatchingEngineDeduplicationLockRemovingMoment,
+                DepositBalanceDetectionsDeduplicationLockUpdatingMoment,
                 ClientOperationFinishRegistrationMoment,
                 OperationId,
                 BlockchainType,
@@ -158,6 +163,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 AssetId,
                 TransactionHash,
                 TransactionAmount,
+                TransactionBlock,
                 Fee,
                 Error);
         }
