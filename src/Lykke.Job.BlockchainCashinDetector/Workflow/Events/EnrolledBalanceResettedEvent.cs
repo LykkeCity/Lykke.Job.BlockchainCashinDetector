@@ -4,21 +4,21 @@ using MessagePack;
 namespace Lykke.Job.BlockchainCashinDetector.Workflow.Events
 {
     [MessagePackObject]
-    public class DepositBalanceDetectionsDeduplicationLockUpdatedEvent
+    public class EnrolledBalanceResettedEvent
     {
         [Key(0)]
-        public string BlockchainType { get; set; }
+        public Guid OperationId { get; set; }
 
         [Key(1)]
-        public string BlockchainAssetId { get; set; }
+        public string BlockchainType { get; set; }
 
         [Key(2)]
-        public long Block { get; set; }
+        public string BlockchainAssetId { get; set; }
 
         [Key(3)]
         public string DepositWalletAddress { get; set; }
 
         [Key(4)]
-        public Guid OperationId { get; set; }
+        public long TransactionBlock { get; set; }
     }
 }

@@ -23,8 +23,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
 
         protected override void Load(ContainerBuilder builder)
         {
-            builder.Register(c => DepositBalanceDetectionsDeduplicationRepository.Create(_dbSettings.Nested(x => x.DataConnString), _log))
-                .As<IDepositBalanceDetectionsDeduplicationRepository>()
+            builder.Register(c => EnrolledBalanceRepository.Create(_dbSettings.Nested(x => x.DataConnString), _log))
+                .As<IEnrolledBalanceRepository>()
                 .SingleInstance();
 
             builder.Register(c => MatchingEngineCallsDeduplicationRepository.Create(_dbSettings.Nested(x => x.DataConnString), _log))
