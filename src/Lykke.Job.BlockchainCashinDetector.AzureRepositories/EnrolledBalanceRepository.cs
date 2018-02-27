@@ -83,6 +83,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
             var entity = new EnrolledBalanceEntity
             {
                 Balance = 0,
+                Block = block,
                 BlockchainType = blockchainType,
                 BlockchainAssetId = blockchainAssetId,
                 DepositWalletAddress = depositWalletAddress,
