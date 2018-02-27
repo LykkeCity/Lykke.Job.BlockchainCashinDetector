@@ -37,7 +37,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                 Amount = command.Amount,
                 DepositWalletAddress = command.DepositWalletAddress,
                 HotWalletAddress = hotWalletAddress,
-                AssetId = command.AssetId
+                AssetId = command.AssetId,
+                OperationAmount = command.OperationAmount
             });
 
             return Task.FromResult(CommandHandlingResult.Ok());

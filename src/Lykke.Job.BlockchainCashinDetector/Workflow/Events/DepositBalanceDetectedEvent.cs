@@ -22,5 +22,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Events
 
         [Key(5)]
         public string AssetId { get; set; }
+
+        [Key(6)]
+        public decimal OperationAmount { get; set; }
     }
 }
