@@ -8,6 +8,7 @@ using Lykke.Job.BlockchainCashinDetector.Settings.JobSettings;
 using Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Commands;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Events;
+using Lykke.Job.BlockchainCashinDetector.Workflow.Projections;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Sagas;
 using Lykke.Job.BlockchainOperationsExecutor.Contract;
 using Lykke.Messaging;
@@ -61,6 +62,10 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
             builder.RegisterType<RegisterClientOperationFinishCommandsHandler>();
             builder.RegisterType<UpdateDepositBalanceDetectionsDeduplicationLockCommandBalanceHandler>();
 
+            // Projections
+            builder.RegisterType<ClientOperationsProjection>();
+            builder.RegisterType<MatchingEngineCallDeduplicationsProjection>();
+
             builder.Register(ctx => CreateEngine(ctx, messagingEngine))
                 .As<ICqrsEngine>()
                 .SingleInstance()
@@ -73,6 +78,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
 
             const string defaultPipeline = "commands";
             const string defaultRoute = "self";
+            const string eventsRoute = "evets";
 
             return new CqrsEngine(
                 _log,
@@ -82,7 +88,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                 true,
                 Register.DefaultEndpointResolver(new RabbitMqConventionEndpointResolver(
                     "RabbitMq",
-                    "messagepack", 
+                    "messagepack",
                     environment: "lykke")),
 
                 Register.BoundedContext(Self)
@@ -94,13 +100,13 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .WithCommandsHandler<DetectDepositBalanceCommandHandler>()
                     .PublishingEvents(typeof(DepositBalanceDetectedEvent))
                     .With(defaultPipeline)
-                    
+
                     .ListeningCommands(typeof(StartCashinCommand))
                     .On(defaultRoute)
                     .WithCommandsHandler<StartCashinCommandsHandler>()
                     .PublishingEvents(typeof(CashinStartedEvent))
                     .With(defaultPipeline)
-                    
+
                     .ListeningCommands(typeof(EnrollToMatchingEngineCommand))
                     .On(defaultRoute)
                     .WithCommandsHandler<EnrollToMatchingEngineCommandsHandler>()
@@ -130,6 +136,31 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .WithCommandsHandler<UpdateDepositBalanceDetectionsDeduplicationLockCommandBalanceHandler>()
                     .PublishingEvents(typeof(DepositBalanceDetectionsDeduplicationLockUpdatedEvent))
                     .With(defaultPipeline)
+
+                    .ListeningEvents(
+                        typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent),
+                        typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent))
+                    .From(BlockchainOperationsExecutorBoundedContext.Name)
+                    .On(eventsRoute)
+                    .WithProjection(typeof(MatchingEngineCallDeduplicationsProjection),
+                        BlockchainOperationsExecutorBoundedContext.Name)
+
+                    .ProcessingOptions(defaultRoute).MultiThreaded(8).QueueCapacity(1024)
+                    .ProcessingOptions(eventsRoute).MultiThreaded(8).QueueCapacity(1024),
+
+                // TODO: This should be moved to the separate service, which is responsible
+                // for the client operations history
+
+                Register.BoundedContext($"{Self}.client-operations")
+                    .ListeningEvents(typeof(CashinStartedEvent))
+                    .From(Self)
+                    .On(defaultRoute)
+                    .WithProjection(typeof(ClientOperationsProjection), Self)
+
+                    .ListeningEvents(typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent))
+                    .From(BlockchainOperationsExecutorBoundedContext.Name)
+                    .On(defaultRoute)
+                    .WithProjection(typeof(ClientOperationsProjection), BlockchainOperationsExecutorBoundedContext.Name)
 
                     .ProcessingOptions(defaultRoute).MultiThreaded(8).QueueCapacity(1024),
 
@@ -192,7 +223,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
 
                     .ListeningEvents(typeof(ClientOperationFinishRegisteredEvent))
                     .From(Self)
-                    .On(defaultRoute));
+                    .On(defaultRoute)
+
+                    .ProcessingOptions(defaultRoute).MultiThreaded(8).QueueCapacity(1024));
         }
     }
 }

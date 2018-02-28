@@ -55,11 +55,9 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
         public DateTime CreationMoment { get; set; }
         public DateTime? StartMoment { get; set; }
         public DateTime? MatchingEngineEnrollementMoment { get; set; }
-        public DateTime? ClientOperationStartRegistrationMoment { get; set; }
         public DateTime? OperationFinishMoment { get; set; }
-        public DateTime? MatchingEngineDeduplicationLockRemovingMoment { get; set; }
-        public DateTime? DepositBalanceDetectionsDeduplicationLockUpdatingMoment { get; set; }
         public DateTime? ClientOperationFinishRegistrationMoment { get; set; }
+        public DateTime? DepositBalanceDetectionsDeduplicationLockUpdatingMoment { get; set; }
 
         public Guid OperationId { get; set; }
         public string BlockchainType { get; set; }
@@ -113,10 +111,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 CreationMoment = aggregate.CreationMoment,
                 StartMoment = aggregate.StartMoment,
                 MatchingEngineEnrollementMoment = aggregate.MatchingEngineEnrollementMoment,
-                ClientOperationStartRegistrationMoment = aggregate.ClientOperationStartRegistrationMoment,
-                MatchingEngineDeduplicationLockRemovingMoment = aggregate.MatchingEngineDeduplicationLockRemovingMoment,
                 DepositBalanceDetectionsDeduplicationLockUpdatingMoment = aggregate.DepositBalanceDetectionsDeduplicationLockUpdatingMoment,
-                ClientOperationFinishRegistrationMoment = aggregate.ClientOperationFinishRegistrationMoment,
                 OperationFinishMoment = aggregate.OperationFinishMoment,
                 OperationId = operationId,
                 BlockchainType = aggregate.BlockchainType,
@@ -148,11 +143,8 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 CreationMoment,
                 StartMoment,
                 MatchingEngineEnrollementMoment,
-                ClientOperationStartRegistrationMoment, 
                 OperationFinishMoment,
-                MatchingEngineDeduplicationLockRemovingMoment,
                 DepositBalanceDetectionsDeduplicationLockUpdatingMoment,
-                ClientOperationFinishRegistrationMoment,
                 OperationId,
                 BlockchainType,
                 HotWalletAddress,

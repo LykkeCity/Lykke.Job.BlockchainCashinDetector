@@ -19,8 +19,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
     /// -> CashinStartedEvent
     ///     -> EnrollToMatchingEngineCommand
     /// -> CashinEnrolledToMatchingEngineEvent
-    ///     -> RegisterClientOperationStartCommand
-    ///  -> ClientOperationStartRegisteredEvent
     ///     -> BlockchainOperationsExecutor : StartOperationCommand
     /// -> BlockchainOperationsExecutor : OperationCompleted          | -> BlockchainOperationsExecutor : OperationFailed
     ///     -> UpdateDepositBalanceDetectionsDeduplicationLockCommand |     -> RemoveMatchingEngineDeduplicationLockCommand
@@ -52,7 +50,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         [UsedImplicitly]
         private async Task Handle(DepositBalanceDetectedEvent evt, ICommandSender sender)
         {
-
             _log.WriteInfo(nameof(DepositBalanceDetectedEvent), evt, "");
 
             try
@@ -90,7 +87,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         [UsedImplicitly]
         private async Task Handle(CashinStartedEvent evt, ICommandSender sender)
         {
-
             _log.WriteInfo(nameof(CashinStartedEvent), evt, "");
 
             try
@@ -125,7 +121,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         [UsedImplicitly]
         private async Task Handle(CashinEnrolledToMatchingEngineEvent evt, ICommandSender sender)
         {
-
             _log.WriteInfo(nameof(CashinEnrolledToMatchingEngineEvent), evt, "");
 
             try
@@ -134,25 +129,18 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
 
                 if (aggregate.OnEnrolledToMatchingEngine(evt.ClientId))
                 {
-                    if (!aggregate.ClientId.HasValue)
-                    {
-                        throw new InvalidOperationException("ClientId should be not null");
-                    }
-                    if (!aggregate.StartMoment.HasValue)
-                    {
-                        throw new InvalidOperationException("StartMoment should be not null");
-                    }
+                    // TODO: Add tag (cashin/cashout) to the operation, and pass it to the operations executor?
 
-                    sender.SendCommand(new RegisterClientOperationStartCommand
+                    sender.SendCommand(new BlockchainOperationsExecutor.Contract.Commands.StartOperationExecutionCommand
                         {
                             OperationId = aggregate.OperationId,
-                            ClientId = aggregate.ClientId.Value,
+                            FromAddress = aggregate.DepositWalletAddress,
+                            ToAddress = aggregate.HotWalletAddress,
                             AssetId = aggregate.AssetId,
-                            DepositWalletAddress = aggregate.DepositWalletAddress,
-                            HotWalletAddress = aggregate.HotWalletAddress,
                             Amount = aggregate.Amount,
-                            Moment = aggregate.StartMoment.Value
-                        }, Self);
+                            IncludeFee = true
+                        },
+                        BlockchainOperationsExecutorBoundedContext.Name);
 
                     _chaosKitty.Meow(evt.OperationId);
 
@@ -166,11 +154,10 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
             }
         }
 
-
+        [Obsolete("Should be removed with next release")]
         [UsedImplicitly]
         private async Task Handle(ClientOperationStartRegisteredEvent evt, ICommandSender sender)
         {
-
             _log.WriteInfo(nameof(ClientOperationStartRegisteredEvent), evt, "");
 
             try
@@ -207,7 +194,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         [UsedImplicitly]
         private async Task Handle(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent evt, ICommandSender sender)
         {
-
             _log.WriteInfo(nameof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent), evt, "");
 
             try
@@ -231,7 +217,13 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                             OperationId = aggregate.OperationId
                         },
                         Self);
-                    
+
+                    sender.SendCommand(new RemoveMatchingEngineDeduplicationLockCommand
+                        {
+                            OperationId = aggregate.OperationId
+                        },
+                        Self);
+
                     _chaosKitty.Meow(evt.OperationId);
 
                     await _cashinRepository.SaveAsync(aggregate);
@@ -247,7 +239,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         [UsedImplicitly]
         private async Task Handle(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent evt, ICommandSender sender)
         {
-
             _log.WriteInfo(nameof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent), evt, "");
 
             try
@@ -280,6 +271,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
             }
         }
 
+        [Obsolete("Should be removed with next release")]
         [UsedImplicitly]
         private async Task Handle(DepositBalanceDetectionsDeduplicationLockUpdatedEvent evt, ICommandSender sender)
         {
@@ -312,7 +304,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         [UsedImplicitly]
         private async Task Handle(MatchingEngineDeduplicationLockRemovedEvent evt, ICommandSender sender)
         {
-
             _log.WriteInfo(nameof(MatchingEngineDeduplicationLockRemovedEvent), evt, "");
 
             try
@@ -345,26 +336,11 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
             }
         }
 
+        [Obsolete("Should be removed with next release")]
         [UsedImplicitly]
-        private async Task Handle(ClientOperationFinishRegisteredEvent evt, ICommandSender sender)
+        private Task Handle(ClientOperationFinishRegisteredEvent evt, ICommandSender sender)
         {
-
-            _log.WriteInfo(nameof(ClientOperationFinishRegisteredEvent), evt, "");
-
-            try
-            {
-                var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
-
-                if (aggregate.OnClientOperationFinishRegistered())
-                {
-                    await _cashinRepository.SaveAsync(aggregate);
-                }
-            }
-            catch (Exception ex)
-            {
-                _log.WriteError(nameof(ClientOperationFinishRegisteredEvent), evt, ex);
-                throw;
-            }
+            return Task.CompletedTask;
         }
     }
 }
