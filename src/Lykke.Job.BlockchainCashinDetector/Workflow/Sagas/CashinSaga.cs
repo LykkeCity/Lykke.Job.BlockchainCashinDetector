@@ -218,6 +218,12 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                         },
                         Self);
 
+                    sender.SendCommand(new RemoveMatchingEngineDeduplicationLockCommand
+                        {
+                            OperationId = aggregate.OperationId
+                        },
+                        Self);
+
                     _chaosKitty.Meow(evt.OperationId);
 
                     await _cashinRepository.SaveAsync(aggregate);

@@ -15,10 +15,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
         public DateTime? StartMoment { get; private set; }
         public DateTime? MatchingEngineEnrollementMoment { get; private set; }
         public DateTime? OperationFinishMoment { get; private set; }
-        public DateTime? MatchingEngineDeduplicationLockRemovingMoment { get; private set; }
         public DateTime? DepositBalanceDetectionsDeduplicationLockUpdatingMoment { get; private set; }
-        public DateTime? ClientOperationFinishRegistrationMoment { get; private set; }
-
 
         public Guid OperationId { get; }
         public string BlockchainType { get; }
@@ -67,9 +64,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             DateTime? startMoment,
             DateTime? matchingEngineEnrollementMoment,
             DateTime? operationFinishMoment,
-            DateTime? matchingEngineDeduplicationLockRemovingMoment,
             DateTime? depositBalanceDetectionsDeduplicationLockUpdatingMoment,
-            DateTime? clientOperationFinishRegistrationMoment,
             Guid operationId,
             string blockchainType,
             string hotWalletAddress,
@@ -92,9 +87,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             StartMoment = startMoment;
             MatchingEngineEnrollementMoment = matchingEngineEnrollementMoment;
             OperationFinishMoment = operationFinishMoment;
-            MatchingEngineDeduplicationLockRemovingMoment = matchingEngineDeduplicationLockRemovingMoment;
             DepositBalanceDetectionsDeduplicationLockUpdatingMoment = depositBalanceDetectionsDeduplicationLockUpdatingMoment;
-            ClientOperationFinishRegistrationMoment = clientOperationFinishRegistrationMoment;
 
             OperationId = operationId;
             BlockchainType = blockchainType;
@@ -131,9 +124,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             DateTime? startMoment,
             DateTime? matchingEngineEnrollementMoment,
             DateTime? operationFinishMoment,
-            DateTime? matchingEngineDeduplicationLockRemovingMoment,
             DateTime? depositBalanceDetectionsDeduplicationLockUpdatingMoment,
-            DateTime? clientOperationFinishRegistrationMoment,
             Guid operationId,
             string blockchainType,
             string hotWalletAddress,
@@ -156,9 +147,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
                 startMoment,
                 matchingEngineEnrollementMoment,
                 operationFinishMoment,
-                matchingEngineDeduplicationLockRemovingMoment,
                 depositBalanceDetectionsDeduplicationLockUpdatingMoment,
-                clientOperationFinishRegistrationMoment,
                 operationId,
                 blockchainType,
                 hotWalletAddress,
