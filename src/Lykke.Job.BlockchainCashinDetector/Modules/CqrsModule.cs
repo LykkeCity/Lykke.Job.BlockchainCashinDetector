@@ -61,11 +61,11 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
             builder.RegisterType<RemoveMatchingEngineDeduplicationLockCommandsHandler>();
             builder.RegisterType<RegisterClientOperationFinishCommandsHandler>();
             builder.RegisterType<IncreaseEnrolledBalanceCommandHandler>();
-            
+            builder.RegisterType<ResetEnrolledBalanceCommandHandler>();
+
             // Projections
             builder.RegisterType<ClientOperationsProjection>();
             builder.RegisterType<MatchingEngineCallDeduplicationsProjection>();
-            builder.RegisterType<EnrolledBalanceProjection>();
 
             builder.Register(ctx => CreateEngine(ctx, messagingEngine))
                 .As<ICqrsEngine>()
@@ -137,20 +137,17 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .WithCommandsHandler<IncreaseEnrolledBalanceCommandHandler>()
                     .PublishingEvents(typeof(EnrolledBalanceIncreasedEvent))
                     .With(defaultPipeline)
-                    
-                    .ListeningEvents(
-                        typeof(EnrolledBalanceIncreasedEvent))
-                    .From(Self)
-                    .On(eventsRoute)
-                    .WithProjection(typeof(EnrolledBalanceProjection),
-                        Self)
+
+                    .ListeningCommands(typeof(ResetEnrolledBalanceCommand))
+                    .On(defaultRoute)
+                    .WithCommandsHandler<ResetEnrolledBalanceCommandHandler>()
+                    .PublishingEvents(typeof(EnrolledBalanceResetEvent))
+                    .With(defaultPipeline)
 
                     .ListeningEvents(
                         typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent))
                     .From(BlockchainOperationsExecutorBoundedContext.Name)
                     .On(eventsRoute)
-                    .WithProjection(typeof(EnrolledBalanceProjection),
-                        BlockchainOperationsExecutorBoundedContext.Name)
                     .WithProjection(typeof(MatchingEngineCallDeduplicationsProjection),
                         BlockchainOperationsExecutorBoundedContext.Name)
 
@@ -215,10 +212,22 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .PublishingCommands(typeof(BlockchainOperationsExecutor.Contract.Commands.StartOperationExecutionCommand))
                     .To(BlockchainOperationsExecutorBoundedContext.Name)
                     .With(defaultPipeline)
-                    
-                    .ListeningEvents(
-                        typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent),
-                        typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent))
+
+                    .ListeningEvents(typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent))
+                    .From(BlockchainOperationsExecutorBoundedContext.Name)
+                    .On(defaultRoute)
+                    .PublishingCommands(typeof(ResetEnrolledBalanceCommand))
+                    .To(Self)
+                    .With(defaultPipeline)
+
+                    .ListeningEvents(typeof(EnrolledBalanceResetEvent))
+                    .From(Self)
+                    .On(defaultRoute)
+                    .PublishingCommands(typeof(RemoveMatchingEngineDeduplicationLockCommand))
+                    .To(Self)
+                    .With(defaultPipeline)
+
+                    .ListeningEvents(typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent))
                     .From(BlockchainOperationsExecutorBoundedContext.Name)
                     .On(defaultRoute)
                     .PublishingCommands(typeof(RemoveMatchingEngineDeduplicationLockCommand))
