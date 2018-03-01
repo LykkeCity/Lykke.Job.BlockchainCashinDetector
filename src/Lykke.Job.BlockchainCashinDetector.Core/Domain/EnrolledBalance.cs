@@ -1,26 +1,29 @@
 ﻿namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
 {
-    public sealed class DepositBalanceDetectionsDeduplicationLock
+    public sealed class EnrolledBalance
     {
-        public DepositBalanceDetectionsDeduplicationLock(
-            long block,
+        public EnrolledBalance(
+            decimal balance,
             string blockchainType,
             string blockchainAssetId,
-            string depositWalletAddress)
+            string depositWalletAddress,
+            long block)
         {
-            Block = block;
+            Balance = balance;
             BlockchainType = blockchainType;
             BlockchainAssetId = blockchainAssetId;
             DepositWalletAddress = depositWalletAddress;
+            Block = block;
         }
 
-
-        public long Block { get; }
+        public decimal Balance { get; }
 
         public string BlockchainType { get; }
 
         public string BlockchainAssetId { get; }
 
         public string DepositWalletAddress { get; }
+
+        public long Block { get; }
     }
 }
