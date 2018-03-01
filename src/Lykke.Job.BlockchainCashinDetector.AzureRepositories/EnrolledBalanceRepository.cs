@@ -58,23 +58,35 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
         {
             var partitionKey = EnrolledBalanceEntity.GetPartitionKey(blockchainType, blockchainAssetId, depositWalletAddress);
             var rowKey = EnrolledBalanceEntity.GetRowKey(depositWalletAddress);
+            var balanceIfNew = amount;
 
-            var entity = await _storage.GetDataAsync(partitionKey, rowKey) ?? new EnrolledBalanceEntity
+            EnrolledBalanceEntity CreateEntity()
             {
-                BlockchainType = blockchainType,
-                BlockchainAssetId = blockchainAssetId,
-                DepositWalletAddress = depositWalletAddress,
+                return new EnrolledBalanceEntity
+                {
+                    Balance = balanceIfNew,
+                    BlockchainType = blockchainType,
+                    BlockchainAssetId = blockchainAssetId,
+                    DepositWalletAddress = depositWalletAddress,
 
-                PartitionKey = partitionKey,
-                RowKey = rowKey
-            };
-
-            entity.Balance += amount;
+                    PartitionKey = partitionKey,
+                    RowKey = rowKey
+                };
+            }
             
-            await _storage.InsertOrReplaceAsync
+            bool UpdateEntity(EnrolledBalanceEntity entity)
+            {
+                entity.Balance += amount;
+
+                return true;
+            }
+
+            await _storage.InsertOrModifyAsync
             (
-                entity,
-                x => x.Balance < entity.Balance
+                partitionKey,
+                rowKey,
+                CreateEntity,
+                UpdateEntity
             );
         }
 

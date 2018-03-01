@@ -123,10 +123,12 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
                     throw new InvalidOperationException("Client ID for the blockchain deposit wallet address is not found");
                 }
 
-                await _clientOperationsRepositoryClient.UpdateBlockchainHashAsync(
+                await _clientOperationsRepositoryClient.UpdateBlockchainHashAsync
+                (
                     clientId.ToString(),
-                    evt.OperationId.ToString(),
-                    evt.TransactionHash);
+                    aggregate.OperationId.ToString(),
+                    evt.TransactionHash
+                );
 
                 _chaosKitty.Meow(evt.OperationId);
             }
