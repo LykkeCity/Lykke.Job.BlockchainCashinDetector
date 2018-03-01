@@ -15,6 +15,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
         public DateTime? StartMoment { get; private set; }
         public DateTime? MatchingEngineEnrollementMoment { get; private set; }
         public DateTime? EnrolledBalanceIncreasedMoment { get; private set; }
+        public DateTime? EnrolledBalanceResetMoment { get; private set; }
         public DateTime? OperationFinishMoment { get; private set; }
         
 
@@ -68,6 +69,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             DateTime? startMoment,
             DateTime? matchingEngineEnrollementMoment,
             DateTime? enrolledBalanceIncreasedMoment,
+            DateTime? enrolledBalanceResetMoment,
             DateTime? operationFinishMoment,
             Guid operationId,
             string blockchainType,
@@ -92,6 +94,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             StartMoment = startMoment;
             MatchingEngineEnrollementMoment = matchingEngineEnrollementMoment;
             EnrolledBalanceIncreasedMoment = enrolledBalanceIncreasedMoment;
+            EnrolledBalanceResetMoment = enrolledBalanceResetMoment;
             OperationFinishMoment = operationFinishMoment;
 
             OperationId = operationId;
@@ -131,6 +134,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             DateTime? startMoment,
             DateTime? matchingEngineEnrollementMoment,
             DateTime? enrolledBalanceIncreasedMoment,
+            DateTime? enrolledBalanceResetMoment,
             DateTime? operationFinishMoment,
             Guid operationId,
             string blockchainType,
@@ -155,6 +159,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
                 startMoment,
                 matchingEngineEnrollementMoment,
                 enrolledBalanceIncreasedMoment,
+                enrolledBalanceResetMoment,
                 operationFinishMoment,
                 operationId,
                 blockchainType,
@@ -216,7 +221,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
                 CashinState.EnrolledBalanceIncreased
             };
 
-            if (!SwitchState(expectedStates, CashinState.OperationIsFinished))
+            if (!SwitchState(expectedStates, CashinState.EnrolledBalanceReset))
             {
                 return false;
             }
@@ -227,6 +232,18 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             TransactionAmount = transactionAmount;
             TransactionBlock = transactionBlock;
             Fee = fee;
+            
+            return true;
+        }
+
+        public bool OnEnrolledBalanceReset()
+        {
+            if (!SwitchState(CashinState.EnrolledBalanceReset, CashinState.OperationIsFinished))
+            {
+                return false;
+            }
+
+            EnrolledBalanceResetMoment = DateTime.UtcNow;
 
             Result = CashinResult.Success;
 
