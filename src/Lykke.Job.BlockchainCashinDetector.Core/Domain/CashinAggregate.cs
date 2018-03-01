@@ -270,6 +270,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
 
             if (Amount == 0)
             {
+                Result = CashinResult.Success;
                 OperationFinishMoment = DateTime.UtcNow;
             }
 
