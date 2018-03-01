@@ -23,7 +23,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
     /// -> EnrolledBalanceIncreasedEvent
     ///     -> BlockchainOperationsExecutor : StartOperationCommand
     /// -> BlockchainOperationsExecutor : OperationCompleted        || -> BlockchainOperationsExecutor : OperationFailed
-    ///     -> RemoveMatchingEngineDeduplicationLockCommand         ||     -> RemoveMatchingEngineDeduplicationLockCommand
+    ///     -> ResetEnrolledBalanceCommand                          ||     -> RemoveMatchingEngineDeduplicationLockCommand
+    /// -> EnrolledBBalanceResetEvent
+    ///     -> RemoveMatchingEngineDeduplicationLockCommand
     /// -> MatchingEngineDeduplicationLockRemovedEvent
     ///     -> RegisterClientOperationFinishCommand
     /// -> ClientOperationFinishRegisteredEvent
@@ -245,11 +247,15 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
 
                 if (aggregate.OnOperationCompleted(evt.TransactionHash, evt.Block, evt.TransactionAmount, evt.Fee))
                 {
-                    sender.SendCommand(new RemoveMatchingEngineDeduplicationLockCommand
-                        {
-                            OperationId = aggregate.OperationId
-                        },
-                        Self);
+                    sender.SendCommand(new ResetEnrolledBalanceCommand
+                    {
+                        OperationId = aggregate.OperationId,
+                        BlockchainType = aggregate.BlockchainType,
+                        BlockchainAssetId = aggregate.BlockchainAssetId,
+                        DepositWalletAddress = aggregate.DepositWalletAddress,
+                        Block = evt.Block
+                    },
+                    Self);
 
                     _chaosKitty.Meow(evt.OperationId);
 
@@ -262,7 +268,35 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                 throw;
             }
         }
-        
+
+        public async Task Handle(EnrolledBalanceResetEvent evt, ICommandSender sender)
+        {
+            _log.WriteInfo(nameof(EnrolledBalanceResetEvent), evt, "");
+
+            try
+            {
+                var aggregate = await _cashinRepository.TryGetAsync(evt.OperationId);
+
+                if (aggregate.OnEnrolledBalanceReset())
+                {
+                    sender.SendCommand(new RemoveMatchingEngineDeduplicationLockCommand
+                    {
+                        OperationId = aggregate.OperationId
+                    },
+                    Self);
+
+                    _chaosKitty.Meow(evt.OperationId);
+
+                    await _cashinRepository.SaveAsync(aggregate);
+                }
+            }
+            catch (Exception ex)
+            {
+                _log.WriteError(nameof(EnrolledBalanceResetEvent), evt, ex);
+                throw;
+            }
+        }
+
         [UsedImplicitly]
         private async Task Handle(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent evt, ICommandSender sender)
         {
