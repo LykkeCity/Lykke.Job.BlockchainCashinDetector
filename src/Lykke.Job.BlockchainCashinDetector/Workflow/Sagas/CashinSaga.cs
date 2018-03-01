@@ -140,7 +140,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                             BlockchainAssetId = aggregate.BlockchainAssetId,
                             DepositWalletAddress = aggregate.DepositWalletAddress
                         },
-                        BlockchainOperationsExecutorBoundedContext.Name);
+                        Self);
 
                     _chaosKitty.Meow(evt.OperationId);
 
