@@ -137,7 +137,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                     sender.SendCommand(new IncreaseEnrolledBalanceCommand
                         {
                             OperationId = aggregate.OperationId,
-                            Amount = aggregate.Amount,
+                            Amount = aggregate.OperationAmount,
                             BlockchainType = aggregate.BlockchainType,
                             BlockchainAssetId = aggregate.BlockchainAssetId,
                             DepositWalletAddress = aggregate.DepositWalletAddress
