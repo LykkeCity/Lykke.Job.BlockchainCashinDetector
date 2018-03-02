@@ -72,7 +72,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
             {
                 var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
 
-                if (aggregate.Amount == 0)
+                if (aggregate.IsDustCashin)
                 {
                     await _deduplicationRepository.TryRemoveAsync(evt.OperationId);
                 }
