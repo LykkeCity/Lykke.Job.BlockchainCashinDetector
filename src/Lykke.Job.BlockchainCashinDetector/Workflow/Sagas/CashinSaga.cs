@@ -167,7 +167,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
 
                 if (aggregate.OnEnrolledBalanceIncreased())
                 {
-                    if (aggregate.IsDustCashin)
+                    if (!aggregate.IsDustCashin)
                     {
                         sender.SendCommand(new BlockchainOperationsExecutor.Contract.Commands.StartOperationExecutionCommand
                         {
