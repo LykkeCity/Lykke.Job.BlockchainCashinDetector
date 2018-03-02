@@ -36,6 +36,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
         public string Error { get; private set; }
 
         public bool IsFinished => Result == CashinResult.Success || Result == CashinResult.Failure;
+        public bool IsDustCashin => Amount == 0;
+
 
         private CashinAggregate(
             string blockchainType, 
@@ -274,10 +276,10 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
 
         public bool OnEnrolledBalanceIncreased()
         {
-            var nextState = Amount > 0 
-                ? CashinState.EnrolledBalanceIncreased 
-                : CashinState.OperationIsFinished;
-            
+            var nextState = IsDustCashin
+                ? CashinState.OperationIsFinished
+                : CashinState.EnrolledBalanceIncreased;
+
             if (!SwitchState(CashinState.EnrolledToMatchingEngine, nextState))
             {
                 return false;
@@ -285,7 +287,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             
             EnrolledBalanceIncreasedMoment = DateTime.UtcNow;
 
-            if (Amount == 0)
+            if (IsDustCashin)
             {
                 Result = CashinResult.Success;
                 OperationFinishMoment = DateTime.UtcNow;

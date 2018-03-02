@@ -99,7 +99,22 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
 
             try
             {
-                await UpdateBlockchainHashAsync(evt.OperationId, evt.TransactionHash);
+                var aggregate = await _cashinRepository.TryGetAsync(evt.OperationId);
+
+                if (aggregate == null)
+                {
+                    // This is not a cashin operation
+                    return;
+                }
+
+                var clientId = await GetClientIdAsync(aggregate);
+
+                await _clientOperationsRepositoryClient.UpdateBlockchainHashAsync
+                (
+                    clientId.ToString(),
+                    aggregate.OperationId.ToString(),
+                    evt.TransactionHash
+                );
 
                 _chaosKitty.Meow(evt.OperationId);
             }
@@ -119,9 +134,16 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
             {
                 var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
 
-                if (aggregate.Amount == 0)
+                if (aggregate.IsDustCashin)
                 {
-                    await UpdateBlockchainHashAsync(evt.OperationId, "n/a");
+                    var clientId = await GetClientIdAsync(aggregate);
+                    
+                    await _clientOperationsRepositoryClient.UpdateBlockchainHashAsync
+                    (
+                        clientId.ToString(),
+                        aggregate.OperationId.ToString(),
+                        "0x"
+                    );
                 }
 
                 _chaosKitty.Meow(evt.OperationId);
@@ -133,38 +155,27 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
             }
         }
 
-        private async Task UpdateBlockchainHashAsync(Guid operationId, string transactionHash)
+        private async Task<Guid> GetClientIdAsync(CashinAggregate aggregate)
         {
-            var aggregate = await _cashinRepository.TryGetAsync(operationId);
-
-            if (aggregate == null)
-            {
-                // This is not a cashin operation
-                return;
-            }
-
             // Obtains clientId directly from the wallets, but not aggregate,
             // to make projection independent on the aggregate state, since
             // clientId in aggregate is initially not filled up.
 
             // TODO: Add client cache for the walletsClient
 
-            var clientId = await _walletsClient.TryGetClientIdAsync(
+            var clientId = await _walletsClient.TryGetClientIdAsync
+            (
                 aggregate.BlockchainType,
                 aggregate.BlockchainAssetId,
-                aggregate.DepositWalletAddress);
+                aggregate.DepositWalletAddress
+            );
 
             if (clientId == null)
             {
                 throw new InvalidOperationException("Client ID for the blockchain deposit wallet address is not found");
             }
 
-            await _clientOperationsRepositoryClient.UpdateBlockchainHashAsync
-            (
-                clientId.ToString(),
-                aggregate.OperationId.ToString(),
-                transactionHash
-            );
+            return clientId.Value;
         }
     }
 }
