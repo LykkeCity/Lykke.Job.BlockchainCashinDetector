@@ -145,6 +145,13 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .With(defaultPipeline)
 
                     .ListeningEvents(
+                        typeof(EnrolledBalanceIncreasedEvent))
+                    .From(Self)
+                    .On(eventsRoute)
+                    .WithProjection(typeof(MatchingEngineCallDeduplicationsProjection),
+                        Self)
+
+                    .ListeningEvents(
                         typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent))
                     .From(BlockchainOperationsExecutorBoundedContext.Name)
                     .On(eventsRoute)
@@ -166,6 +173,11 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
 
                 Register.BoundedContext($"{Self}.client-operations")
                     .ListeningEvents(typeof(CashinStartedEvent))
+                    .From(Self)
+                    .On(defaultRoute)
+                    .WithProjection(typeof(ClientOperationsProjection), Self)
+
+                    .ListeningEvents(typeof(EnrolledBalanceIncreasedEvent))
                     .From(Self)
                     .On(defaultRoute)
                     .WithProjection(typeof(ClientOperationsProjection), Self)
