@@ -7,7 +7,6 @@ using Common;
 using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Cqrs;
-using Lykke.Job.BlockchainCashinDetector.AzureRepositories;
 using Lykke.Job.BlockchainCashinDetector.Contract;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain;
 using Lykke.Job.BlockchainCashinDetector.Core.Services.BLockchains;
@@ -25,7 +24,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
         private readonly IBlockchainApiClient _blockchainApiClient;
         private readonly ICqrsEngine _cqrsEngine;
         private readonly IAssetsServiceWithCache _assetsService;
-        private readonly IDepositBalanceDetectionsDeduplicationRepository _deduplicationRepository;
+        private readonly IEnrolledBalanceRepository _enrolledBalanceRepository;
+
 
         public DepositWalletsBalanceProcessingPeriodicalHandler(
             ILog log, 
@@ -35,7 +35,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
             IBlockchainApiClientProvider blockchainApiClientProvider,
             ICqrsEngine cqrsEngine, 
             IAssetsServiceWithCache assetsService,
-            IDepositBalanceDetectionsDeduplicationRepository deduplicationRepository) :
+            IEnrolledBalanceRepository enrolledBalanceRepository) :
 
             base(
                 nameof(DepositWalletsBalanceProcessingPeriodicalHandler), 
@@ -47,7 +47,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
             _blockchainApiClient = blockchainApiClientProvider.Get(blockchainType);
             _cqrsEngine = cqrsEngine;
             _assetsService = assetsService;
-            _deduplicationRepository = deduplicationRepository;
+            _enrolledBalanceRepository = enrolledBalanceRepository;
         }
 
         public override async Task Execute()
@@ -94,39 +94,48 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
                         depositWalletAddress: x.Address
                     ));
 
-                    var deduplicationLocks = (await _deduplicationRepository.GetAsync(walletKeys))
-                        .ToDictionary(x => x.DepositWalletAddress, y => y.Block);
+                    var enrolledBalances = (await _enrolledBalanceRepository.GetAsync(walletKeys))
+                        .ToDictionary(x => x.DepositWalletAddress, y => new { y.Balance, y.Block });
 
                     foreach (var balance in batch)
                     {
-                        if (deduplicationLocks.TryGetValue(balance.Address, out var latestTransactionBlock) && latestTransactionBlock >= balance.Block)
+                        if (enrolledBalances.TryGetValue(balance.Address, out var enrolledBalance))
                         {
-                            continue;
+                            if (balance.Block <= enrolledBalance.Block)
+                            {
+                                // We are not sure, that balance is actual
+                                continue;
+                            }
+
+                            if (balance.Balance - enrolledBalance.Balance == 0)
+                            {
+                                // Nothing to transfer
+                                continue;
+                            }
                         }
                         
                         if (assets.TryGetValue(balance.AssetId, out var asset))
                         {
-                            if (balance.Balance < (decimal)asset.CashinMinimalAmount)
+                            var operationAmount = balance.Balance - (enrolledBalance?.Balance ?? 0);
+                            var transactionAmount = (balance.Balance >= (decimal)asset.CashinMinimalAmount) ? balance.Balance : 0;
+
+                            if (transactionAmount == 0)
                             {
                                 ++tooSmallBalanceWalletsCount;
                             }
-                            else
-                            {
-                                // Enough balance on the deposit wallet is detected, sends command to let the cashin saga
-                                // detect it.
 
-                                _cqrsEngine.SendCommand(
-                                    new DetectDepositBalanceCommand
-                                    {
-                                        BlockchainType = _blockchainType,
-                                        Amount = balance.Balance,
-                                        DepositWalletAddress = balance.Address,
-                                        BlockchainAssetId = balance.AssetId,
-                                        AssetId = asset.Id
-                                    },
-                                    BlockchainCashinDetectorBoundedContext.Name,
-                                    BlockchainCashinDetectorBoundedContext.Name);
-                            }
+                            _cqrsEngine.SendCommand(
+                                new DetectDepositBalanceCommand
+                                {
+                                    BlockchainType = _blockchainType,
+                                    DepositWalletAddress = balance.Address,
+                                    BlockchainAssetId = balance.AssetId,
+                                    Amount = transactionAmount,
+                                    AssetId = asset.Id,
+                                    OperationAmount = operationAmount
+                                },
+                                BlockchainCashinDetectorBoundedContext.Name,
+                                BlockchainCashinDetectorBoundedContext.Name);
                         }
                         else
                         {

@@ -10,6 +10,10 @@ using Lykke.Job.BlockchainCashinDetector.Workflow.Commands;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Events;
 using Lykke.Job.BlockchainOperationsExecutor.Contract;
 
+using StartTransactionCommand = Lykke.Job.BlockchainOperationsExecutor.Contract.Commands.StartOperationExecutionCommand;
+using TransactionCompletedEvent = Lykke.Job.BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent;
+using TransactionFailedEvent = Lykke.Job.BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent;
+
 namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
 {
     /// <summary>
@@ -19,11 +23,13 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
     /// -> CashinStartedEvent
     ///     -> EnrollToMatchingEngineCommand
     /// -> CashinEnrolledToMatchingEngineEvent
-    ///     -> BlockchainOperationsExecutor : StartOperationCommand
-    /// -> BlockchainOperationsExecutor : OperationCompleted          | -> BlockchainOperationsExecutor : OperationFailed
-    ///     -> UpdateDepositBalanceDetectionsDeduplicationLockCommand |     -> RemoveMatchingEngineDeduplicationLockCommand
-    /// -> DepositBalanceDetectionsDeduplicationLockUpdatedEvent      |
-    ///     -> RemoveMatchingEngineDeduplicationLockCommand           |
+    ///     -> IncreaseEnrolledBalanceCommand
+    /// -> EnrolledBalanceIncreasedEvent
+    ///     -> StartTransactionCommand
+    /// -> TransactionCompletedEvent                        || -> TransactionFailedEvent
+    ///     -> ResetEnrolledBalanceCommand                  ||     -> RemoveMatchingEngineDeduplicationLockCommand
+    /// -> EnrolledBalanceResetEvent                        ||
+    ///     -> RemoveMatchingEngineDeduplicationLockCommand ||
     /// -> MatchingEngineDeduplicationLockRemovedEvent
     ///     -> RegisterClientOperationFinishCommand
     /// -> ClientOperationFinishRegisteredEvent
@@ -58,13 +64,16 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                     evt.BlockchainType,
                     evt.DepositWalletAddress,
                     evt.BlockchainAssetId,
-                    () => CashinAggregate.StartNew(
+                    () => CashinAggregate.StartNew
+                    (
                         evt.BlockchainType,
                         evt.HotWalletAddress,
                         evt.DepositWalletAddress,
                         evt.BlockchainAssetId,
                         evt.Amount,
-                        evt.AssetId));
+                        evt.AssetId,
+                        evt.OperationAmount
+                    ));
 
                 _chaosKitty.Meow(aggregate.OperationId);
 
@@ -101,7 +110,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                             BlockchainType = aggregate.BlockchainType,
                             DepositWalletAddress = aggregate.DepositWalletAddress,
                             BlockchainAssetId = aggregate.BlockchainAssetId,
-                            Amount = aggregate.Amount,
+                            Amount = aggregate.OperationAmount,
                             AssetId = aggregate.AssetId
                         },
                         Self);
@@ -129,18 +138,15 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
 
                 if (aggregate.OnEnrolledToMatchingEngine(evt.ClientId))
                 {
-                    // TODO: Add tag (cashin/cashout) to the operation, and pass it to the operations executor?
-
-                    sender.SendCommand(new BlockchainOperationsExecutor.Contract.Commands.StartOperationExecutionCommand
+                    sender.SendCommand(new IncreaseEnrolledBalanceCommand
                         {
                             OperationId = aggregate.OperationId,
-                            FromAddress = aggregate.DepositWalletAddress,
-                            ToAddress = aggregate.HotWalletAddress,
-                            AssetId = aggregate.AssetId,
-                            Amount = aggregate.Amount,
-                            IncludeFee = true
+                            Amount = aggregate.OperationAmount,
+                            BlockchainType = aggregate.BlockchainType,
+                            BlockchainAssetId = aggregate.BlockchainAssetId,
+                            DepositWalletAddress = aggregate.DepositWalletAddress
                         },
-                        BlockchainOperationsExecutorBoundedContext.Name);
+                        Self);
 
                     _chaosKitty.Meow(evt.OperationId);
 
@@ -150,6 +156,43 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
             catch (Exception ex)
             {
                 _log.WriteError(nameof(CashinEnrolledToMatchingEngineEvent), evt, ex);
+                throw;
+            }
+        }
+
+        [UsedImplicitly]
+        private async Task Handle(EnrolledBalanceIncreasedEvent evt, ICommandSender sender)
+        {
+            _log.WriteInfo(nameof(EnrolledBalanceIncreasedEvent), evt, "");
+
+            try
+            {
+                var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
+
+                if (aggregate.OnEnrolledBalanceIncreased())
+                {
+                    if (!aggregate.IsDustCashin)
+                    {
+                        sender.SendCommand(new StartTransactionCommand
+                        {
+                            OperationId = aggregate.OperationId,
+                            FromAddress = aggregate.DepositWalletAddress,
+                            ToAddress = aggregate.HotWalletAddress,
+                            AssetId = aggregate.AssetId,
+                            Amount = aggregate.TransactionAmount,
+                            IncludeFee = true
+                        },
+                        BlockchainOperationsExecutorBoundedContext.Name);
+                    }
+
+                    _chaosKitty.Meow(evt.OperationId);
+
+                    await _cashinRepository.SaveAsync(aggregate);
+                }
+            }
+            catch (Exception ex)
+            {
+                _log.WriteError(nameof(EnrolledBalanceIncreasedEvent), evt, ex);
                 throw;
             }
         }
@@ -168,13 +211,13 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                 {
                     // TODO: Add tag (cashin/cashout) to the operation, and pass it to the operations executor?
 
-                    sender.SendCommand(new BlockchainOperationsExecutor.Contract.Commands.StartOperationExecutionCommand
+                    sender.SendCommand(new StartTransactionCommand
                         {
                             OperationId = aggregate.OperationId,
                             FromAddress = aggregate.DepositWalletAddress,
                             ToAddress = aggregate.HotWalletAddress,
                             AssetId = aggregate.AssetId,
-                            Amount = aggregate.Amount,
+                            Amount = aggregate.TransactionAmount,
                             IncludeFee = true
                         },
                         BlockchainOperationsExecutorBoundedContext.Name);
@@ -192,9 +235,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         }
 
         [UsedImplicitly]
-        private async Task Handle(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent evt, ICommandSender sender)
+        private async Task Handle(TransactionCompletedEvent evt, ICommandSender sender)
         {
-            _log.WriteInfo(nameof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent), evt, "");
+            _log.WriteInfo(nameof(TransactionCompletedEvent), evt, "");
 
             try
             {
@@ -206,18 +249,75 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                     return;
                 }
 
-                if (aggregate.OnOperationCompleted(evt.TransactionHash, evt.Block, evt.TransactionAmount, evt.Fee))
+                if (aggregate.OnTransactionCompleted(evt.TransactionHash, evt.Block, evt.TransactionAmount, evt.Fee))
                 {
-                    sender.SendCommand(new UpdateDepositBalanceDetectionsDeduplicationLockCommand
-                        {
-                            Block = evt.Block,
-                            BlockchainAssetId = aggregate.BlockchainAssetId,
-                            BlockchainType = aggregate.BlockchainType,
-                            DepositWalletAddress = aggregate.DepositWalletAddress,
-                            OperationId = aggregate.OperationId
-                        },
-                        Self);
+                    sender.SendCommand(new ResetEnrolledBalanceCommand
+                    {
+                        OperationId = aggregate.OperationId,
+                        BlockchainType = aggregate.BlockchainType,
+                        BlockchainAssetId = aggregate.BlockchainAssetId,
+                        DepositWalletAddress = aggregate.DepositWalletAddress,
+                        Block = evt.Block
+                    },
+                    Self);
 
+                    _chaosKitty.Meow(evt.OperationId);
+
+                    await _cashinRepository.SaveAsync(aggregate);
+                }
+            }
+            catch (Exception ex)
+            {
+                _log.WriteError(nameof(TransactionCompletedEvent), evt, ex);
+                throw;
+            }
+        }
+
+        public async Task Handle(EnrolledBalanceResetEvent evt, ICommandSender sender)
+        {
+            _log.WriteInfo(nameof(EnrolledBalanceResetEvent), evt, "");
+
+            try
+            {
+                var aggregate = await _cashinRepository.TryGetAsync(evt.OperationId);
+
+                if (aggregate.OnEnrolledBalanceReset())
+                {
+                    sender.SendCommand(new RemoveMatchingEngineDeduplicationLockCommand
+                    {
+                        OperationId = aggregate.OperationId
+                    },
+                    Self);
+
+                    _chaosKitty.Meow(evt.OperationId);
+
+                    await _cashinRepository.SaveAsync(aggregate);
+                }
+            }
+            catch (Exception ex)
+            {
+                _log.WriteError(nameof(EnrolledBalanceResetEvent), evt, ex);
+                throw;
+            }
+        }
+
+        [UsedImplicitly]
+        private async Task Handle(TransactionFailedEvent evt, ICommandSender sender)
+        {
+            _log.WriteInfo(nameof(TransactionFailedEvent), evt, "");
+
+            try
+            {
+                var aggregate = await _cashinRepository.TryGetAsync(evt.OperationId);
+
+                if (aggregate == null)
+                {
+                    // This is not a cashin operation
+                    return;
+                }
+
+                if (aggregate.OnTransactionFailed(evt.Error))
+                {
                     sender.SendCommand(new RemoveMatchingEngineDeduplicationLockCommand
                         {
                             OperationId = aggregate.OperationId
@@ -231,76 +331,11 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
             }
             catch (Exception ex)
             {
-                _log.WriteError(nameof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent), evt, ex);
+                _log.WriteError(nameof(TransactionFailedEvent), evt, ex);
                 throw;
             }
         }
         
-        [UsedImplicitly]
-        private async Task Handle(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent evt, ICommandSender sender)
-        {
-            _log.WriteInfo(nameof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent), evt, "");
-
-            try
-            {
-                var aggregate = await _cashinRepository.TryGetAsync(evt.OperationId);
-
-                if (aggregate == null)
-                {
-                    // This is not a cashin operation
-                    return;
-                }
-
-                if (aggregate.OnOperationFailed(evt.Error))
-                {
-                    sender.SendCommand(new RemoveMatchingEngineDeduplicationLockCommand
-                        {
-                            OperationId = aggregate.OperationId
-                        },
-                        Self);
-
-                    _chaosKitty.Meow(evt.OperationId);
-
-                    await _cashinRepository.SaveAsync(aggregate);
-                }
-            }
-            catch (Exception ex)
-            {
-                _log.WriteError(nameof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent), evt, ex);
-                throw;
-            }
-        }
-
-        [Obsolete("Should be removed with next release")]
-        [UsedImplicitly]
-        private async Task Handle(DepositBalanceDetectionsDeduplicationLockUpdatedEvent evt, ICommandSender sender)
-        {
-            _log.WriteInfo(nameof(DepositBalanceDetectionsDeduplicationLockUpdatedEvent), evt, "");
-
-            try
-            {
-                var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
-
-                if (aggregate.OnDepositBalanceDetectionsDeduplicationLockUpdated())
-                {
-                    sender.SendCommand(new RemoveMatchingEngineDeduplicationLockCommand
-                        {
-                            OperationId = aggregate.OperationId
-                        },
-                        Self);
-
-                    _chaosKitty.Meow(evt.OperationId);
-
-                    await _cashinRepository.SaveAsync(aggregate);
-                }
-            }
-            catch (Exception ex)
-            {
-                _log.WriteError(nameof(DepositBalanceDetectionsDeduplicationLockUpdatedEvent), evt, ex);
-                throw;
-            }
-        }
-
         [UsedImplicitly]
         private async Task Handle(MatchingEngineDeduplicationLockRemovedEvent evt, ICommandSender sender)
         {
