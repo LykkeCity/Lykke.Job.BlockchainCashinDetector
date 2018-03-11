@@ -10,6 +10,10 @@ using Lykke.Job.BlockchainCashinDetector.Workflow.Commands;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Events;
 using Lykke.Job.BlockchainOperationsExecutor.Contract;
 
+using StartTransactionCommand = Lykke.Job.BlockchainOperationsExecutor.Contract.Commands.StartOperationExecutionCommand;
+using TransactionCompletedEvent = Lykke.Job.BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent;
+using TransactionFailedEvent = Lykke.Job.BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent;
+
 namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
 {
     /// <summary>
@@ -21,11 +25,11 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
     /// -> CashinEnrolledToMatchingEngineEvent
     ///     -> IncreaseEnrolledBalanceCommand
     /// -> EnrolledBalanceIncreasedEvent
-    ///     -> BlockchainOperationsExecutor : StartOperationCommand
-    /// -> BlockchainOperationsExecutor : OperationCompleted        || -> BlockchainOperationsExecutor : OperationFailed
-    ///     -> ResetEnrolledBalanceCommand                          ||     -> RemoveMatchingEngineDeduplicationLockCommand
-    /// -> EnrolledBBalanceResetEvent
-    ///     -> RemoveMatchingEngineDeduplicationLockCommand
+    ///     -> StartTransactionCommand
+    /// -> TransactionCompletedEvent                        || -> TransactionFailedEvent
+    ///     -> ResetEnrolledBalanceCommand                  ||     -> RemoveMatchingEngineDeduplicationLockCommand
+    /// -> EnrolledBalanceResetEvent                        ||
+    ///     -> RemoveMatchingEngineDeduplicationLockCommand ||
     /// -> MatchingEngineDeduplicationLockRemovedEvent
     ///     -> RegisterClientOperationFinishCommand
     /// -> ClientOperationFinishRegisteredEvent
@@ -169,13 +173,13 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                 {
                     if (!aggregate.IsDustCashin)
                     {
-                        sender.SendCommand(new BlockchainOperationsExecutor.Contract.Commands.StartOperationExecutionCommand
+                        sender.SendCommand(new StartTransactionCommand
                         {
                             OperationId = aggregate.OperationId,
                             FromAddress = aggregate.DepositWalletAddress,
                             ToAddress = aggregate.HotWalletAddress,
                             AssetId = aggregate.AssetId,
-                            Amount = aggregate.Amount,
+                            Amount = aggregate.TransactionAmount,
                             IncludeFee = true
                         },
                         BlockchainOperationsExecutorBoundedContext.Name);
@@ -207,13 +211,13 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                 {
                     // TODO: Add tag (cashin/cashout) to the operation, and pass it to the operations executor?
 
-                    sender.SendCommand(new BlockchainOperationsExecutor.Contract.Commands.StartOperationExecutionCommand
+                    sender.SendCommand(new StartTransactionCommand
                         {
                             OperationId = aggregate.OperationId,
                             FromAddress = aggregate.DepositWalletAddress,
                             ToAddress = aggregate.HotWalletAddress,
                             AssetId = aggregate.AssetId,
-                            Amount = aggregate.Amount,
+                            Amount = aggregate.TransactionAmount,
                             IncludeFee = true
                         },
                         BlockchainOperationsExecutorBoundedContext.Name);
@@ -231,9 +235,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         }
 
         [UsedImplicitly]
-        private async Task Handle(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent evt, ICommandSender sender)
+        private async Task Handle(TransactionCompletedEvent evt, ICommandSender sender)
         {
-            _log.WriteInfo(nameof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent), evt, "");
+            _log.WriteInfo(nameof(TransactionCompletedEvent), evt, "");
 
             try
             {
@@ -245,7 +249,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                     return;
                 }
 
-                if (aggregate.OnOperationCompleted(evt.TransactionHash, evt.Block, evt.TransactionAmount, evt.Fee))
+                if (aggregate.OnTransactionCompleted(evt.TransactionHash, evt.Block, evt.TransactionAmount, evt.Fee))
                 {
                     sender.SendCommand(new ResetEnrolledBalanceCommand
                     {
@@ -264,7 +268,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
             }
             catch (Exception ex)
             {
-                _log.WriteError(nameof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent), evt, ex);
+                _log.WriteError(nameof(TransactionCompletedEvent), evt, ex);
                 throw;
             }
         }
@@ -298,9 +302,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         }
 
         [UsedImplicitly]
-        private async Task Handle(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent evt, ICommandSender sender)
+        private async Task Handle(TransactionFailedEvent evt, ICommandSender sender)
         {
-            _log.WriteInfo(nameof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent), evt, "");
+            _log.WriteInfo(nameof(TransactionFailedEvent), evt, "");
 
             try
             {
@@ -312,7 +316,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                     return;
                 }
 
-                if (aggregate.OnOperationFailed(evt.Error))
+                if (aggregate.OnTransactionFailed(evt.Error))
                 {
                     sender.SendCommand(new RemoveMatchingEngineDeduplicationLockCommand
                         {
@@ -327,7 +331,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
             }
             catch (Exception ex)
             {
-                _log.WriteError(nameof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent), evt, ex);
+                _log.WriteError(nameof(TransactionFailedEvent), evt, ex);
                 throw;
             }
         }
