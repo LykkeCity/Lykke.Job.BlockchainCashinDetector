@@ -101,7 +101,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
                     {
                         if (enrolledBalances.TryGetValue(balance.Address, out var enrolledBalance))
                         {
-                            if (balance.Block <= enrolledBalance.Block)
+                            if (balance.Block < enrolledBalance.Block)
                             {
                                 // We are not sure, that balance is actual
                                 continue;

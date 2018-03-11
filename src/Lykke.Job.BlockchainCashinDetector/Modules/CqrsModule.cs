@@ -144,26 +144,21 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .PublishingEvents(typeof(EnrolledBalanceResetEvent))
                     .With(defaultPipeline)
 
-                    .ListeningEvents(
-                        typeof(EnrolledBalanceIncreasedEvent))
+                    .ListeningEvents(typeof(EnrolledBalanceIncreasedEvent))
                     .From(Self)
                     .On(eventsRoute)
-                    .WithProjection(typeof(MatchingEngineCallDeduplicationsProjection),
-                        Self)
+                    .WithProjection(typeof(MatchingEngineCallDeduplicationsProjection), Self)
 
-                    .ListeningEvents(
-                        typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent))
+                    .ListeningEvents(typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent))
                     .From(BlockchainOperationsExecutorBoundedContext.Name)
                     .On(eventsRoute)
                     .WithProjection(typeof(MatchingEngineCallDeduplicationsProjection),
                         BlockchainOperationsExecutorBoundedContext.Name)
 
-                    .ListeningEvents(
-                        typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent))
+                    .ListeningEvents(typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent))
                     .From(BlockchainOperationsExecutorBoundedContext.Name)
                     .On(eventsRoute)
-                    .WithProjection(typeof(MatchingEngineCallDeduplicationsProjection),
-                        BlockchainOperationsExecutorBoundedContext.Name)
+                    .WithProjection(typeof(MatchingEngineCallDeduplicationsProjection), BlockchainOperationsExecutorBoundedContext.Name)
 
                     .ProcessingOptions(defaultRoute).MultiThreaded(8).QueueCapacity(1024)
                     .ProcessingOptions(eventsRoute).MultiThreaded(8).QueueCapacity(1024),
