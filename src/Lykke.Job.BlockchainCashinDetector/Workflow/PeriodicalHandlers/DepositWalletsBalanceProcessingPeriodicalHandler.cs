@@ -57,6 +57,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
                 .ToDictionary(
                     a => a.BlockchainIntegrationLayerAssetId, 
                     a => a);
+            var warningAssets = new HashSet<string>();
 
             var stopwatch = Stopwatch.StartNew();
             var wallets = new HashSet<string>();
@@ -99,6 +100,16 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
 
                     foreach (var balance in batch)
                     {
+                        if (!assets.TryGetValue(balance.AssetId, out var asset))
+                        {
+                            if (!warningAssets.Contains(balance.AssetId))
+                            {
+                                Log.WriteWarning(nameof(Execute), balance, "Lykke asset for the blockchain asset is not found");
+
+                                warningAssets.Add(balance.AssetId);
+                            }
+                        }
+
                         if (enrolledBalances.TryGetValue(balance.Address, out var enrolledBalance))
                         {
                             if (balance.Block < enrolledBalance.Block)
@@ -109,15 +120,20 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
 
                             if (balance.Balance - enrolledBalance.Balance == 0)
                             {
+                                if(asset != null && balance.Balance < (decimal) asset.CashinMinimalAmount)
+                                {
+                                    ++tooSmallBalanceWalletsCount;
+                                }
+
                                 // Nothing to transfer
                                 continue;
                             }
                         }
                         
-                        if (assets.TryGetValue(balance.AssetId, out var asset))
+                        if (asset != null)
                         {
                             var operationAmount = balance.Balance - (enrolledBalance?.Balance ?? 0);
-                            var transactionAmount = (balance.Balance >= (decimal)asset.CashinMinimalAmount) ? balance.Balance : 0;
+                            var transactionAmount = balance.Balance >= (decimal)asset.CashinMinimalAmount ? balance.Balance : 0;
 
                             if (transactionAmount == 0)
                             {
@@ -136,10 +152,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
                                 },
                                 BlockchainCashinDetectorBoundedContext.Name,
                                 BlockchainCashinDetectorBoundedContext.Name);
-                        }
-                        else
-                        {
-                            Log.WriteWarning(nameof(Execute), balance, "Lykke asset for the blockchain asset is not found");
                         }
 
                         wallets.Add(balance.Address);
