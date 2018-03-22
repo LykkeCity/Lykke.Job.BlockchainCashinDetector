@@ -4,6 +4,7 @@ using Common.Log;
 using Lykke.Cqrs;
 using Lykke.Cqrs.Configuration;
 using Lykke.Job.BlockchainCashinDetector.Contract;
+using Lykke.Job.BlockchainCashinDetector.Contract.Events;
 using Lykke.Job.BlockchainCashinDetector.Settings.JobSettings;
 using Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Commands;
@@ -62,6 +63,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
             builder.RegisterType<RegisterClientOperationFinishCommandsHandler>();
             builder.RegisterType<SetEnrolledBalanceCommandHandler>();
             builder.RegisterType<ResetEnrolledBalanceCommandHandler>();
+            builder.RegisterType<OperationCompletedCommandsHandler>();
 
             // Projections
             builder.RegisterType<ClientOperationsProjection>();
@@ -94,6 +96,13 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
 
                 Register.BoundedContext(Self)
                     .FailedCommandRetryDelay(defaultRetryDelay)
+
+                    .ListeningCommands(typeof(NotifyCashinCompletedCommand))
+                    .On(defaultRoute)
+                    .WithCommandsHandler<OperationCompletedCommandsHandler>()
+                    .PublishingEvents(typeof(CashinCompletedEvent))
+
+                    .With(eventsRoute)
 
                     .ListeningCommands(typeof(DetectDepositBalanceCommand))
                     .On(defaultRoute)
