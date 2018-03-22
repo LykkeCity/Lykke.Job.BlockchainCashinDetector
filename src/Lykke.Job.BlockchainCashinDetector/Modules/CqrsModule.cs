@@ -230,7 +230,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .ListeningEvents(typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent))
                     .From(BlockchainOperationsExecutorBoundedContext.Name)
                     .On(defaultRoute)
-                    .PublishingCommands(typeof(ResetEnrolledBalanceCommand))
+                    .PublishingCommands(typeof(ResetEnrolledBalanceCommand), 
+                                        typeof(NotifyCashinCompletedCommand))
                     .To(Self)
                     .With(defaultPipeline)
 
@@ -255,6 +256,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .To(Self)
                     .With(defaultPipeline)
                     
+
+
                     .ProcessingOptions(defaultRoute).MultiThreaded(8).QueueCapacity(1024));
         }
     }
