@@ -23,8 +23,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
     /// -> CashinStartedEvent
     ///     -> EnrollToMatchingEngineCommand
     /// -> CashinEnrolledToMatchingEngineEvent
-    ///     -> IncreaseEnrolledBalanceCommand
-    /// -> EnrolledBalanceIncreasedEvent
+    ///     -> SetEnrolledBalanceCommand
+    /// -> EnrolledBalanceSetEvent
     ///     -> StartTransactionCommand
     /// -> TransactionCompletedEvent                        || -> TransactionFailedEvent
     ///     -> ResetEnrolledBalanceCommand                  ||     -> RemoveMatchingEngineDeduplicationLockCommand
@@ -60,20 +60,23 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
 
             try
             {
-                var aggregate = await _cashinRepository.GetOrAddAsync(
+                var aggregate = await _cashinRepository.GetOrAddAsync
+                (
                     evt.BlockchainType,
                     evt.DepositWalletAddress,
                     evt.BlockchainAssetId,
                     () => CashinAggregate.StartNew
                     (
-                        evt.BlockchainType,
-                        evt.HotWalletAddress,
-                        evt.DepositWalletAddress,
-                        evt.BlockchainAssetId,
-                        evt.Amount,
-                        evt.AssetId,
-                        evt.OperationAmount
-                    ));
+                        assetId: evt.AssetId,
+                        balanceAmount: evt.BalanceAmount,
+                        balanceBlock: evt.BalanceBlock,
+                        blockchainAssetId: evt.BlockchainAssetId,
+                        blockchainType: evt.BlockchainType,
+                        cashinMinimalAmount: evt.CashinMinimalAmount,
+                        depositWalletAddress: evt.DepositWalletAddress,
+                        hotWalletAddress: evt.HotWalletAddress
+                    )
+                );
 
                 _chaosKitty.Meow(aggregate.OperationId);
 
@@ -104,16 +107,22 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
 
                 if (aggregate.Start())
                 {
-                    sender.SendCommand(new EnrollToMatchingEngineCommand
+                    sender.SendCommand
+                    (
+                        new EnrollToMatchingEngineCommand
                         {
-                            OperationId = aggregate.OperationId,
-                            BlockchainType = aggregate.BlockchainType,
-                            DepositWalletAddress = aggregate.DepositWalletAddress,
+                            AssetId = aggregate.AssetId,
+                            BalanceAmount = aggregate.BalanceAmount,
+                            BalanceBlock = aggregate.BalanceBlock,
                             BlockchainAssetId = aggregate.BlockchainAssetId,
-                            Amount = aggregate.OperationAmount,
-                            AssetId = aggregate.AssetId
+                            BlockchainType = aggregate.BlockchainType,
+                            CashinMinimalAmount = aggregate.CashinMinimalAmount,
+                            DepositWalletAddress = aggregate.DepositWalletAddress,
+                            HotWalletAddress = aggregate.HotWalletAddress,
+                            OperationId = aggregate.OperationId
                         },
-                        Self);
+                        Self
+                    );
 
                     _chaosKitty.Meow(evt.OperationId);
 
@@ -136,17 +145,25 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
             {
                 var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
 
-                if (aggregate.OnEnrolledToMatchingEngine(evt.ClientId))
+                if (aggregate.OnEnrolledToMatchingEngine(
+                        clientId: evt.ClientId,
+                        enrolledBalanceAmount: evt.EnrolledBalanceAmount,
+                        operationAmount: evt.OperationAmount
+                   ))
                 {
-                    sender.SendCommand(new IncreaseEnrolledBalanceCommand
+                    sender.SendCommand
+                    (
+                        new SetEnrolledBalanceCommand
                         {
-                            OperationId = aggregate.OperationId,
-                            Amount = aggregate.OperationAmount,
-                            BlockchainType = aggregate.BlockchainType,
                             BlockchainAssetId = aggregate.BlockchainAssetId,
-                            DepositWalletAddress = aggregate.DepositWalletAddress
+                            BlockchainType = aggregate.BlockchainType,
+                            DepositWalletAddress = aggregate.DepositWalletAddress,
+                            EnrolledBalanceAmount = evt.EnrolledBalanceAmount,
+                            OperationAmount = evt.OperationAmount,
+                            OperationId = aggregate.OperationId                            
                         },
-                        Self);
+                        Self
+                    );
 
                     _chaosKitty.Meow(evt.OperationId);
 
@@ -161,28 +178,31 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         }
 
         [UsedImplicitly]
-        private async Task Handle(EnrolledBalanceIncreasedEvent evt, ICommandSender sender)
+        private async Task Handle(EnrolledBalanceSetEvent evt, ICommandSender sender)
         {
-            _log.WriteInfo(nameof(EnrolledBalanceIncreasedEvent), evt, "");
+            _log.WriteInfo(nameof(EnrolledBalanceSetEvent), evt, "");
 
             try
             {
                 var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
 
-                if (aggregate.OnEnrolledBalanceIncreased())
+                if (aggregate.OnEnrolledBalanceSet())
                 {
                     if (!aggregate.IsDustCashin)
                     {
-                        sender.SendCommand(new StartTransactionCommand
-                        {
-                            OperationId = aggregate.OperationId,
-                            FromAddress = aggregate.DepositWalletAddress,
-                            ToAddress = aggregate.HotWalletAddress,
-                            AssetId = aggregate.AssetId,
-                            Amount = aggregate.TransactionAmount,
-                            IncludeFee = true
-                        },
-                        BlockchainOperationsExecutorBoundedContext.Name);
+                        sender.SendCommand
+                        (
+                            new StartTransactionCommand
+                            {
+                                Amount = aggregate.BalanceAmount,
+                                AssetId = aggregate.AssetId,
+                                FromAddress = aggregate.DepositWalletAddress,
+                                IncludeFee = true,
+                                OperationId = aggregate.OperationId,
+                                ToAddress = aggregate.HotWalletAddress
+                            },
+                            BlockchainOperationsExecutorBoundedContext.Name
+                        );
                     }
 
                     _chaosKitty.Meow(evt.OperationId);
@@ -192,7 +212,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
             }
             catch (Exception ex)
             {
-                _log.WriteError(nameof(EnrolledBalanceIncreasedEvent), evt, ex);
+                _log.WriteError(nameof(EnrolledBalanceSetEvent), evt, ex);
                 throw;
             }
         }
@@ -217,7 +237,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                             FromAddress = aggregate.DepositWalletAddress,
                             ToAddress = aggregate.HotWalletAddress,
                             AssetId = aggregate.AssetId,
-                            Amount = aggregate.TransactionAmount,
+                            Amount = aggregate.BalanceAmount,
                             IncludeFee = true
                         },
                         BlockchainOperationsExecutorBoundedContext.Name);

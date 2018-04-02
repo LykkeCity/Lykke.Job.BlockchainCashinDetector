@@ -126,9 +126,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
         }
 
         [UsedImplicitly]
-        public async Task Handle(EnrolledBalanceIncreasedEvent evt)
+        public async Task Handle(EnrolledBalanceSetEvent evt)
         {
-            _log.WriteInfo(nameof(EnrolledBalanceIncreasedEvent), evt, "");
+            _log.WriteInfo(nameof(EnrolledBalanceSetEvent), evt, "");
 
             try
             {
@@ -150,7 +150,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
             }
             catch (Exception ex)
             {
-                _log.WriteError(nameof(EnrolledBalanceIncreasedEvent), evt, ex);
+                _log.WriteError(nameof(EnrolledBalanceSetEvent), evt, ex);
                 throw;
             }
         }

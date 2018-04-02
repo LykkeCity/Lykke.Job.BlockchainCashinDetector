@@ -52,30 +52,34 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
         public CashinState State { get; set; }
         public CashinResult Result { get; set; }
 
+
         public DateTime CreationMoment { get; set; }
         public DateTime? StartMoment { get; set; }
         public DateTime? MatchingEngineEnrollementMoment { get; set; }
-        public DateTime? EnrolledBalanceIncreasedMoment { get; set; }
+        public DateTime? EnrolledBalanceSetMoment { get; set; }
         public DateTime? EnrolledBalanceResetMoment { get; set; }
         public DateTime? OperationFinishMoment { get; set; }
-        public DateTime? ClientOperationFinishRegistrationMoment { get; set; }
-        
+
 
         public Guid OperationId { get; set; }
         public string BlockchainType { get; set; }
         public string HotWalletAddress { get; set; }
         public string DepositWalletAddress { get; set; }
         public string BlockchainAssetId { get; set; }
-        public decimal Amount { get; set; }
-        public decimal OperationAmount { get; set; }
+        public string AssetId { get; set; }
+        public decimal BalanceAmount { get; set; }
+        public long BalanceBlock { get; set; }
+        public decimal CashinMinimalAmount { get; set; }
+
 
         public Guid? ClientId { get; set; }
-        public string AssetId { get; set; }
         public string TransactionHash { get; set; }
-        public decimal? TransactionAmount { get; set; }
         public long? TransactionBlock { get; set; }
         public decimal? Fee { get; set; }
         public string Error { get; set; }
+        public decimal? EnrolledBalanceAmount { get; set; }
+        public decimal? OperationAmount { get; set; }
+        public decimal? TransactionAmount { get; set; }
 
         // ReSharper restore MemberCanBePrivate.Global
 
@@ -106,31 +110,37 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
         {
             return new CashinEntity
             {
+                AssetId = aggregate.AssetId,
+                BalanceAmount = aggregate.BalanceAmount,
+                BalanceBlock = aggregate.BalanceBlock,
+                BlockchainAssetId = aggregate.BlockchainAssetId,
+                BlockchainType = aggregate.BlockchainType,
+                CashinMinimalAmount = aggregate.CashinMinimalAmount,
+                ClientId = aggregate.ClientId,
+                CreationMoment = aggregate.CreationMoment,
+                DepositWalletAddress = aggregate.DepositWalletAddress,
+                EnrolledBalanceAmount = aggregate.EnrolledBalanceAmount,
+                EnrolledBalanceResetMoment = aggregate.EnrolledBalanceResetMoment,
+                EnrolledBalanceSetMoment = aggregate.EnrolledBalanceSetMoment,
+                Error = aggregate.Error,
+                Fee = aggregate.Fee,
+                HotWalletAddress = aggregate.HotWalletAddress,
+                MatchingEngineEnrollementMoment = aggregate.MatchingEngineEnrollementMoment,
+                OperationFinishMoment = aggregate.OperationFinishMoment,
+                OperationAmount = aggregate.OperationAmount,
+                OperationId = operationId,
+                Result = aggregate.Result,
+                StartMoment = aggregate.StartMoment,
+                State = aggregate.State,
+                TransactionAmount = aggregate.TransactionAmount,
+                TransactionBlock = aggregate.TransactionBlock,
+                TransactionHash = aggregate.TransactionHash,
+
+
                 ETag = string.IsNullOrEmpty(aggregate.Version) ? "*" : aggregate.Version,
                 PartitionKey = GetPartitionKey(operationId),
                 RowKey = GetRowKey(operationId),
-                State = aggregate.State,
-                Result = aggregate.Result,
-                CreationMoment = aggregate.CreationMoment,
-                StartMoment = aggregate.StartMoment,
-                MatchingEngineEnrollementMoment = aggregate.MatchingEngineEnrollementMoment,
-                EnrolledBalanceIncreasedMoment = aggregate.EnrolledBalanceIncreasedMoment,
-                EnrolledBalanceResetMoment = aggregate.EnrolledBalanceResetMoment,
-                OperationFinishMoment = aggregate.OperationFinishMoment,
-                OperationId = operationId,
-                BlockchainType = aggregate.BlockchainType,
-                HotWalletAddress = aggregate.HotWalletAddress,
-                DepositWalletAddress = aggregate.DepositWalletAddress,
-                BlockchainAssetId = aggregate.BlockchainAssetId,
-                Amount = aggregate.TransactionAmount,
-                OperationAmount = aggregate.OperationAmount,
-                ClientId = aggregate.ClientId,
-                AssetId = aggregate.AssetId,
-                TransactionHash = aggregate.TransactionHash,
-                TransactionAmount = aggregate.ActualTransactionAmount,
-                TransactionBlock = aggregate.TransactionBlock,
-                Fee = aggregate.Fee,
-                Error = aggregate.Error
+                
             };
         }
 
@@ -143,29 +153,31 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
         {
             return CashinAggregate.Restore
             (
-                ETag,
-                State,
-                Result,
-                CreationMoment,
-                StartMoment,
-                MatchingEngineEnrollementMoment,
-                EnrolledBalanceIncreasedMoment,
-                EnrolledBalanceResetMoment,
-                OperationFinishMoment,
-                OperationId,
-                BlockchainType,
-                HotWalletAddress,
-                DepositWalletAddress,
-                BlockchainAssetId,
-                Amount,
-                OperationAmount,
-                ClientId,
-                AssetId,
-                TransactionHash,
-                TransactionAmount,
-                TransactionBlock,
-                Fee,
-                Error
+                clientId: ClientId,
+                assetId: AssetId,
+                balanceAmount: BalanceAmount,
+                balanceBlock: BalanceBlock,
+                blockchainAssetId: BlockchainAssetId,
+                blockchainType: BlockchainType,
+                cashinMinimalAmount: CashinMinimalAmount,
+                creationMoment: CreationMoment,
+                depositWalletAddress: DepositWalletAddress,
+                enrolledBalanceAmount: EnrolledBalanceAmount,
+                enrolledBalanceResetMoment: EnrolledBalanceResetMoment,
+                enrolledBalanceSetMoment: EnrolledBalanceSetMoment,
+                error: Error,
+                fee: Fee,
+                hotWalletAddress: HotWalletAddress,
+                matchingEngineEnrollementMoment: MatchingEngineEnrollementMoment,
+                operationAmount: OperationAmount,
+                operationFinishMoment: OperationFinishMoment,
+                result: Result,
+                startMoment: StartMoment,
+                transactionAmount: TransactionAmount,
+                transactionBlock: TransactionBlock,
+                transactionHash: TransactionHash,
+                state: State,
+                version: ETag
             );
         }
 

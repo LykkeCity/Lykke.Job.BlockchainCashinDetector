@@ -8,13 +8,15 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
     {
         public string Version { get; }
 
+
         public CashinState State { get; private set; }
         public CashinResult Result { get; private set; }
+
 
         public DateTime CreationMoment { get; }
         public DateTime? StartMoment { get; private set; }
         public DateTime? MatchingEngineEnrollementMoment { get; private set; }
-        public DateTime? EnrolledBalanceIncreasedMoment { get; private set; }
+        public DateTime? EnrolledBalanceSetMoment { get; private set; }
         public DateTime? EnrolledBalanceResetMoment { get; private set; }
         public DateTime? OperationFinishMoment { get; private set; }
         
@@ -24,159 +26,155 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
         public string HotWalletAddress { get; }
         public string DepositWalletAddress { get; }
         public string BlockchainAssetId { get; }
-        public decimal TransactionAmount { get; }
         public string AssetId { get; }
-        public decimal OperationAmount { get; }
+        public decimal BalanceAmount { get; }
+        public long BalanceBlock { get; }
+        public decimal CashinMinimalAmount { get; }
+
 
         public Guid? ClientId { get; private set; }
         public string TransactionHash { get; private set; }
-        public decimal? ActualTransactionAmount { get; private set; }
         public long? TransactionBlock { get; private set; }
         public decimal? Fee { get; private set; }
         public string Error { get; private set; }
+        public decimal? EnrolledBalanceAmount { get; private set; }
+        public decimal? OperationAmount { get; private set; }
+        public decimal? TransactionAmount { get; private set; }
+
 
         public bool IsFinished => Result == CashinResult.Success || Result == CashinResult.Failure;
-        public bool IsDustCashin => TransactionAmount == 0;
+        public bool IsDustCashin => BalanceAmount <= CashinMinimalAmount;
 
 
         private CashinAggregate(
-            string blockchainType, 
-            string hotWalletAddress, 
-            string depositWalletAddress, 
-            string blockchainAssetId, 
-            decimal transactionAmount, 
             string assetId,
-            decimal operationAmount)
-        {
-            CreationMoment = DateTime.UtcNow;
-
-            OperationId = Guid.NewGuid();
-            BlockchainType = blockchainType;
-            HotWalletAddress = hotWalletAddress;
-            DepositWalletAddress = depositWalletAddress;
-            BlockchainAssetId = blockchainAssetId;
-            TransactionAmount = transactionAmount;
-            AssetId = assetId;
-            OperationAmount = operationAmount;
-
-            State = CashinState.Starting;
-            Result = CashinResult.Unknown;
-        }
-
-        private CashinAggregate(
-            string version,
-            CashinState state,
-            CashinResult result,
-            DateTime creationMoment,
-            DateTime? startMoment,
-            DateTime? matchingEngineEnrollementMoment,
-            DateTime? enrolledBalanceIncreasedMoment,
-            DateTime? enrolledBalanceResetMoment,
-            DateTime? operationFinishMoment,
-            Guid operationId,
-            string blockchainType,
-            string hotWalletAddress,
-            string depositWalletAddress,
+            decimal balanceAmount,
+            long balanceBlock,
             string blockchainAssetId,
-            decimal transactionAmount,
-            decimal operationAmount,
-            Guid? clientId,
-            string assetId,
-            string transactionHash,
-            decimal? actualTransactionAmount,
-            long? transactionBlock,
-            decimal? fee,
-            string error)
+            string blockchainType,
+            decimal cashinMinimalAmount,
+            string depositWalletAddress,
+            string hotWalletAddress)
         {
-            Version = version;
-            State = state;
-            Result = result;
-
-            CreationMoment = creationMoment;
-            StartMoment = startMoment;
-            MatchingEngineEnrollementMoment = matchingEngineEnrollementMoment;
-            EnrolledBalanceIncreasedMoment = enrolledBalanceIncreasedMoment;
-            EnrolledBalanceResetMoment = enrolledBalanceResetMoment;
-            OperationFinishMoment = operationFinishMoment;
-
-            OperationId = operationId;
-            BlockchainType = blockchainType;
-            HotWalletAddress = hotWalletAddress;
-            DepositWalletAddress = depositWalletAddress;
-            BlockchainAssetId = blockchainAssetId;
-            TransactionAmount = transactionAmount;
-            OperationAmount = operationAmount;
-
-            ClientId = clientId;
             AssetId = assetId;
-            TransactionHash = transactionHash;
-            ActualTransactionAmount = actualTransactionAmount;
-            TransactionBlock = transactionBlock;
-            Fee = fee;
-            Error = error;
+            BalanceAmount = balanceAmount;
+            BalanceBlock = balanceBlock;
+            BlockchainAssetId = blockchainAssetId;
+            BlockchainType = blockchainType;
+            CashinMinimalAmount = cashinMinimalAmount;
+            DepositWalletAddress = depositWalletAddress;
+            HotWalletAddress = hotWalletAddress;
+
+            CreationMoment = DateTime.UtcNow;
+            OperationId = Guid.NewGuid();
+            Result = CashinResult.Unknown;
+            State = CashinState.Starting;
+        }
+        
+        private CashinAggregate(
+            string assetId,
+            decimal balanceAmount,
+            long balanceBlock,
+            string blockchainAssetId,
+            string blockchainType,
+            decimal cashinMinimalAmount,
+            DateTime creationMoment,
+            string depositWalletAddress,
+            string hotWalletAddress,
+            string version) : this(
+            assetId: assetId,
+            balanceAmount: balanceAmount,
+            balanceBlock: balanceBlock,
+            blockchainAssetId: blockchainAssetId,
+            blockchainType: blockchainType,
+            cashinMinimalAmount: cashinMinimalAmount,
+            depositWalletAddress: depositWalletAddress,
+            hotWalletAddress: hotWalletAddress)
+        {
+            CreationMoment = creationMoment;
+            Version = version;
         }
 
         public static CashinAggregate StartNew(
-            string blockchainType, 
-            string hotWalletAddress, 
-            string depositWalletAddress, 
-            string blockchainAssetId, 
-            decimal amount, 
             string assetId,
-            decimal operationAmount)
+            decimal balanceAmount,
+            long balanceBlock,
+            string blockchainAssetId,
+            string blockchainType, 
+            decimal cashinMinimalAmount,
+            string depositWalletAddress,
+            string hotWalletAddress)
         {
-            return new CashinAggregate(blockchainType, hotWalletAddress, depositWalletAddress, blockchainAssetId, amount, assetId, operationAmount);
+            return new CashinAggregate
+            (
+                assetId: assetId,
+                balanceAmount: balanceAmount,
+                balanceBlock: balanceBlock,
+                blockchainAssetId: blockchainAssetId,
+                blockchainType: blockchainType,
+                cashinMinimalAmount: cashinMinimalAmount,
+                depositWalletAddress: depositWalletAddress,
+                hotWalletAddress: hotWalletAddress
+            );
         }
 
         public static CashinAggregate Restore(
-            string version,
-            CashinState state,
-            CashinResult result,
-            DateTime creationMoment,
-            DateTime? startMoment,
-            DateTime? matchingEngineEnrollementMoment,
-            DateTime? enrolledBalanceIncreasedMoment,
-            DateTime? enrolledBalanceResetMoment,
-            DateTime? operationFinishMoment,
-            Guid operationId,
-            string blockchainType,
-            string hotWalletAddress,
-            string depositWalletAddress,
-            string blockchainAssetId,
-            decimal transactionAmount,
-            decimal operationAmount,
             Guid? clientId,
             string assetId,
-            string transactionHash,
-            decimal? actualTransactionAmount,
-            long? transactionBlock,
+            decimal balanceAmount,
+            long balanceBlock,
+            string blockchainAssetId,
+            string blockchainType,
+            decimal cashinMinimalAmount,
+            DateTime creationMoment,
+            string depositWalletAddress,
+            decimal? enrolledBalanceAmount,
+            DateTime? enrolledBalanceResetMoment,
+            DateTime? enrolledBalanceSetMoment,
+            string error,
             decimal? fee,
-            string error)
+            string hotWalletAddress,
+            DateTime? matchingEngineEnrollementMoment,
+            decimal? operationAmount,
+            DateTime? operationFinishMoment,
+            CashinResult result,
+            DateTime? startMoment,
+            decimal? transactionAmount,
+            long? transactionBlock,
+            string transactionHash,
+            CashinState state,
+            string version)
         {
-            return new CashinAggregate(
-                version,
-                state,
-                result,
-                creationMoment,
-                startMoment,
-                matchingEngineEnrollementMoment,
-                enrolledBalanceIncreasedMoment,
-                enrolledBalanceResetMoment,
-                operationFinishMoment,
-                operationId,
-                blockchainType,
-                hotWalletAddress,
-                depositWalletAddress,
-                blockchainAssetId,
-                transactionAmount,
-                operationAmount,
-                clientId,
-                assetId,
-                transactionHash,
-                actualTransactionAmount,
-                transactionBlock,
-                fee,
-                error);
+            return new CashinAggregate
+            (
+                assetId: assetId,
+                balanceAmount: balanceAmount,
+                balanceBlock: balanceBlock,
+                blockchainAssetId: blockchainAssetId,
+                blockchainType: blockchainType,
+                cashinMinimalAmount: cashinMinimalAmount,
+                creationMoment: creationMoment,
+                depositWalletAddress: depositWalletAddress,
+                hotWalletAddress: hotWalletAddress,
+                version: version
+            )
+            {
+                ClientId = clientId,
+                EnrolledBalanceAmount = enrolledBalanceAmount,
+                EnrolledBalanceResetMoment = enrolledBalanceResetMoment,
+                EnrolledBalanceSetMoment = enrolledBalanceSetMoment,
+                Error = error,
+                Fee = fee,
+                MatchingEngineEnrollementMoment = matchingEngineEnrollementMoment,
+                OperationAmount = operationAmount,
+                OperationFinishMoment = operationFinishMoment,
+                Result = result,
+                StartMoment = startMoment,
+                State = state,
+                TransactionAmount = transactionAmount,
+                TransactionBlock = transactionBlock,
+                TransactionHash = transactionHash
+            };
         }
 
         public bool Start()
@@ -191,17 +189,19 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             return true;
         }
 
-        public bool OnEnrolledToMatchingEngine(Guid clientId)
+        public bool OnEnrolledToMatchingEngine(Guid clientId, decimal enrolledBalanceAmount, decimal operationAmount)
         {
             if (!SwitchState(CashinState.Started, CashinState.EnrolledToMatchingEngine))
             {
                 return false;
             }
 
-            MatchingEngineEnrollementMoment = DateTime.UtcNow;
-
             ClientId = clientId;
+            EnrolledBalanceAmount = enrolledBalanceAmount;
+            OperationAmount = operationAmount;
 
+            MatchingEngineEnrollementMoment = DateTime.UtcNow;
+            
             return true;
         }
 
@@ -215,12 +215,12 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             return true;
         }
 
-        public bool OnTransactionCompleted(string transactionHash, long transactionBlock, decimal actualTransactionAmount, decimal fee)
+        public bool OnTransactionCompleted(string transactionHash, long transactionBlock, decimal transactionAmount, decimal fee)
         {
             var expectedStates = new[]
             {
                 CashinState.ClientOperationStartIsRegistered,
-                CashinState.EnrolledBalanceIncreased
+                CashinState.EnrolledBalanceSet
             };
 
             if (!SwitchState(expectedStates, CashinState.OperationIsFinished))
@@ -229,9 +229,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             }
 
             OperationFinishMoment = DateTime.UtcNow;
-            
+
+            TransactionAmount = transactionAmount;
             TransactionHash = transactionHash;
-            ActualTransactionAmount = actualTransactionAmount;
             TransactionBlock = transactionBlock;
             Fee = fee;
             
@@ -258,7 +258,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             var expectedStates = new[]
             {
                 CashinState.ClientOperationStartIsRegistered,
-                CashinState.EnrolledBalanceIncreased
+                CashinState.EnrolledBalanceSet
             };
 
             if (!SwitchState(expectedStates, CashinState.OperationIsFinished))
@@ -273,18 +273,18 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             return true;
         }
 
-        public bool OnEnrolledBalanceIncreased()
+        public bool OnEnrolledBalanceSet()
         {
             var nextState = IsDustCashin
                 ? CashinState.OperationIsFinished
-                : CashinState.EnrolledBalanceIncreased;
+                : CashinState.EnrolledBalanceSet;
 
             if (!SwitchState(CashinState.EnrolledToMatchingEngine, nextState))
             {
                 return false;
             }
             
-            EnrolledBalanceIncreasedMoment = DateTime.UtcNow;
+            EnrolledBalanceSetMoment = DateTime.UtcNow;
 
             if (IsDustCashin)
             {
