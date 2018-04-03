@@ -81,6 +81,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             DateTime creationMoment,
             string depositWalletAddress,
             string hotWalletAddress,
+            Guid operationId,
             string version) : this(
             assetId: assetId,
             balanceAmount: balanceAmount,
@@ -92,6 +93,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             hotWalletAddress: hotWalletAddress)
         {
             CreationMoment = creationMoment;
+            OperationId = operationId;
             Version = version;
         }
 
@@ -137,6 +139,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             DateTime? matchingEngineEnrollementMoment,
             decimal? operationAmount,
             DateTime? operationFinishMoment,
+            Guid operationId,
             CashinResult result,
             DateTime? startMoment,
             decimal? transactionAmount,
@@ -156,6 +159,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
                 creationMoment: creationMoment,
                 depositWalletAddress: depositWalletAddress,
                 hotWalletAddress: hotWalletAddress,
+                operationId: operationId,
                 version: version
             )
             {

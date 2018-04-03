@@ -171,6 +171,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 matchingEngineEnrollementMoment: MatchingEngineEnrollementMoment,
                 operationAmount: OperationAmount,
                 operationFinishMoment: OperationFinishMoment,
+                operationId: OperationId,
                 result: Result,
                 startMoment: StartMoment,
                 transactionAmount: TransactionAmount,
