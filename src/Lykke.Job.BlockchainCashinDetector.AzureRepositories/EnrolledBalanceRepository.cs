@@ -111,7 +111,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
 
             var entity = await _storage.GetDataAsync(partitionKey, rowKey);
 
-            return ConvertEntityToDto(entity);
+            return (entity != null) ? ConvertEntityToDto(entity) : null;
         }
 
         private static EnrolledBalance ConvertEntityToDto(EnrolledBalanceEntity entity)

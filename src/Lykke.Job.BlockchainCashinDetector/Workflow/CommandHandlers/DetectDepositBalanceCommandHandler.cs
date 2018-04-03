@@ -35,7 +35,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                 AssetId = command.AssetId,
                 BalanceAmount = command.BalanceAmount,
                 BalanceBlock = command.BalanceBlock,
-                BlockchainAssetId = command.AssetId,
+                BlockchainAssetId = command.BlockchainAssetId,
                 BlockchainType = command.BlockchainType,
                 CashinMinimalAmount = command.CashinMinimalAmount,
                 DepositWalletAddress = command.DepositWalletAddress,
