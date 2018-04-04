@@ -270,29 +270,37 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                 }
 
                 if (!aggregate.ClientId.HasValue)
+                {
                     throw new ArgumentException($"Operation {evt.OperationId} has no client associated with it. Fix it!");
+                }
 
                 if (aggregate.OnTransactionCompleted(evt.TransactionHash, evt.Block, evt.TransactionAmount, evt.Fee))
                 {
-                    sender.SendCommand(new ResetEnrolledBalanceCommand
-                    {
-                        OperationId = aggregate.OperationId,
-                        BlockchainType = aggregate.BlockchainType,
-                        BlockchainAssetId = aggregate.BlockchainAssetId,
-                        DepositWalletAddress = aggregate.DepositWalletAddress,
-                        Block = evt.Block
-                    },
-                    Self);
+                    sender.SendCommand
+                    (
+                        new ResetEnrolledBalanceCommand
+                        {
+                            OperationId = aggregate.OperationId,
+                            BlockchainType = aggregate.BlockchainType,
+                            BlockchainAssetId = aggregate.BlockchainAssetId,
+                            DepositWalletAddress = aggregate.DepositWalletAddress,
+                            Block = evt.Block
+                        },
+                        Self
+                    );
 
                     _chaosKitty.Meow(evt.OperationId);
 
-                    sender.SendCommand(new NotifyCashinCompletedCommand
-                    {
-                        Amount = aggregate.OperationAmount,
-                        AssetId = aggregate.AssetId,
-                        ClientId = aggregate.ClientId.Value
-                    },
-                        Self);
+                    sender.SendCommand
+                    (
+                        new NotifyCashinCompletedCommand
+                        {
+                            Amount = aggregate.OperationAmount.Value,
+                            AssetId = aggregate.AssetId,
+                            ClientId = aggregate.ClientId.Value
+                        },
+                        Self
+                    );
 
                     await _cashinRepository.SaveAsync(aggregate);
                 }
