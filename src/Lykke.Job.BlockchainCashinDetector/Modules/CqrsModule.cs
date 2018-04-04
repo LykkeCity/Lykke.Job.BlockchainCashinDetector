@@ -61,7 +61,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
             builder.RegisterType<DetectDepositBalanceCommandHandler>();
             builder.RegisterType<RemoveMatchingEngineDeduplicationLockCommandsHandler>();
             builder.RegisterType<RegisterClientOperationFinishCommandsHandler>();
-            builder.RegisterType<IncreaseEnrolledBalanceCommandHandler>();
+            builder.RegisterType<SetEnrolledBalanceCommandHandler>();
             builder.RegisterType<ResetEnrolledBalanceCommandHandler>();
             builder.RegisterType<OperationCompletedCommandsHandler>();
 
@@ -141,10 +141,10 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .PublishingEvents(typeof(ClientOperationFinishRegisteredEvent))
                     .With(defaultPipeline)
 
-                    .ListeningCommands(typeof(IncreaseEnrolledBalanceCommand))
+                    .ListeningCommands(typeof(SetEnrolledBalanceCommand))
                     .On(defaultRoute)
-                    .WithCommandsHandler<IncreaseEnrolledBalanceCommandHandler>()
-                    .PublishingEvents(typeof(EnrolledBalanceIncreasedEvent))
+                    .WithCommandsHandler<SetEnrolledBalanceCommandHandler>()
+                    .PublishingEvents(typeof(EnrolledBalanceSetEvent))
                     .With(defaultPipeline)
 
                     .ListeningCommands(typeof(ResetEnrolledBalanceCommand))
@@ -153,7 +153,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .PublishingEvents(typeof(EnrolledBalanceResetEvent))
                     .With(defaultPipeline)
 
-                    .ListeningEvents(typeof(EnrolledBalanceIncreasedEvent))
+                    .ListeningEvents(typeof(EnrolledBalanceSetEvent))
                     .From(Self)
                     .On(eventsRoute)
                     .WithProjection(typeof(MatchingEngineCallDeduplicationsProjection), Self)
@@ -176,12 +176,12 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                 // for the client operations history
 
                 Register.BoundedContext($"{Self}.client-operations")
-                    .ListeningEvents(typeof(CashinStartedEvent))
+                    .ListeningEvents(typeof(CashinEnrolledToMatchingEngineEvent))
                     .From(Self)
                     .On(defaultRoute)
                     .WithProjection(typeof(ClientOperationsProjection), Self)
 
-                    .ListeningEvents(typeof(EnrolledBalanceIncreasedEvent))
+                    .ListeningEvents(typeof(EnrolledBalanceSetEvent))
                     .From(Self)
                     .On(defaultRoute)
                     .WithProjection(typeof(ClientOperationsProjection), Self)
@@ -211,11 +211,11 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .ListeningEvents(typeof(CashinEnrolledToMatchingEngineEvent))
                     .From(Self)
                     .On(defaultRoute)
-                    .PublishingCommands(typeof(IncreaseEnrolledBalanceCommand))
+                    .PublishingCommands(typeof(SetEnrolledBalanceCommand))
                     .To(Self)
                     .With(defaultPipeline)
 
-                    .ListeningEvents(typeof(EnrolledBalanceIncreasedEvent))
+                    .ListeningEvents(typeof(EnrolledBalanceSetEvent))
                     .From(Self)
                     .On(defaultRoute)
                     .PublishingCommands(typeof(BlockchainOperationsExecutor.Contract.Commands.StartOperationExecutionCommand))

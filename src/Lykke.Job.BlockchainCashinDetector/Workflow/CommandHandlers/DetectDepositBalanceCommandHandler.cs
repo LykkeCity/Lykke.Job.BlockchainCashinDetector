@@ -32,13 +32,14 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
 
             publisher.PublishEvent(new DepositBalanceDetectedEvent
             {
-                BlockchainType = command.BlockchainType,
-                BlockchainAssetId = command.BlockchainAssetId,
-                Amount = command.Amount,
-                DepositWalletAddress = command.DepositWalletAddress,
-                HotWalletAddress = hotWalletAddress,
                 AssetId = command.AssetId,
-                OperationAmount = command.OperationAmount
+                BalanceAmount = command.BalanceAmount,
+                BalanceBlock = command.BalanceBlock,
+                BlockchainAssetId = command.BlockchainAssetId,
+                BlockchainType = command.BlockchainType,
+                CashinMinimalAmount = command.CashinMinimalAmount,
+                DepositWalletAddress = command.DepositWalletAddress,
+                HotWalletAddress = hotWalletAddress
             });
 
             return Task.FromResult(CommandHandlingResult.Ok());
