@@ -167,7 +167,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                 // for the client operations history
 
                 Register.BoundedContext($"{Self}.client-operations")
-                    .ListeningEvents(typeof(CashinStartedEvent))
+                    .ListeningEvents(typeof(CashinEnrolledToMatchingEngineEvent))
                     .From(Self)
                     .On(defaultRoute)
                     .WithProjection(typeof(ClientOperationsProjection), Self)
