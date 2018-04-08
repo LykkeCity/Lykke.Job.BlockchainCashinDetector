@@ -76,6 +76,10 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
             var enrolledBalanceAmount = enrolledBalance?.Balance ?? 0;
             var operationAmount = command.BalanceAmount - enrolledBalanceAmount;
 
+            if (operationAmount <= 0)
+            {
+                throw new InvalidOperationException($"Operation amount [{operationAmount}] is lower or equal to zero. It should not been happen.");
+            }
 
             var cashInResult = await _meClient.CashInOutAsync
             (

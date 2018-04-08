@@ -144,7 +144,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
             try
             {
                 var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
-
+                
                 if (aggregate.OnEnrolledToMatchingEngine(
                         clientId: evt.ClientId,
                         enrolledBalanceAmount: evt.EnrolledBalanceAmount,
@@ -155,6 +155,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                     (
                         new SetEnrolledBalanceCommand
                         {
+                            BalanceBlock = aggregate.BalanceBlock,
                             BlockchainAssetId = aggregate.BlockchainAssetId,
                             BlockchainType = aggregate.BlockchainType,
                             DepositWalletAddress = aggregate.DepositWalletAddress,
@@ -312,6 +313,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
             }
         }
 
+        [UsedImplicitly]
         public async Task Handle(EnrolledBalanceResetEvent evt, ICommandSender sender)
         {
             _log.WriteInfo(nameof(EnrolledBalanceResetEvent), evt, "");
@@ -408,13 +410,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                 _log.WriteError(nameof(MatchingEngineDeduplicationLockRemovedEvent), evt, ex);
                 throw;
             }
-        }
-
-        [Obsolete("Should be removed with next release")]
-        [UsedImplicitly]
-        private Task Handle(ClientOperationFinishRegisteredEvent evt, ICommandSender sender)
-        {
-            return Task.CompletedTask;
         }
     }
 }

@@ -230,6 +230,7 @@ namespace Lykke.Job.BlockchainCashinDetector
             (
                 slackService,
                 "BlockChainIntegration",
+                // ReSharper disable once RedundantArgumentDefaultValue
                 LogLevel.All
             );
 

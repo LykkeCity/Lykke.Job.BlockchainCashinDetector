@@ -109,9 +109,14 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
                                 warningAssets.Add(balance.AssetId);
                             }
                         }
-
+                        
                         if (enrolledBalances.TryGetValue(balance.Address, out var enrolledBalance))
                         {
+                            if (asset != null && balance.Balance < (decimal)asset.CashinMinimalAmount)
+                            {
+                                ++tooSmallBalanceWalletsCount;
+                            }
+
                             if (balance.Block < enrolledBalance.Block)
                             {
                                 // We are not sure, that balance is actual
@@ -120,11 +125,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
 
                             if (balance.Balance - enrolledBalance.Balance <= 0)
                             {
-                                if(asset != null && balance.Balance < (decimal) asset.CashinMinimalAmount)
-                                {
-                                    ++tooSmallBalanceWalletsCount;
-                                }
-
                                 // Nothing to transfer
                                 continue;
                             }
