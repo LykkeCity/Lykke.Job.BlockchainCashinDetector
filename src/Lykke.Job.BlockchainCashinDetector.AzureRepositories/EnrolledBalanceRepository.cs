@@ -12,7 +12,6 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
 {
     public class EnrolledBalanceRepository : IEnrolledBalanceRepository
     {
-        private readonly ILog _log;
         private readonly INoSQLTableStorage<EnrolledBalanceEntity> _storage;
 
 
@@ -23,14 +22,12 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 "EnrolledBalance",
                 log);
             
-            return new EnrolledBalanceRepository(log, storage);
+            return new EnrolledBalanceRepository(storage);
         }
 
         private EnrolledBalanceRepository(
-            ILog log,
             INoSQLTableStorage<EnrolledBalanceEntity> storage)
         {
-            _log = log;
             _storage = storage;
         }
 
@@ -47,7 +44,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 .Select(ConvertEntityToDto);
         }
 
-        public async Task SetBalanceAsync(string blockchainType, string blockchainAssetId, string depositWalletAddress, decimal amount)
+        public async Task SetBalanceAsync(string blockchainType, string blockchainAssetId, string depositWalletAddress, decimal amount, long block)
         {
             var partitionKey = EnrolledBalanceEntity.GetPartitionKey(blockchainType, blockchainAssetId, depositWalletAddress);
             var rowKey = EnrolledBalanceEntity.GetRowKey(depositWalletAddress);
@@ -69,8 +66,11 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
             // ReSharper disable once ImplicitlyCapturedClosure
             bool UpdateEntity(EnrolledBalanceEntity entity)
             {
-                entity.Balance += amount;
-
+                if (block > entity.Block)
+                {
+                    entity.Balance = amount;
+                }
+                
                 return true;
             }
 

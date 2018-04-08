@@ -32,7 +32,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                 blockchainType: command.BlockchainType,
                 blockchainAssetId: command.BlockchainAssetId,
                 depositWalletAddress: command.DepositWalletAddress,
-                amount: command.EnrolledBalanceAmount + command.OperationAmount
+                amount: command.EnrolledBalanceAmount + command.OperationAmount,
+                block: command.BalanceBlock
             );
 
             publisher.PublishEvent(new EnrolledBalanceSetEvent
