@@ -109,14 +109,14 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
                                 warningAssets.Add(balance.AssetId);
                             }
                         }
-                        
+
+                        if (asset != null && balance.Balance < (decimal)asset.CashinMinimalAmount)
+                        {
+                            ++tooSmallBalanceWalletsCount;
+                        }
+
                         if (enrolledBalances.TryGetValue(balance.Address, out var enrolledBalance))
                         {
-                            if (asset != null && balance.Balance < (decimal)asset.CashinMinimalAmount)
-                            {
-                                ++tooSmallBalanceWalletsCount;
-                            }
-
                             if (balance.Block < enrolledBalance.Block)
                             {
                                 // We are not sure, that balance is actual
