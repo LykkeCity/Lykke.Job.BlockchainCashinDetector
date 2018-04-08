@@ -1,4 +1,6 @@
-﻿namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
+﻿using JetBrains.Annotations;
+
+namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
 {
     public sealed class EnrolledBalance
     {
@@ -17,9 +19,11 @@
         }
 
         public decimal Balance { get; }
-
+        
+        [UsedImplicitly(ImplicitUseKindFlags.Access)]
         public string BlockchainType { get; }
 
+        [UsedImplicitly(ImplicitUseKindFlags.Access)]
         public string BlockchainAssetId { get; }
 
         public string DepositWalletAddress { get; }

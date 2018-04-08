@@ -10,9 +10,15 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Events
     public class CashinEnrolledToMatchingEngineEvent
     {
         [Key(0)]
-        public Guid OperationId { get; set; }
+        public Guid ClientId { get; set; }
 
         [Key(1)]
-        public Guid ClientId { get; set; }
+        public decimal EnrolledBalanceAmount { get; set; }
+
+        [Key(2)]
+        public decimal OperationAmount { get; set; }
+
+        [Key(3)]
+        public Guid OperationId { get; set; }
     }
 }

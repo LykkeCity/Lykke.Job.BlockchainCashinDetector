@@ -21,19 +21,22 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
         private readonly IBlockchainWalletsClient _walletsClient;
         private readonly IMatchingEngineCallsDeduplicationRepository _deduplicationRepository;
         private readonly IMatchingEngineClient _meClient;
+        private readonly IEnrolledBalanceRepository _enrolledBalanceRepository;
 
         public EnrollToMatchingEngineCommandsHandler(
             IChaosKitty chaosKitty,
             ILog log,
             IBlockchainWalletsClient walletsClient,
             IMatchingEngineCallsDeduplicationRepository deduplicationRepository, 
-            IMatchingEngineClient meClient)
+            IMatchingEngineClient meClient,
+            IEnrolledBalanceRepository enrolledBalanceRepository)
         {
             _chaosKitty = chaosKitty;
             _log = log;
             _walletsClient = walletsClient;
             _deduplicationRepository = deduplicationRepository;
             _meClient = meClient;
+            _enrolledBalanceRepository = enrolledBalanceRepository;
         }
 
         [UsedImplicitly]
@@ -63,11 +66,28 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                 throw new InvalidOperationException("Client ID for the blockchain deposit wallet address is not found");
             }
 
-            var cashInResult = await _meClient.CashInOutAsync(
-                command.OperationId.ToString(),
-                clientId.Value.ToString(),
-                command.AssetId,
-                (double) command.Amount);
+            var enrolledBalance = await _enrolledBalanceRepository.TryGetAsync(new DepositWalletKey
+            (
+                blockchainAssetId: command.BlockchainAssetId,
+                blockchainType: command.BlockchainType,
+                depositWalletAddress: command.DepositWalletAddress
+            ));
+
+            var enrolledBalanceAmount = enrolledBalance?.Balance ?? 0;
+            var operationAmount = command.BalanceAmount - enrolledBalanceAmount;
+
+            if (operationAmount <= 0)
+            {
+                throw new InvalidOperationException($"Operation amount [{operationAmount}] is lower or equal to zero. It should not been happen.");
+            }
+
+            var cashInResult = await _meClient.CashInOutAsync
+            (
+                id: command.OperationId.ToString(),
+                clientId: clientId.Value.ToString(),
+                assetId: command.AssetId,
+                amount: (double) operationAmount
+            );
 
             _chaosKitty.Meow(command.OperationId);
 
@@ -86,8 +106,10 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
 
                 publisher.PublishEvent(new CashinEnrolledToMatchingEngineEvent
                 {
-                    OperationId = command.OperationId,
-                    ClientId = clientId.Value
+                    ClientId = clientId.Value,
+                    EnrolledBalanceAmount = enrolledBalanceAmount,
+                    OperationAmount = operationAmount,
+                    OperationId = command.OperationId
                 });
 
                 _chaosKitty.Meow(command.OperationId);

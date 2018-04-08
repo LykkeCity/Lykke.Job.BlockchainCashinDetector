@@ -9,12 +9,12 @@ using Lykke.Job.BlockchainCashinDetector.Workflow.Events;
 namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
 {
     [UsedImplicitly]
-    public class IncreaseEnrolledBalanceCommandHandler
+    public class SetEnrolledBalanceCommandHandler
     {
         private readonly ILog _log;
         private readonly IEnrolledBalanceRepository _enrolledBalanceRepository;
 
-        public IncreaseEnrolledBalanceCommandHandler(
+        public SetEnrolledBalanceCommandHandler(
             ILog log,
             IEnrolledBalanceRepository enrolledBalanceRepository)
         {
@@ -23,25 +23,22 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
         }
 
         [UsedImplicitly]
-        public async Task<CommandHandlingResult> Handle(IncreaseEnrolledBalanceCommand command, IEventPublisher publisher)
+        public async Task<CommandHandlingResult> Handle(SetEnrolledBalanceCommand command, IEventPublisher publisher)
         {
-            _log.WriteInfo(nameof(IncreaseEnrolledBalanceCommand), command, "");
-
-            await _enrolledBalanceRepository.InсreaseBalanceAsync
+            _log.WriteInfo(nameof(SetEnrolledBalanceCommand), command, "");
+            
+            await _enrolledBalanceRepository.SetBalanceAsync
             (
                 blockchainType: command.BlockchainType,
                 blockchainAssetId: command.BlockchainAssetId,
                 depositWalletAddress: command.DepositWalletAddress,
-                amount: command.Amount
+                amount: command.EnrolledBalanceAmount + command.OperationAmount,
+                block: command.BalanceBlock
             );
 
-            publisher.PublishEvent(new EnrolledBalanceIncreasedEvent
+            publisher.PublishEvent(new EnrolledBalanceSetEvent
             {
-                OperationId = command.OperationId,
-                Amount = command.Amount,
-                BlockchainType = command.BlockchainType,
-                BlockchainAssetId = command.BlockchainAssetId,
-                DepositWalletAddress = command.DepositWalletAddress,
+                OperationId = command.OperationId
             });
 
             return CommandHandlingResult.Ok();

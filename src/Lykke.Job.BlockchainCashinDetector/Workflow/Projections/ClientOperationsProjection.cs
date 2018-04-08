@@ -36,39 +36,25 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
         }
 
         [UsedImplicitly]
-        public async Task Handle(CashinStartedEvent evt)
+        public async Task Handle(CashinEnrolledToMatchingEngineEvent evt)
         {
-            _log.WriteInfo(nameof(CashinStartedEvent), evt, "");
+            _log.WriteInfo(nameof(CashinEnrolledToMatchingEngineEvent), evt, "");
 
             try
             {
                 var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
-
-                // Obtains clientId directly from the wallets, but not aggregate,
-                // to make projection independent on the aggregate state, since
-                // clientId in aggregate is initially not filled up.
-
-                // TODO: Add client cache for the walletsClient
-
-                var clientId = await _walletsClient.TryGetClientIdAsync(
-                    aggregate.BlockchainType,
-                    aggregate.BlockchainAssetId,
-                    aggregate.DepositWalletAddress);
-
-                if (clientId == null)
-                {
-                    throw new InvalidOperationException("Client ID for the blockchain deposit wallet address is not found");
-                }
-
+                
                 await _clientOperationsRepositoryClient.RegisterAsync(new CashInOutOperation(
-                    id: aggregate.OperationId.ToString(),
+                    id: evt.OperationId.ToString(),
+                    amount: (double) evt.OperationAmount,
+                    clientId: evt.ClientId.ToString(),
+
                     transactionId: aggregate.OperationId.ToString(),
                     dateTime: aggregate.CreationMoment,
-                    amount: (double) aggregate.OperationAmount,
                     assetId: aggregate.AssetId,
-                    clientId: clientId.ToString(),
                     addressFrom: aggregate.DepositWalletAddress,
                     addressTo: aggregate.HotWalletAddress,
+
                     type: CashOperationType.ForwardCashIn,
                     state: TransactionStates.InProcessOnchain,
                     isSettled: false,
@@ -87,7 +73,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
             }
             catch (Exception ex)
             {
-                _log.WriteError(nameof(CashinStartedEvent), evt, ex);
+                _log.WriteError(nameof(CashinEnrolledToMatchingEngineEvent), evt, ex);
                 throw;
             }
         }
@@ -126,9 +112,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
         }
 
         [UsedImplicitly]
-        public async Task Handle(EnrolledBalanceIncreasedEvent evt)
+        public async Task Handle(EnrolledBalanceSetEvent evt)
         {
-            _log.WriteInfo(nameof(EnrolledBalanceIncreasedEvent), evt, "");
+            _log.WriteInfo(nameof(EnrolledBalanceSetEvent), evt, "");
 
             try
             {
@@ -150,7 +136,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
             }
             catch (Exception ex)
             {
-                _log.WriteError(nameof(EnrolledBalanceIncreasedEvent), evt, ex);
+                _log.WriteError(nameof(EnrolledBalanceSetEvent), evt, ex);
                 throw;
             }
         }
