@@ -256,6 +256,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .To(Self)
                     .With(defaultPipeline)
                     
+
+
                     .ProcessingOptions(defaultRoute).MultiThreaded(8).QueueCapacity(1024));
         }
     }
