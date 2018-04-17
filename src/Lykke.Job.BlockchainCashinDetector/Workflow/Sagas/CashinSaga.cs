@@ -287,13 +287,17 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
 
                     _chaosKitty.Meow(evt.OperationId);
 
-                    sender.SendCommand(new NotifyCashinCompletedCommand
+                    if (aggregate.OperationAmount.HasValue && 
+                        aggregate.OperationAmount.Value != 0)
                     {
-                        Amount = aggregate.OperationAmount,
-                        AssetId = aggregate.AssetId,
-                        ClientId = aggregate.ClientId.Value
-                    },
-                        Self);
+                        sender.SendCommand(new NotifyCashinCompletedCommand
+                            {
+                                Amount = aggregate.OperationAmount.Value,
+                                AssetId = aggregate.AssetId,
+                                ClientId = aggregate.ClientId.Value
+                            },
+                            Self);
+                    }
 
                     await _cashinRepository.SaveAsync(aggregate);
                 }
