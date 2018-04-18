@@ -45,7 +45,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
 
         public CashinSaga(
             IChaosKitty chaosKitty,
-            ILog log, 
+            ILog log,
             ICashinRepository cashinRepository)
         {
             _log = log.CreateComponentScope(nameof(CashinSaga));
@@ -83,9 +83,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                 if (aggregate.State == CashinState.Starting)
                 {
                     sender.SendCommand(new StartCashinCommand
-                        {
-                            OperationId = aggregate.OperationId
-                        },
+                    {
+                        OperationId = aggregate.OperationId
+                    },
                         Self);
                 }
             }
@@ -270,6 +270,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                     return;
                 }
 
+                if (!aggregate.ClientId.HasValue)
+                    throw new ArgumentException($"Operation {evt.OperationId} has no client associated with it. Fix it!");
+
                 if (aggregate.OnTransactionCompleted(evt.TransactionHash, evt.Block, evt.TransactionAmount, evt.Fee))
                 {
                     sender.SendCommand(new ResetEnrolledBalanceCommand
@@ -283,6 +286,18 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                     Self);
 
                     _chaosKitty.Meow(evt.OperationId);
+
+                    if (aggregate.OperationAmount.HasValue && 
+                        aggregate.OperationAmount.Value != 0)
+                    {
+                        sender.SendCommand(new NotifyCashinCompletedCommand
+                            {
+                                Amount = aggregate.OperationAmount.Value,
+                                AssetId = aggregate.AssetId,
+                                ClientId = aggregate.ClientId.Value
+                            },
+                            Self);
+                    }
 
                     await _cashinRepository.SaveAsync(aggregate);
                 }
@@ -341,9 +356,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                 if (aggregate.OnTransactionFailed(evt.Error))
                 {
                     sender.SendCommand(new RemoveMatchingEngineDeduplicationLockCommand
-                        {
-                            OperationId = aggregate.OperationId
-                        },
+                    {
+                        OperationId = aggregate.OperationId
+                    },
                         Self);
 
                     _chaosKitty.Meow(evt.OperationId);
@@ -357,7 +372,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                 throw;
             }
         }
-        
+
         [UsedImplicitly]
         private async Task Handle(MatchingEngineDeduplicationLockRemovedEvent evt, ICommandSender sender)
         {

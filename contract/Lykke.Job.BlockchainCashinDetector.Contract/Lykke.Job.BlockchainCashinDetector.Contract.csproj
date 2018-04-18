@@ -33,6 +33,7 @@
 
   <ItemGroup>
     <PackageReference Include="JetBrains.Annotations" Version="11.1.0" />
+    <PackageReference Include="Lykke.Messaging" Version="5.0.0" />
   </ItemGroup>
 
 </Project>
