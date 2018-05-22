@@ -72,7 +72,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
             }
             
             // First level deduplication just to reduce traffic to the ME
-            if (!await _deduplicationRepository.IsExistsAsync(command.OperationId))
+            if (await _deduplicationRepository.IsExistsAsync(command.OperationId))
             {
                 _log.WriteInfo(nameof(EnrollToMatchingEngineCommand), command.OperationId, "Deduplicated at first level");
 
