@@ -40,42 +40,34 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
         {
             _log.WriteInfo(nameof(CashinEnrolledToMatchingEngineEvent), evt, "");
 
-            try
-            {
-                var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
+            var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
                 
-                await _clientOperationsRepositoryClient.RegisterAsync(new CashInOutOperation(
-                    id: evt.OperationId.ToString(),
-                    amount: (double) evt.OperationAmount,
-                    clientId: evt.ClientId.ToString(),
+            await _clientOperationsRepositoryClient.RegisterAsync(new CashInOutOperation(
+                id: evt.OperationId.ToString(),
+                amount: (double) evt.OperationAmount,
+                clientId: evt.ClientId.ToString(),
 
-                    transactionId: aggregate.OperationId.ToString(),
-                    dateTime: aggregate.CreationMoment,
-                    assetId: aggregate.AssetId,
-                    addressFrom: aggregate.DepositWalletAddress,
-                    addressTo: aggregate.HotWalletAddress,
+                transactionId: aggregate.OperationId.ToString(),
+                dateTime: aggregate.CreationMoment,
+                assetId: aggregate.AssetId,
+                addressFrom: aggregate.DepositWalletAddress,
+                addressTo: aggregate.HotWalletAddress,
 
-                    type: CashOperationType.ForwardCashIn,
-                    state: TransactionStates.InProcessOnchain,
-                    isSettled: false,
-                    blockChainHash: "",
+                type: CashOperationType.ForwardCashIn,
+                state: TransactionStates.InProcessOnchain,
+                isSettled: false,
+                blockChainHash: "",
 
-                    // These fields are not used
+                // These fields are not used
 
-                    feeType: FeeType.Unknown,
-                    feeSize: 0,
-                    isRefund: false,
-                    multisig: "",
-                    isHidden: false
-                ));
+                feeType: FeeType.Unknown,
+                feeSize: 0,
+                isRefund: false,
+                multisig: "",
+                isHidden: false
+            ));
 
-                _chaosKitty.Meow(evt.OperationId);
-            }
-            catch (Exception ex)
-            {
-                _log.WriteError(nameof(CashinEnrolledToMatchingEngineEvent), evt, ex);
-                throw;
-            }
+            _chaosKitty.Meow(evt.OperationId);
         }
 
         [UsedImplicitly]
@@ -83,32 +75,24 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
         {
             _log.WriteInfo(nameof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent), evt, "");
 
-            try
+            var aggregate = await _cashinRepository.TryGetAsync(evt.OperationId);
+
+            if (aggregate == null)
             {
-                var aggregate = await _cashinRepository.TryGetAsync(evt.OperationId);
-
-                if (aggregate == null)
-                {
-                    // This is not a cashin operation
-                    return;
-                }
-
-                var clientId = await GetClientIdAsync(aggregate);
-
-                await _clientOperationsRepositoryClient.UpdateBlockchainHashAsync
-                (
-                    clientId.ToString(),
-                    aggregate.OperationId.ToString(),
-                    evt.TransactionHash
-                );
-
-                _chaosKitty.Meow(evt.OperationId);
+                // This is not a cashin operation
+                return;
             }
-            catch (Exception ex)
-            {
-                _log.WriteError(nameof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent), evt, ex);
-                throw;
-            }
+
+            var clientId = await GetClientIdAsync(aggregate);
+
+            await _clientOperationsRepositoryClient.UpdateBlockchainHashAsync
+            (
+                clientId.ToString(),
+                aggregate.OperationId.ToString(),
+                evt.TransactionHash
+            );
+
+            _chaosKitty.Meow(evt.OperationId);
         }
 
         [UsedImplicitly]
@@ -116,29 +100,21 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
         {
             _log.WriteInfo(nameof(EnrolledBalanceSetEvent), evt, "");
 
-            try
-            {
-                var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
+            var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
 
-                if (aggregate.IsDustCashin)
-                {
-                    var clientId = await GetClientIdAsync(aggregate);
+            if (aggregate.IsDustCashin)
+            {
+                var clientId = await GetClientIdAsync(aggregate);
                     
-                    await _clientOperationsRepositoryClient.UpdateBlockchainHashAsync
-                    (
-                        clientId.ToString(),
-                        aggregate.OperationId.ToString(),
-                        "0x"
-                    );
-                }
+                await _clientOperationsRepositoryClient.UpdateBlockchainHashAsync
+                (
+                    clientId.ToString(),
+                    aggregate.OperationId.ToString(),
+                    "0x"
+                );
+            }
 
-                _chaosKitty.Meow(evt.OperationId);
-            }
-            catch (Exception ex)
-            {
-                _log.WriteError(nameof(EnrolledBalanceSetEvent), evt, ex);
-                throw;
-            }
+            _chaosKitty.Meow(evt.OperationId);
         }
 
         private async Task<Guid> GetClientIdAsync(CashinAggregate aggregate)

@@ -1,5 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Common.Chaos;
@@ -32,17 +31,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
         {
             _log.WriteInfo(nameof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent), evt, "");
 
-            try
-            {
-                await _deduplicationRepository.TryRemoveAsync(evt.OperationId);
+            await _deduplicationRepository.TryRemoveAsync(evt.OperationId);
 
-                _chaosKitty.Meow(evt.OperationId);
-            }
-            catch (Exception ex)
-            {
-                _log.WriteError(nameof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent), evt, ex);
-                throw;
-            }
+            _chaosKitty.Meow(evt.OperationId);
         }
 
         [UsedImplicitly]
@@ -50,17 +41,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
         {
             _log.WriteInfo(nameof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent), evt, "");
 
-            try
-            {
-                await _deduplicationRepository.TryRemoveAsync(evt.OperationId);
+            await _deduplicationRepository.TryRemoveAsync(evt.OperationId);
 
-                _chaosKitty.Meow(evt.OperationId);
-            }
-            catch (Exception ex)
-            {
-                _log.WriteError(nameof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent), evt, ex);
-                throw;
-            }
+            _chaosKitty.Meow(evt.OperationId);
         }
 
         [UsedImplicitly]
@@ -68,22 +51,14 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
         {
             _log.WriteInfo(nameof(EnrolledBalanceSetEvent), evt, "");
 
-            try
-            {
-                var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
+            var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
 
-                if (aggregate.IsDustCashin)
-                {
-                    await _deduplicationRepository.TryRemoveAsync(evt.OperationId);
-                }
-                
-                _chaosKitty.Meow(evt.OperationId);
-            }
-            catch (Exception ex)
+            if (aggregate.IsDustCashin)
             {
-                _log.WriteError(nameof(EnrolledBalanceSetEvent), evt, ex);
-                throw;
+                await _deduplicationRepository.TryRemoveAsync(evt.OperationId);
             }
+                
+            _chaosKitty.Meow(evt.OperationId);
         }
     }
 }
