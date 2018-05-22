@@ -209,25 +209,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             return true;
         }
 
-        public bool OnClientOperationStartRegistered()
-        {
-            if (!SwitchState(CashinState.EnrolledToMatchingEngine, CashinState.ClientOperationStartIsRegistered))
-            {
-                return false;
-            }
-
-            return true;
-        }
-
         public bool OnTransactionCompleted(string transactionHash, long transactionBlock, decimal transactionAmount, decimal fee)
         {
-            var expectedStates = new[]
-            {
-                CashinState.ClientOperationStartIsRegistered,
-                CashinState.EnrolledBalanceSet
-            };
-
-            if (!SwitchState(expectedStates, CashinState.OperationIsFinished))
+            if (!SwitchState(CashinState.EnrolledBalanceSet, CashinState.OperationIsFinished))
             {
                 return false;
             }
@@ -259,13 +243,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
 
         public bool OnTransactionFailed(string error)
         {
-            var expectedStates = new[]
-            {
-                CashinState.ClientOperationStartIsRegistered,
-                CashinState.EnrolledBalanceSet
-            };
-
-            if (!SwitchState(expectedStates, CashinState.OperationIsFinished))
+            if (!SwitchState(CashinState.EnrolledBalanceSet, CashinState.OperationIsFinished))
             {
                 return false;
             }
@@ -298,16 +276,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             return true;
         }
         
-        public bool OnMatchingEngineDeduplicationLockRemoved()
-        {
-            if (!SwitchState(CashinState.OperationIsFinished, CashinState.MatchingEngineDeduplicationLockIsRemoved))
-            {
-                return false;
-            }
-
-            return true;
-        }
-
         private bool SwitchState(CashinState expectedState, CashinState nextState)
         {
             return SwitchState(new[] {expectedState}, nextState);
