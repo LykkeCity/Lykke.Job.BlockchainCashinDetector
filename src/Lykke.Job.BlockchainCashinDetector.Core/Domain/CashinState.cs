@@ -8,11 +8,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
         Started,
         EnrolledToMatchingEngine,
         EnrolledBalanceSet,
-        [Obsolete("Should be removed with next release")]
-        ClientOperationStartIsRegistered,
         OperationIsFinished,
-        EnrolledBalanceReset,
-        [Obsolete("Should be removed with next release")]
-        MatchingEngineDeduplicationLockIsRemoved
+        EnrolledBalanceReset
     }
 }

@@ -15,7 +15,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
         private static string BuildMessage(CashinState currentState, IList<CashinState> expectedStates, CashinState targetState)
         {
             var expectedStateMessage = expectedStates.Count == 1
-                ? $"{expectedStates} state"
+                ? $"{expectedStates.First()} state"
                 : $"one of [{string.Join(", ", expectedStates.Select(s => s.ToString()))}] states";
 
             return $"Cashin state can't be switched: {currentState} -> {targetState}. Waiting for the {expectedStateMessage}.";
