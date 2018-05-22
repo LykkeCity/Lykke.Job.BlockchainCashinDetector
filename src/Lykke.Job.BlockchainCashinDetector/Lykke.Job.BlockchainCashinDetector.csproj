@@ -26,7 +26,7 @@
   <ItemGroup>
     <PackageReference Include="Lykke.Common.ApiLibrary" Version="1.4.0" />
     <PackageReference Include="Lykke.Job.BlockchainOperationsExecutor.Contract" Version="6.0.0" />
-    <PackageReference Include="Lykke.Logs" Version="4.3.3" />
+    <PackageReference Include="Lykke.Logs" Version="4.3.4" />
     <PackageReference Include="Lykke.Messaging" Version="5.0.0" />
     <PackageReference Include="Lykke.Messaging.RabbitMq" Version="2.0.0" />
     <PackageReference Include="Lykke.Service.Assets.Client" Version="3.3.2" />
