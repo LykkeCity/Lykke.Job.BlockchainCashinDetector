@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Common.Chaos;
 using Lykke.Cqrs;
@@ -34,16 +33,13 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
     {
         private static readonly string Self = BlockchainCashinDetectorBoundedContext.Name;
 
-        private readonly ILog _log;
         private readonly IChaosKitty _chaosKitty;
         private readonly ICashinRepository _cashinRepository;
 
         public CashinSaga(
             IChaosKitty chaosKitty,
-            ILog log,
             ICashinRepository cashinRepository)
         {
-            _log = log.CreateComponentScope(nameof(CashinSaga));
             _chaosKitty = chaosKitty;
             _cashinRepository = cashinRepository;
         }
@@ -51,8 +47,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         [UsedImplicitly]
         private async Task Handle(DepositBalanceDetectedEvent evt, ICommandSender sender)
         {
-            _log.WriteInfo(nameof(DepositBalanceDetectedEvent), evt, "");
-
             var aggregate = await _cashinRepository.GetOrAddAsync
             (
                 evt.BlockchainType,
@@ -86,8 +80,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         [UsedImplicitly]
         private async Task Handle(CashinStartedEvent evt, ICommandSender sender)
         {
-            _log.WriteInfo(nameof(CashinStartedEvent), evt, "");
-
             var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
 
             if (aggregate.Start())
@@ -118,8 +110,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         [UsedImplicitly]
         private async Task Handle(CashinEnrolledToMatchingEngineEvent evt, ICommandSender sender)
         {
-            _log.WriteInfo(nameof(CashinEnrolledToMatchingEngineEvent), evt, "");
-
             var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
 
             if (aggregate.OnEnrolledToMatchingEngine(
@@ -152,8 +142,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         [UsedImplicitly]
         private async Task Handle(EnrolledBalanceSetEvent evt, ICommandSender sender)
         {
-            _log.WriteInfo(nameof(EnrolledBalanceSetEvent), evt, "");
-
             var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
 
             if (aggregate.OnEnrolledBalanceSet())
@@ -184,8 +172,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         [UsedImplicitly]
         private async Task Handle(OperationExecutionCompletedEvent evt, ICommandSender sender)
         {
-            _log.WriteInfo(nameof(OperationExecutionCompletedEvent), evt, "");
-
             var aggregate = await _cashinRepository.TryGetAsync(evt.OperationId);
 
             if (aggregate == null)
@@ -232,8 +218,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         [UsedImplicitly]
         public async Task Handle(EnrolledBalanceResetEvent evt, ICommandSender sender)
         {
-            _log.WriteInfo(nameof(EnrolledBalanceResetEvent), evt, "");
-
             var aggregate = await _cashinRepository.TryGetAsync(evt.OperationId);
 
             if (aggregate.OnEnrolledBalanceReset())
@@ -245,8 +229,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         [UsedImplicitly]
         private async Task Handle(OperationExecutionFailedEvent evt, ICommandSender sender)
         {
-            _log.WriteInfo(nameof(OperationExecutionFailedEvent), evt, "");
-
             var aggregate = await _cashinRepository.TryGetAsync(evt.OperationId);
 
             if (aggregate == null)

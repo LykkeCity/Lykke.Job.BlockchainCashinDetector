@@ -9,18 +9,15 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
 {
     public class MatchingEngineCallDeduplicationsProjection
     {
-        private readonly ILog _log;
         private readonly IMatchingEngineCallsDeduplicationRepository _deduplicationRepository;
         private readonly ICashinRepository _cashinRepository;
         private readonly IChaosKitty _chaosKitty;
 
         public MatchingEngineCallDeduplicationsProjection(
-            ILog log,
             IMatchingEngineCallsDeduplicationRepository deduplicationRepository,
             ICashinRepository cashinRepository,
             IChaosKitty chaosKitty)
         {
-            _log = log.CreateComponentScope(nameof(MatchingEngineCallDeduplicationsProjection));
             _deduplicationRepository = deduplicationRepository;
             _chaosKitty = chaosKitty;
             _cashinRepository = cashinRepository;
@@ -29,8 +26,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
         [UsedImplicitly]
         public async Task Handle(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent evt)
         {
-            _log.WriteInfo(nameof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent), evt, "");
-
             await _deduplicationRepository.TryRemoveAsync(evt.OperationId);
 
             _chaosKitty.Meow(evt.OperationId);
@@ -39,8 +34,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
         [UsedImplicitly]
         public async Task Handle(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent evt)
         {
-            _log.WriteInfo(nameof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent), evt, "");
-
             await _deduplicationRepository.TryRemoveAsync(evt.OperationId);
 
             _chaosKitty.Meow(evt.OperationId);
@@ -49,8 +42,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
         [UsedImplicitly]
         public async Task Handle(EnrolledBalanceSetEvent evt)
         {
-            _log.WriteInfo(nameof(EnrolledBalanceSetEvent), evt, "");
-
             var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
 
             if (aggregate.IsDustCashin)

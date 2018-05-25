@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Cqrs;
@@ -13,25 +10,21 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
     [UsedImplicitly]
     public class OperationCompletedCommandsHandler
     {
-        private readonly ILog _log;
-
-        public OperationCompletedCommandsHandler(
-            ILog log)
+        public OperationCompletedCommandsHandler(ILog log)
         {
-            _log = log;
         }
 
         [UsedImplicitly]
-        public async Task<CommandHandlingResult> Handle(NotifyCashinCompletedCommand command, IEventPublisher publisher)
+        public Task<CommandHandlingResult> Handle(NotifyCashinCompletedCommand command, IEventPublisher publisher)
         {
-            publisher.PublishEvent(new CashinCompletedEvent()
+            publisher.PublishEvent(new CashinCompletedEvent
             {
                 ClientId = command.ClientId,
                 AssetId = command.AssetId,
                 Amount = command.Amount
             });
 
-            return CommandHandlingResult.Ok();
+            return Task.FromResult(CommandHandlingResult.Ok());
         }
     }
 }
