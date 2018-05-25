@@ -42,8 +42,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
         [UsedImplicitly]
         public async Task<CommandHandlingResult> Handle(EnrollToMatchingEngineCommand command, IEventPublisher publisher)
         {
-            _log.WriteInfo(nameof(EnrollToMatchingEngineCommand), command, "");
-
             // TODO: Add client cache for the walletsClient
 
             var clientId = await _walletsClient.TryGetClientIdAsync(
