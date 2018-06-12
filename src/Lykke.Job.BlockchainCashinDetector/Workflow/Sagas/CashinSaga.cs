@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Common.Chaos;
 using Lykke.Cqrs;
@@ -9,10 +8,8 @@ using Lykke.Job.BlockchainCashinDetector.Core.Domain;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Commands;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Events;
 using Lykke.Job.BlockchainOperationsExecutor.Contract;
-
-using StartTransactionCommand = Lykke.Job.BlockchainOperationsExecutor.Contract.Commands.StartOperationExecutionCommand;
-using TransactionCompletedEvent = Lykke.Job.BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent;
-using TransactionFailedEvent = Lykke.Job.BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent;
+using Lykke.Job.BlockchainOperationsExecutor.Contract.Commands;
+using Lykke.Job.BlockchainOperationsExecutor.Contract.Events;
 
 namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
 {
@@ -25,30 +22,24 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
     /// -> CashinEnrolledToMatchingEngineEvent
     ///     -> SetEnrolledBalanceCommand
     /// -> EnrolledBalanceSetEvent
-    ///     -> StartTransactionCommand
-    /// -> TransactionCompletedEvent                        || -> TransactionFailedEvent
-    ///     -> ResetEnrolledBalanceCommand                  ||     -> RemoveMatchingEngineDeduplicationLockCommand
-    /// -> EnrolledBalanceResetEvent                        ||
-    ///     -> RemoveMatchingEngineDeduplicationLockCommand ||
-    /// -> MatchingEngineDeduplicationLockRemovedEvent
-    ///     -> RegisterClientOperationFinishCommand
-    /// -> ClientOperationFinishRegisteredEvent
+    ///     -> StartOperationExecutionCommand
+    /// -> OperationExecutionCompletedEvent                 ||  -> OperationExecutionFailedEvent
+    ///     -> ResetEnrolledBalanceCommand                  ||      -> x
+    /// -> EnrolledBalanceResetEvent
+    ///     -> x
     /// </summary>
     [UsedImplicitly]
     public class CashinSaga
     {
         private static readonly string Self = BlockchainCashinDetectorBoundedContext.Name;
 
-        private readonly ILog _log;
         private readonly IChaosKitty _chaosKitty;
         private readonly ICashinRepository _cashinRepository;
 
         public CashinSaga(
             IChaosKitty chaosKitty,
-            ILog log,
             ICashinRepository cashinRepository)
         {
-            _log = log.CreateComponentScope(nameof(CashinSaga));
             _chaosKitty = chaosKitty;
             _cashinRepository = cashinRepository;
         }
@@ -56,226 +47,142 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         [UsedImplicitly]
         private async Task Handle(DepositBalanceDetectedEvent evt, ICommandSender sender)
         {
-            _log.WriteInfo(nameof(DepositBalanceDetectedEvent), evt, "");
-
-            try
-            {
-                var aggregate = await _cashinRepository.GetOrAddAsync
+            var aggregate = await _cashinRepository.GetOrAddAsync
+            (
+                evt.BlockchainType,
+                evt.DepositWalletAddress,
+                evt.BlockchainAssetId,
+                () => CashinAggregate.StartNew
                 (
-                    evt.BlockchainType,
-                    evt.DepositWalletAddress,
-                    evt.BlockchainAssetId,
-                    () => CashinAggregate.StartNew
-                    (
-                        assetId: evt.AssetId,
-                        balanceAmount: evt.BalanceAmount,
-                        balanceBlock: evt.BalanceBlock,
-                        blockchainAssetId: evt.BlockchainAssetId,
-                        blockchainType: evt.BlockchainType,
-                        cashinMinimalAmount: evt.CashinMinimalAmount,
-                        depositWalletAddress: evt.DepositWalletAddress,
-                        hotWalletAddress: evt.HotWalletAddress
-                    )
-                );
+                    assetId: evt.AssetId,
+                    balanceAmount: evt.BalanceAmount,
+                    balanceBlock: evt.BalanceBlock,
+                    blockchainAssetId: evt.BlockchainAssetId,
+                    blockchainType: evt.BlockchainType,
+                    cashinMinimalAmount: evt.CashinMinimalAmount,
+                    depositWalletAddress: evt.DepositWalletAddress,
+                    hotWalletAddress: evt.HotWalletAddress
+                )
+            );
 
-                _chaosKitty.Meow(aggregate.OperationId);
+            _chaosKitty.Meow(aggregate.OperationId);
 
-                if (aggregate.State == CashinState.Starting)
-                {
-                    sender.SendCommand(new StartCashinCommand
+            if (aggregate.State == CashinState.Starting)
+            {
+                sender.SendCommand(new StartCashinCommand
                     {
                         OperationId = aggregate.OperationId
                     },
-                        Self);
-                }
-            }
-            catch (Exception ex)
-            {
-                _log.WriteError(nameof(DepositBalanceDetectedEvent), evt, ex);
-                throw;
+                    Self);
             }
         }
 
         [UsedImplicitly]
         private async Task Handle(CashinStartedEvent evt, ICommandSender sender)
         {
-            _log.WriteInfo(nameof(CashinStartedEvent), evt, "");
+            var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
 
-            try
+            if (aggregate.Start())
             {
-                var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
+                sender.SendCommand
+                (
+                    new EnrollToMatchingEngineCommand
+                    {
+                        AssetId = aggregate.AssetId,
+                        BalanceAmount = aggregate.BalanceAmount,
+                        BalanceBlock = aggregate.BalanceBlock,
+                        BlockchainAssetId = aggregate.BlockchainAssetId,
+                        BlockchainType = aggregate.BlockchainType,
+                        CashinMinimalAmount = aggregate.CashinMinimalAmount,
+                        DepositWalletAddress = aggregate.DepositWalletAddress,
+                        HotWalletAddress = aggregate.HotWalletAddress,
+                        OperationId = aggregate.OperationId
+                    },
+                    Self
+                );
 
-                if (aggregate.Start())
-                {
-                    sender.SendCommand
-                    (
-                        new EnrollToMatchingEngineCommand
-                        {
-                            AssetId = aggregate.AssetId,
-                            BalanceAmount = aggregate.BalanceAmount,
-                            BalanceBlock = aggregate.BalanceBlock,
-                            BlockchainAssetId = aggregate.BlockchainAssetId,
-                            BlockchainType = aggregate.BlockchainType,
-                            CashinMinimalAmount = aggregate.CashinMinimalAmount,
-                            DepositWalletAddress = aggregate.DepositWalletAddress,
-                            HotWalletAddress = aggregate.HotWalletAddress,
-                            OperationId = aggregate.OperationId
-                        },
-                        Self
-                    );
+                _chaosKitty.Meow(evt.OperationId);
 
-                    _chaosKitty.Meow(evt.OperationId);
-
-                    await _cashinRepository.SaveAsync(aggregate);
-                }
-            }
-            catch (Exception ex)
-            {
-                _log.WriteError(nameof(CashinStartedEvent), evt, ex);
-                throw;
+                await _cashinRepository.SaveAsync(aggregate);
             }
         }
 
         [UsedImplicitly]
         private async Task Handle(CashinEnrolledToMatchingEngineEvent evt, ICommandSender sender)
         {
-            _log.WriteInfo(nameof(CashinEnrolledToMatchingEngineEvent), evt, "");
+            var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
 
-            try
+            if (aggregate.OnEnrolledToMatchingEngine(
+                clientId: evt.ClientId,
+                enrolledBalanceAmount: evt.EnrolledBalanceAmount,
+                operationAmount: evt.OperationAmount
+            ))
             {
-                var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
-                
-                if (aggregate.OnEnrolledToMatchingEngine(
-                        clientId: evt.ClientId,
-                        enrolledBalanceAmount: evt.EnrolledBalanceAmount,
-                        operationAmount: evt.OperationAmount
-                   ))
-                {
-                    sender.SendCommand
-                    (
-                        new SetEnrolledBalanceCommand
-                        {
-                            BalanceBlock = aggregate.BalanceBlock,
-                            BlockchainAssetId = aggregate.BlockchainAssetId,
-                            BlockchainType = aggregate.BlockchainType,
-                            DepositWalletAddress = aggregate.DepositWalletAddress,
-                            EnrolledBalanceAmount = evt.EnrolledBalanceAmount,
-                            OperationAmount = evt.OperationAmount,
-                            OperationId = aggregate.OperationId                            
-                        },
-                        Self
-                    );
+                sender.SendCommand
+                (
+                    new SetEnrolledBalanceCommand
+                    {
+                        BalanceBlock = aggregate.BalanceBlock,
+                        BlockchainAssetId = aggregate.BlockchainAssetId,
+                        BlockchainType = aggregate.BlockchainType,
+                        DepositWalletAddress = aggregate.DepositWalletAddress,
+                        EnrolledBalanceAmount = evt.EnrolledBalanceAmount,
+                        OperationAmount = evt.OperationAmount,
+                        OperationId = aggregate.OperationId
+                    },
+                    Self
+                );
 
-                    _chaosKitty.Meow(evt.OperationId);
+                _chaosKitty.Meow(evt.OperationId);
 
-                    await _cashinRepository.SaveAsync(aggregate);
-                }
-            }
-            catch (Exception ex)
-            {
-                _log.WriteError(nameof(CashinEnrolledToMatchingEngineEvent), evt, ex);
-                throw;
+                await _cashinRepository.SaveAsync(aggregate);
             }
         }
 
         [UsedImplicitly]
         private async Task Handle(EnrolledBalanceSetEvent evt, ICommandSender sender)
         {
-            _log.WriteInfo(nameof(EnrolledBalanceSetEvent), evt, "");
+            var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
 
-            try
+            if (aggregate.OnEnrolledBalanceSet())
             {
-                var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
-
-                if (aggregate.OnEnrolledBalanceSet())
+                if (!aggregate.IsDustCashin)
                 {
-                    if (!aggregate.IsDustCashin)
-                    {
-                        sender.SendCommand
-                        (
-                            new StartTransactionCommand
-                            {
-                                Amount = aggregate.BalanceAmount,
-                                AssetId = aggregate.AssetId,
-                                FromAddress = aggregate.DepositWalletAddress,
-                                IncludeFee = true,
-                                OperationId = aggregate.OperationId,
-                                ToAddress = aggregate.HotWalletAddress
-                            },
-                            BlockchainOperationsExecutorBoundedContext.Name
-                        );
-                    }
-
-                    _chaosKitty.Meow(evt.OperationId);
-
-                    await _cashinRepository.SaveAsync(aggregate);
-                }
-            }
-            catch (Exception ex)
-            {
-                _log.WriteError(nameof(EnrolledBalanceSetEvent), evt, ex);
-                throw;
-            }
-        }
-
-        [Obsolete("Should be removed with next release")]
-        [UsedImplicitly]
-        private async Task Handle(ClientOperationStartRegisteredEvent evt, ICommandSender sender)
-        {
-            _log.WriteInfo(nameof(ClientOperationStartRegisteredEvent), evt, "");
-
-            try
-            {
-                var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
-
-                if (aggregate.OnClientOperationStartRegistered())
-                {
-                    // TODO: Add tag (cashin/cashout) to the operation, and pass it to the operations executor?
-
-                    sender.SendCommand(new StartTransactionCommand
+                    sender.SendCommand
+                    (
+                        new StartOperationExecutionCommand
                         {
-                            OperationId = aggregate.OperationId,
-                            FromAddress = aggregate.DepositWalletAddress,
-                            ToAddress = aggregate.HotWalletAddress,
-                            AssetId = aggregate.AssetId,
                             Amount = aggregate.BalanceAmount,
-                            IncludeFee = true
+                            AssetId = aggregate.AssetId,
+                            FromAddress = aggregate.DepositWalletAddress,
+                            IncludeFee = true,
+                            OperationId = aggregate.OperationId,
+                            ToAddress = aggregate.HotWalletAddress
                         },
-                        BlockchainOperationsExecutorBoundedContext.Name);
-
-                    _chaosKitty.Meow(evt.OperationId);
-
-                    await _cashinRepository.SaveAsync(aggregate);
+                        BlockchainOperationsExecutorBoundedContext.Name
+                    );
                 }
-            }
-            catch (Exception ex)
-            {
-                _log.WriteError(nameof(ClientOperationStartRegisteredEvent), evt, ex);
-                throw;
+
+                _chaosKitty.Meow(evt.OperationId);
+
+                await _cashinRepository.SaveAsync(aggregate);
             }
         }
 
         [UsedImplicitly]
-        private async Task Handle(TransactionCompletedEvent evt, ICommandSender sender)
+        private async Task Handle(OperationExecutionCompletedEvent evt, ICommandSender sender)
         {
-            _log.WriteInfo(nameof(TransactionCompletedEvent), evt, "");
+            var aggregate = await _cashinRepository.TryGetAsync(evt.OperationId);
 
-            try
+            if (aggregate == null)
             {
-                var aggregate = await _cashinRepository.TryGetAsync(evt.OperationId);
+                // This is not a cashin operation
+                return;
+            }
 
-                if (aggregate == null)
-                {
-                    // This is not a cashin operation
-                    return;
-                }
-
-                if (!aggregate.ClientId.HasValue)
-                    throw new ArgumentException($"Operation {evt.OperationId} has no client associated with it. Fix it!");
-
-                if (aggregate.OnTransactionCompleted(evt.TransactionHash, evt.Block, evt.TransactionAmount, evt.Fee))
-                {
-                    sender.SendCommand(new ResetEnrolledBalanceCommand
+            if (aggregate.OnTransactionCompleted(evt.TransactionHash, evt.Block, evt.TransactionAmount, evt.Fee))
+            {
+                sender.SendCommand(new ResetEnrolledBalanceCommand
                     {
                         OperationId = aggregate.OperationId,
                         BlockchainType = aggregate.BlockchainType,
@@ -285,126 +192,54 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                     },
                     Self);
 
-                    _chaosKitty.Meow(evt.OperationId);
+                _chaosKitty.Meow(evt.OperationId);
 
-                    if (aggregate.OperationAmount.HasValue && 
-                        aggregate.OperationAmount.Value != 0)
+                if (aggregate.OperationAmount.HasValue &&
+                    aggregate.OperationAmount.Value != 0)
+                {
+                    if (!aggregate.ClientId.HasValue)
                     {
-                        sender.SendCommand(new NotifyCashinCompletedCommand
-                            {
-                                Amount = aggregate.OperationAmount.Value,
-                                AssetId = aggregate.AssetId,
-                                ClientId = aggregate.ClientId.Value
-                            },
-                            Self);
+                        throw new ArgumentException($"Operation {evt.OperationId} has no client associated with it. Fix it!");
                     }
 
-                    await _cashinRepository.SaveAsync(aggregate);
+                    sender.SendCommand(new NotifyCashinCompletedCommand
+                        {
+                            Amount = aggregate.OperationAmount.Value,
+                            AssetId = aggregate.AssetId,
+                            ClientId = aggregate.ClientId.Value
+                        },
+                        Self);
                 }
-            }
-            catch (Exception ex)
-            {
-                _log.WriteError(nameof(TransactionCompletedEvent), evt, ex);
-                throw;
+
+                await _cashinRepository.SaveAsync(aggregate);
             }
         }
 
         [UsedImplicitly]
         public async Task Handle(EnrolledBalanceResetEvent evt, ICommandSender sender)
         {
-            _log.WriteInfo(nameof(EnrolledBalanceResetEvent), evt, "");
+            var aggregate = await _cashinRepository.TryGetAsync(evt.OperationId);
 
-            try
+            if (aggregate.OnEnrolledBalanceReset())
             {
-                var aggregate = await _cashinRepository.TryGetAsync(evt.OperationId);
-
-                if (aggregate.OnEnrolledBalanceReset())
-                {
-                    sender.SendCommand(new RemoveMatchingEngineDeduplicationLockCommand
-                    {
-                        OperationId = aggregate.OperationId
-                    },
-                    Self);
-
-                    _chaosKitty.Meow(evt.OperationId);
-
-                    await _cashinRepository.SaveAsync(aggregate);
-                }
-            }
-            catch (Exception ex)
-            {
-                _log.WriteError(nameof(EnrolledBalanceResetEvent), evt, ex);
-                throw;
+                await _cashinRepository.SaveAsync(aggregate);
             }
         }
 
         [UsedImplicitly]
-        private async Task Handle(TransactionFailedEvent evt, ICommandSender sender)
+        private async Task Handle(OperationExecutionFailedEvent evt, ICommandSender sender)
         {
-            _log.WriteInfo(nameof(TransactionFailedEvent), evt, "");
+            var aggregate = await _cashinRepository.TryGetAsync(evt.OperationId);
 
-            try
+            if (aggregate == null)
             {
-                var aggregate = await _cashinRepository.TryGetAsync(evt.OperationId);
-
-                if (aggregate == null)
-                {
-                    // This is not a cashin operation
-                    return;
-                }
-
-                if (aggregate.OnTransactionFailed(evt.Error))
-                {
-                    sender.SendCommand(new RemoveMatchingEngineDeduplicationLockCommand
-                    {
-                        OperationId = aggregate.OperationId
-                    },
-                        Self);
-
-                    _chaosKitty.Meow(evt.OperationId);
-
-                    await _cashinRepository.SaveAsync(aggregate);
-                }
+                // This is not a cashin operation
+                return;
             }
-            catch (Exception ex)
+
+            if (aggregate.OnTransactionFailed(evt.Error))
             {
-                _log.WriteError(nameof(TransactionFailedEvent), evt, ex);
-                throw;
-            }
-        }
-
-        [UsedImplicitly]
-        private async Task Handle(MatchingEngineDeduplicationLockRemovedEvent evt, ICommandSender sender)
-        {
-            _log.WriteInfo(nameof(MatchingEngineDeduplicationLockRemovedEvent), evt, "");
-
-            try
-            {
-                var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
-
-                if (aggregate.OnMatchingEngineDeduplicationLockRemoved())
-                {
-                    if (!aggregate.ClientId.HasValue)
-                    {
-                        throw new InvalidOperationException("Client id should be not null");
-                    }
-
-                    sender.SendCommand(new RegisterClientOperationFinishCommand
-                    {
-                        OperationId = aggregate.OperationId,
-                        ClientId = aggregate.ClientId.Value,
-                        TransactionHash = aggregate.TransactionHash
-                    }, Self);
-
-                    _chaosKitty.Meow(evt.OperationId);
-
-                    await _cashinRepository.SaveAsync(aggregate);
-                }
-            }
-            catch (Exception ex)
-            {
-                _log.WriteError(nameof(MatchingEngineDeduplicationLockRemovedEvent), evt, ex);
-                throw;
+                await _cashinRepository.SaveAsync(aggregate);
             }
         }
     }

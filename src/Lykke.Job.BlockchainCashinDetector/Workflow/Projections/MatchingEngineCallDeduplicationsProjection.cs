@@ -1,5 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Common.Chaos;
@@ -10,18 +9,15 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
 {
     public class MatchingEngineCallDeduplicationsProjection
     {
-        private readonly ILog _log;
         private readonly IMatchingEngineCallsDeduplicationRepository _deduplicationRepository;
         private readonly ICashinRepository _cashinRepository;
         private readonly IChaosKitty _chaosKitty;
 
         public MatchingEngineCallDeduplicationsProjection(
-            ILog log,
             IMatchingEngineCallsDeduplicationRepository deduplicationRepository,
             ICashinRepository cashinRepository,
             IChaosKitty chaosKitty)
         {
-            _log = log.CreateComponentScope(nameof(MatchingEngineCallDeduplicationsProjection));
             _deduplicationRepository = deduplicationRepository;
             _chaosKitty = chaosKitty;
             _cashinRepository = cashinRepository;
@@ -30,60 +26,30 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
         [UsedImplicitly]
         public async Task Handle(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent evt)
         {
-            _log.WriteInfo(nameof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent), evt, "");
+            await _deduplicationRepository.TryRemoveAsync(evt.OperationId);
 
-            try
-            {
-                await _deduplicationRepository.TryRemoveAsync(evt.OperationId);
-
-                _chaosKitty.Meow(evt.OperationId);
-            }
-            catch (Exception ex)
-            {
-                _log.WriteError(nameof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent), evt, ex);
-                throw;
-            }
+            _chaosKitty.Meow(evt.OperationId);
         }
 
         [UsedImplicitly]
         public async Task Handle(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent evt)
         {
-            _log.WriteInfo(nameof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent), evt, "");
+            await _deduplicationRepository.TryRemoveAsync(evt.OperationId);
 
-            try
-            {
-                await _deduplicationRepository.TryRemoveAsync(evt.OperationId);
-
-                _chaosKitty.Meow(evt.OperationId);
-            }
-            catch (Exception ex)
-            {
-                _log.WriteError(nameof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent), evt, ex);
-                throw;
-            }
+            _chaosKitty.Meow(evt.OperationId);
         }
 
         [UsedImplicitly]
         public async Task Handle(EnrolledBalanceSetEvent evt)
         {
-            _log.WriteInfo(nameof(EnrolledBalanceSetEvent), evt, "");
+            var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
 
-            try
+            if (aggregate.IsDustCashin)
             {
-                var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
-
-                if (aggregate.IsDustCashin)
-                {
-                    await _deduplicationRepository.TryRemoveAsync(evt.OperationId);
-                }
+                await _deduplicationRepository.TryRemoveAsync(evt.OperationId);
+            }
                 
-                _chaosKitty.Meow(evt.OperationId);
-            }
-            catch (Exception ex)
-            {
-                _log.WriteError(nameof(EnrolledBalanceSetEvent), evt, ex);
-                throw;
-            }
+            _chaosKitty.Meow(evt.OperationId);
         }
     }
 }

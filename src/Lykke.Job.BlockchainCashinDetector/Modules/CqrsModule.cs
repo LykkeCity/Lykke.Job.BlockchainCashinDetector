@@ -57,10 +57,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
             // Command handlers
             builder.RegisterType<StartCashinCommandsHandler>();
             builder.RegisterType<EnrollToMatchingEngineCommandsHandler>();
-            builder.RegisterType<RegisterClientOperationStartCommandsHandler>();
             builder.RegisterType<DetectDepositBalanceCommandHandler>();
-            builder.RegisterType<RemoveMatchingEngineDeduplicationLockCommandsHandler>();
-            builder.RegisterType<RegisterClientOperationFinishCommandsHandler>();
             builder.RegisterType<SetEnrolledBalanceCommandHandler>();
             builder.RegisterType<ResetEnrolledBalanceCommandHandler>();
             builder.RegisterType<OperationCompletedCommandsHandler>();
@@ -122,22 +119,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .WithCommandsHandler<EnrollToMatchingEngineCommandsHandler>()
                     .PublishingEvents(typeof(CashinEnrolledToMatchingEngineEvent))
                     .With(defaultPipeline)
-
-                    .ListeningCommands(typeof(RegisterClientOperationStartCommand))
-                    .On(defaultRoute)
-                    .WithCommandsHandler<RegisterClientOperationStartCommandsHandler>()
-                    .PublishingEvents(typeof(ClientOperationStartRegisteredEvent))
-                    .With(defaultPipeline)
-
-                    .ListeningCommands(typeof(RemoveMatchingEngineDeduplicationLockCommand))
-                    .On(defaultRoute)
-                    .WithCommandsHandler<RemoveMatchingEngineDeduplicationLockCommandsHandler>()
-                    .PublishingEvents(typeof(MatchingEngineDeduplicationLockRemovedEvent))
-                    .With(defaultPipeline)
-
-                    .ListeningCommands(typeof(RegisterClientOperationFinishCommand))
-                    .On(defaultRoute)
-                    .WithCommandsHandler<RegisterClientOperationFinishCommandsHandler>()
 
                     .ListeningCommands(typeof(SetEnrolledBalanceCommand))
                     .On(defaultRoute)
@@ -217,13 +198,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .From(Self)
                     .On(defaultRoute)
                     .PublishingCommands(typeof(BlockchainOperationsExecutor.Contract.Commands.StartOperationExecutionCommand))
-                    .To(Self)
-                    .With(defaultPipeline)
-
-                    .ListeningEvents(typeof(ClientOperationStartRegisteredEvent))
-                    .From(Self)
-                    .On(defaultRoute)
-                    .PublishingCommands(typeof(BlockchainOperationsExecutor.Contract.Commands.StartOperationExecutionCommand))
                     .To(BlockchainOperationsExecutorBoundedContext.Name)
                     .With(defaultPipeline)
 
@@ -238,25 +212,10 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .ListeningEvents(typeof(EnrolledBalanceResetEvent))
                     .From(Self)
                     .On(defaultRoute)
-                    .PublishingCommands(typeof(RemoveMatchingEngineDeduplicationLockCommand))
-                    .To(Self)
-                    .With(defaultPipeline)
 
                     .ListeningEvents(typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent))
                     .From(BlockchainOperationsExecutorBoundedContext.Name)
                     .On(defaultRoute)
-                    .PublishingCommands(typeof(RemoveMatchingEngineDeduplicationLockCommand))
-                    .To(Self)
-                    .With(defaultPipeline)
-                    
-                    .ListeningEvents(typeof(MatchingEngineDeduplicationLockRemovedEvent))
-                    .From(Self)
-                    .On(defaultRoute)
-                    .PublishingCommands(typeof(RegisterClientOperationFinishCommand))
-                    .To(Self)
-                    .With(defaultPipeline)
-                    
-
 
                     .ProcessingOptions(defaultRoute).MultiThreaded(8).QueueCapacity(1024));
         }

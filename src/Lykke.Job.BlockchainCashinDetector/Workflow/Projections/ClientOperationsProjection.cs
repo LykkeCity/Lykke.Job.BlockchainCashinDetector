@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Common.Chaos;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain;
@@ -15,20 +14,17 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
 
     public class ClientOperationsProjection
     {
-        private readonly ILog _log;
         private readonly ICashinRepository _cashinRepository;
         private readonly IBlockchainWalletsClient _walletsClient;
         private readonly ICashOperationsRepositoryClient _clientOperationsRepositoryClient;
         private readonly IChaosKitty _chaosKitty;
 
         public ClientOperationsProjection(
-            ILog log,
             ICashinRepository cashinRepository,
             IBlockchainWalletsClient walletsClient,
             ICashOperationsRepositoryClient clientOperationsRepositoryClient,
             IChaosKitty chaosKitty)
         {
-            _log = log.CreateComponentScope(nameof(ClientOperationsProjection));
             _cashinRepository = cashinRepository;
             _walletsClient = walletsClient;
             _clientOperationsRepositoryClient = clientOperationsRepositoryClient;
@@ -38,107 +34,77 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
         [UsedImplicitly]
         public async Task Handle(CashinEnrolledToMatchingEngineEvent evt)
         {
-            _log.WriteInfo(nameof(CashinEnrolledToMatchingEngineEvent), evt, "");
-
-            try
-            {
-                var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
+            var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
                 
-                await _clientOperationsRepositoryClient.RegisterAsync(new CashInOutOperation(
-                    id: evt.OperationId.ToString(),
-                    amount: (double) evt.OperationAmount,
-                    clientId: evt.ClientId.ToString(),
+            await _clientOperationsRepositoryClient.RegisterAsync(new CashInOutOperation(
+                id: evt.OperationId.ToString(),
+                amount: (double) evt.OperationAmount,
+                clientId: evt.ClientId.ToString(),
 
-                    transactionId: aggregate.OperationId.ToString(),
-                    dateTime: aggregate.CreationMoment,
-                    assetId: aggregate.AssetId,
-                    addressFrom: aggregate.DepositWalletAddress,
-                    addressTo: aggregate.HotWalletAddress,
+                transactionId: aggregate.OperationId.ToString(),
+                dateTime: aggregate.CreationMoment,
+                assetId: aggregate.AssetId,
+                addressFrom: aggregate.DepositWalletAddress,
+                addressTo: aggregate.HotWalletAddress,
 
-                    type: CashOperationType.ForwardCashIn,
-                    state: TransactionStates.InProcessOnchain,
-                    isSettled: false,
-                    blockChainHash: "",
+                type: CashOperationType.ForwardCashIn,
+                state: TransactionStates.InProcessOnchain,
+                isSettled: false,
+                blockChainHash: "",
 
-                    // These fields are not used
+                // These fields are not used
 
-                    feeType: FeeType.Unknown,
-                    feeSize: 0,
-                    isRefund: false,
-                    multisig: "",
-                    isHidden: false
-                ));
+                feeType: FeeType.Unknown,
+                feeSize: 0,
+                isRefund: false,
+                multisig: "",
+                isHidden: false
+            ));
 
-                _chaosKitty.Meow(evt.OperationId);
-            }
-            catch (Exception ex)
-            {
-                _log.WriteError(nameof(CashinEnrolledToMatchingEngineEvent), evt, ex);
-                throw;
-            }
+            _chaosKitty.Meow(evt.OperationId);
         }
 
         [UsedImplicitly]
         public async Task Handle(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent evt)
         {
-            _log.WriteInfo(nameof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent), evt, "");
+            var aggregate = await _cashinRepository.TryGetAsync(evt.OperationId);
 
-            try
+            if (aggregate == null)
             {
-                var aggregate = await _cashinRepository.TryGetAsync(evt.OperationId);
-
-                if (aggregate == null)
-                {
-                    // This is not a cashin operation
-                    return;
-                }
-
-                var clientId = await GetClientIdAsync(aggregate);
-
-                await _clientOperationsRepositoryClient.UpdateBlockchainHashAsync
-                (
-                    clientId.ToString(),
-                    aggregate.OperationId.ToString(),
-                    evt.TransactionHash
-                );
-
-                _chaosKitty.Meow(evt.OperationId);
+                // This is not a cashin operation
+                return;
             }
-            catch (Exception ex)
-            {
-                _log.WriteError(nameof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent), evt, ex);
-                throw;
-            }
+
+            var clientId = await GetClientIdAsync(aggregate);
+
+            await _clientOperationsRepositoryClient.UpdateBlockchainHashAsync
+            (
+                clientId.ToString(),
+                aggregate.OperationId.ToString(),
+                evt.TransactionHash
+            );
+
+            _chaosKitty.Meow(evt.OperationId);
         }
 
         [UsedImplicitly]
         public async Task Handle(EnrolledBalanceSetEvent evt)
         {
-            _log.WriteInfo(nameof(EnrolledBalanceSetEvent), evt, "");
+            var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
 
-            try
+            if (aggregate.IsDustCashin)
             {
-                var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
-
-                if (aggregate.IsDustCashin)
-                {
-                    var clientId = await GetClientIdAsync(aggregate);
+                var clientId = await GetClientIdAsync(aggregate);
                     
-                    await _clientOperationsRepositoryClient.UpdateBlockchainHashAsync
-                    (
-                        clientId.ToString(),
-                        aggregate.OperationId.ToString(),
-                        "0x"
-                    );
-                }
+                await _clientOperationsRepositoryClient.UpdateBlockchainHashAsync
+                (
+                    clientId.ToString(),
+                    aggregate.OperationId.ToString(),
+                    "0x"
+                );
+            }
 
-                _chaosKitty.Meow(evt.OperationId);
-            }
-            catch (Exception ex)
-            {
-                _log.WriteError(nameof(EnrolledBalanceSetEvent), evt, ex);
-                throw;
-            }
+            _chaosKitty.Meow(evt.OperationId);
         }
 
         private async Task<Guid> GetClientIdAsync(CashinAggregate aggregate)

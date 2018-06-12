@@ -42,23 +42,11 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
         [UsedImplicitly]
         public async Task<CommandHandlingResult> Handle(EnrollToMatchingEngineCommand command, IEventPublisher publisher)
         {
-
-            _log.WriteInfo(nameof(EnrollToMatchingEngineCommand), command, "");
-
-            // First level deduplication just to reduce traffic to the ME
-            if (await _deduplicationRepository.IsExistsAsync(command.OperationId))
-            {
-                _log.WriteInfo(nameof(EnrollToMatchingEngineCommand), command.OperationId, "Deduplicated");
-
-                // Just skips
-                return CommandHandlingResult.Ok();
-            }
-
             // TODO: Add client cache for the walletsClient
 
             var clientId = await _walletsClient.TryGetClientIdAsync(
-                command.BlockchainType, 
-                command.BlockchainAssetId, 
+                command.BlockchainType,
+                command.BlockchainAssetId,
                 command.DepositWalletAddress);
 
             if (clientId == null)
@@ -79,6 +67,24 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
             if (operationAmount <= 0)
             {
                 throw new InvalidOperationException($"Operation amount [{operationAmount}] is lower or equal to zero. It should not been happen.");
+            }
+            
+            // First level deduplication just to reduce traffic to the ME
+            if (await _deduplicationRepository.IsExistsAsync(command.OperationId))
+            {
+                _log.WriteInfo(nameof(EnrollToMatchingEngineCommand), command.OperationId, "Deduplicated at first level");
+
+                // Workflow should be continued
+
+                publisher.PublishEvent(new CashinEnrolledToMatchingEngineEvent
+                {
+                    ClientId = clientId.Value,
+                    EnrolledBalanceAmount = enrolledBalanceAmount,
+                    OperationAmount = operationAmount,
+                    OperationId = command.OperationId
+                });
+
+                return CommandHandlingResult.Ok();
             }
 
             var cashInResult = await _meClient.CashInOutAsync
