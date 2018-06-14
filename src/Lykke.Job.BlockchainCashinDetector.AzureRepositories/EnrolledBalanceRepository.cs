@@ -44,7 +44,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 .Select(ConvertEntityToDto);
         }
 
-        public async Task SetBalanceAsync(string blockchainType, string blockchainAssetId, string depositWalletAddress, decimal amount, long block)
+        public async Task SetBalanceAsync(string blockchainType, string blockchainAssetId, string depositWalletAddress, decimal amount, long balanceBlock)
         {
             var partitionKey = EnrolledBalanceEntity.GetPartitionKey(blockchainType, blockchainAssetId, depositWalletAddress);
             var rowKey = EnrolledBalanceEntity.GetRowKey(depositWalletAddress);
@@ -66,12 +66,13 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
             // ReSharper disable once ImplicitlyCapturedClosure
             bool UpdateEntity(EnrolledBalanceEntity entity)
             {
-                if (block > entity.Block)
+                if (balanceBlock >= entity.Block)
                 {
                     entity.Balance = amount;
+                    return true;
                 }
                 
-                return true;
+                return false;
             }
 
             await _storage.InsertOrModifyAsync
@@ -83,12 +84,12 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
             );
         }
 
-        public async Task ResetBalanceAsync(string blockchainType, string blockchainAssetId, string depositWalletAddress, long block)
+        public async Task ResetBalanceAsync(string blockchainType, string blockchainAssetId, string depositWalletAddress, long transactionBlock)
         {
             var entity = new EnrolledBalanceEntity
             {
                 Balance = 0,
-                Block = block,
+                Block = transactionBlock,
                 BlockchainType = blockchainType,
                 BlockchainAssetId = blockchainAssetId,
                 DepositWalletAddress = depositWalletAddress,

@@ -1,14 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using Autofac;
-using Autofac.Extensions.DependencyInjection;
-using Castle.Windsor.Installer;
 using Common.Log;
 using Lykke.Job.BlockchainCashinDetector.Modules;
-using Lykke.Job.BlockchainCashinDetector.Settings;
 using Lykke.Job.BlockchainCashinDetector.Settings.JobSettings;
 using Lykke.Job.BlockchainCashinDetector.Tests.Integration.Common;
 using Lykke.Job.BlockchainCashinDetector.Tests.Integration.Modules;
@@ -21,8 +16,6 @@ using Lykke.SettingsReader;
 using Lykke.SettingsReader.ReloadingManager;
 using Microsoft.Extensions.Configuration;
 using Moq;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace Lykke.Job.BlockchainCashinDetector.Tests.Integration
@@ -130,6 +123,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Tests.Integration
 
                         return new EnumerationStatistics(1, 1, TimeSpan.Zero);
                     });
+
+
         }
 
         public void Dispose()
