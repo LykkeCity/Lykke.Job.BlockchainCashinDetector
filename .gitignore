@@ -59,4 +59,4 @@ node_modules
 **/launchSettings.json
 **/appsettings.*.json
 **/appsettings.json
-/tests/Lykke.Job.BlockchainCashinDetector.Tests/environment.json
+**/environment.json
