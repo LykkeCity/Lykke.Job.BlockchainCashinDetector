@@ -3,18 +3,12 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Autofac;
 using Common.Log;
-using Lykke.Job.BlockchainCashinDetector.Modules;
-using Lykke.Job.BlockchainCashinDetector.Settings.JobSettings;
 using Lykke.Job.BlockchainCashinDetector.Tests.Integration.Common;
 using Lykke.Job.BlockchainCashinDetector.Tests.Integration.Modules;
-using Lykke.Job.BlockchainCashinDetector.Tests.Integration.Settings;
 using Lykke.Service.BlockchainApi.Client.Models;
 using Lykke.Service.BlockchainApi.Contract;
 using Lykke.Service.BlockchainApi.Contract.Assets;
 using Lykke.Service.BlockchainApi.Contract.Balances;
-using Lykke.SettingsReader;
-using Lykke.SettingsReader.ReloadingManager;
-using Microsoft.Extensions.Configuration;
 using Moq;
 using Xunit;
 
@@ -41,32 +35,26 @@ namespace Lykke.Job.BlockchainCashinDetector.Tests.Integration
         public DepositBalanceDeduplicationTests()
         {
             var log = new LogToConsole();
-            var configurationBuilder = new ConfigurationBuilder()
-                .AddJsonFile("environment.json", optional: true)
-                .AddEnvironmentVariables();
-
-            var configuration = configurationBuilder.Build();
-            var testsSettings = configuration.LoadSettings<TestsSettings>()
-                .CurrentValue
-                .BlockchainCashinDetectorIntegrationTests;
 
             var containerBuilder = new ContainerBuilder();
 
             containerBuilder.RegisterModule(new IntegrationTestsModule(log));
-            containerBuilder.RegisterModule(new RepositoriesModule(
-                ConstantReloadingManager.From(new DbSettings
-                {
-                    DataConnString = testsSettings.AzureStorageConnectionString
-                }),
-                log));
-            containerBuilder.RegisterModule(new CqrsModule(
-                new CqrsSettings
-                {
-                    RabbitConnectionString = testsSettings.RabbitMqConnectionString,
-                    RetryDelay = TimeSpan.FromSeconds(10)
-                },
-                log,
-                rabbitMqVirtualHost: $"IntegrationTests-{Environment.MachineName}"));
+
+            // TODO: Should be in-memory implementations
+            //containerBuilder.RegisterModule(new RepositoriesModule(
+            //    ConstantReloadingManager.From(new DbSettings
+            //    {
+            //        DataConnString = testsSettings.AzureStorageConnectionString
+            //    }),
+            //    log));
+            //containerBuilder.RegisterModule(new CqrsModule(
+            //    new CqrsSettings
+            //    {
+            //        RabbitConnectionString = testsSettings.RabbitMqConnectionString,
+            //        RetryDelay = TimeSpan.FromSeconds(10)
+            //    },
+            //    log,
+            //    rabbitMqVirtualHost: $"IntegrationTests-{Environment.MachineName}"));
 
             Container = containerBuilder.Build();
 
@@ -91,7 +79,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Tests.Integration
                     }));
         }
 
-        [Fact]
+        [Fact(Skip = "Not implemented yet")]
         public void Test()
         {
             const string depositWallet = "LTC_DW_1";
