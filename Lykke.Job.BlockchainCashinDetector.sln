@@ -21,7 +21,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lykke.Job.BlockchainCashinD
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "4. Contract", "4. Contract", "{579F7EFC-B394-4D2B-9F42-C1A4293F5C2B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lykke.Job.BlockchainCashinDetector.Contract", "contract\Lykke.Job.BlockchainCashinDetector.Contract\Lykke.Job.BlockchainCashinDetector.Contract.csproj", "{58FEDF76-9CC9-4B3B-877F-0795CE7C50F9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lykke.Job.BlockchainCashinDetector.Contract", "contract\Lykke.Job.BlockchainCashinDetector.Contract\Lykke.Job.BlockchainCashinDetector.Contract.csproj", "{58FEDF76-9CC9-4B3B-877F-0795CE7C50F9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

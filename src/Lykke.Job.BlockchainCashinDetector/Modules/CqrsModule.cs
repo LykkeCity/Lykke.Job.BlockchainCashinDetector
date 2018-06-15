@@ -223,7 +223,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .ListeningEvents(typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent))
                     .From(BlockchainOperationsExecutorBoundedContext.Name)
                     .On(defaultRoute)
-
                     .ProcessingOptions(defaultRoute).MultiThreaded(8).QueueCapacity(1024));
         }
     }
