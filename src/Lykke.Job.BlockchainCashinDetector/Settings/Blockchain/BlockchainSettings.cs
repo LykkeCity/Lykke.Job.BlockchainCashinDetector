@@ -19,5 +19,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Settings.Blockchain
 
         [UsedImplicitly(ImplicitUseKindFlags.Assign)]
         public string HotWalletAddress { get; set; }
+
+        [Optional]
+        [UsedImplicitly(ImplicitUseKindFlags.Assign)]
+        public bool AreCashinsDisabled { get; set; }
     }
 }
