@@ -64,8 +64,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                 else
                 {
                     builder.RegisterType<DepositWalletsBalanceProcessingPeriodicalHandler>()
-                        .As<IStartable>()
-                        .AutoActivate()
+                        .As<IDepositWalletsBalanceProcessingPeriodicalHandler>()
                         .SingleInstance()
                         .WithParameter(TypedParameter.From(_settings.Monitoring.Period))
                         .WithParameter(TypedParameter.From(_settings.Requests.BatchSize))
