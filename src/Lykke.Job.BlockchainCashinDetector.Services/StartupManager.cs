@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Common.Log;
 using JetBrains.Annotations;
@@ -23,8 +24,13 @@ namespace Lykke.Job.BlockchainCashinDetector.Services
             ILog log, 
             IEnumerable<IDepositWalletsBalanceProcessingPeriodicalHandler> depositWalletsBalanceProcessingHandlers)
         {
+            if (log == null)
+            {
+                throw new ArgumentNullException(nameof(log));
+            }
+
             _log = log.CreateComponentScope(nameof(StartupManager));
-            _depositWalletsBalanceProcessingHandlers = depositWalletsBalanceProcessingHandlers;
+            _depositWalletsBalanceProcessingHandlers = depositWalletsBalanceProcessingHandlers ?? throw new ArgumentNullException(nameof(depositWalletsBalanceProcessingHandlers));
         }
 
         public async Task StartAsync()
