@@ -17,7 +17,9 @@ using Lykke.Service.BlockchainApi.Client;
 namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
 {
     [UsedImplicitly]
-    public class DepositWalletsBalanceProcessingPeriodicalHandler : TimerPeriod
+    public class DepositWalletsBalanceProcessingPeriodicalHandler : 
+        TimerPeriod,
+        IDepositWalletsBalanceProcessingPeriodicalHandler
     {
         private readonly int _batchSize;
         private readonly string _blockchainType;

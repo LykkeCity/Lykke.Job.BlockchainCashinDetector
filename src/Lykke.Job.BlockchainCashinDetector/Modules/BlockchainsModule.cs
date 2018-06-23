@@ -57,13 +57,19 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .WithParameter(TypedParameter.From(blockchain.ApiUrl))
                     .SingleInstance();
 
-                builder.RegisterType<DepositWalletsBalanceProcessingPeriodicalHandler>()
-                    .As<IStartable>()
-                    .AutoActivate()
-                    .SingleInstance()
-                    .WithParameter(TypedParameter.From(_settings.Monitoring.Period))
-                    .WithParameter(TypedParameter.From(_settings.Requests.BatchSize))
-                    .WithParameter(TypedParameter.From(blockchain.Type));
+                if (blockchain.AreCashinsDisabled)
+                {
+                    _log.WriteWarning("Blockchains registration", "", $"Cashins for blockchain {blockchain.Type} are disabled");
+                }
+                else
+                {
+                    builder.RegisterType<DepositWalletsBalanceProcessingPeriodicalHandler>()
+                        .As<IDepositWalletsBalanceProcessingPeriodicalHandler>()
+                        .SingleInstance()
+                        .WithParameter(TypedParameter.From(_settings.Monitoring.Period))
+                        .WithParameter(TypedParameter.From(_settings.Requests.BatchSize))
+                        .WithParameter(TypedParameter.From(blockchain.Type));
+                }
             }
         }
     }
