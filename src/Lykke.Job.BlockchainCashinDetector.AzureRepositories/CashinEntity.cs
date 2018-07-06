@@ -51,27 +51,25 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
 
         public CashinState State { get; set; }
         public CashinResult Result { get; set; }
-
-
+        
         public DateTime CreationMoment { get; set; }
         public DateTime? StartMoment { get; set; }
         public DateTime? MatchingEngineEnrollementMoment { get; set; }
         public DateTime? EnrolledBalanceSetMoment { get; set; }
         public DateTime? EnrolledBalanceResetMoment { get; set; }
         public DateTime? OperationFinishMoment { get; set; }
-
-
+        
         public Guid OperationId { get; set; }
         public string BlockchainType { get; set; }
         public string HotWalletAddress { get; set; }
         public string DepositWalletAddress { get; set; }
         public string BlockchainAssetId { get; set; }
         public string AssetId { get; set; }
+        public int AssetAccuracy { get; set; }
         public decimal BalanceAmount { get; set; }
         public long BalanceBlock { get; set; }
         public decimal CashinMinimalAmount { get; set; }
-
-
+        
         public Guid? ClientId { get; set; }
         public string TransactionHash { get; set; }
         public long? TransactionBlock { get; set; }
@@ -79,6 +77,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
         public string Error { get; set; }
         public decimal? EnrolledBalanceAmount { get; set; }
         public decimal? OperationAmount { get; set; }
+        public double? MeAmount { get;set; }
         public decimal? TransactionAmount { get; set; }
 
         // ReSharper restore MemberCanBePrivate.Global
@@ -111,6 +110,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
             return new CashinEntity
             {
                 AssetId = aggregate.AssetId,
+                AssetAccuracy =  aggregate.AssetAccuracy,
                 BalanceAmount = aggregate.BalanceAmount,
                 BalanceBlock = aggregate.BalanceBlock,
                 BlockchainAssetId = aggregate.BlockchainAssetId,
@@ -128,6 +128,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 MatchingEngineEnrollementMoment = aggregate.MatchingEngineEnrollementMoment,
                 OperationFinishMoment = aggregate.OperationFinishMoment,
                 OperationAmount = aggregate.OperationAmount,
+                MeAmount = aggregate.MeAmount,
                 OperationId = operationId,
                 Result = aggregate.Result,
                 StartMoment = aggregate.StartMoment,
@@ -155,6 +156,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
             (
                 clientId: ClientId,
                 assetId: AssetId,
+                assetAccuracy: AssetAccuracy,
                 balanceAmount: BalanceAmount,
                 balanceBlock: BalanceBlock,
                 blockchainAssetId: BlockchainAssetId,
@@ -170,6 +172,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 hotWalletAddress: HotWalletAddress,
                 matchingEngineEnrollementMoment: MatchingEngineEnrollementMoment,
                 operationAmount: OperationAmount,
+                meAmount: MeAmount,
                 operationFinishMoment: OperationFinishMoment,
                 operationId: OperationId,
                 result: Result,

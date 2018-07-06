@@ -38,7 +38,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
                 
             await _clientOperationsRepositoryClient.RegisterAsync(new CashInOutOperation(
                 id: evt.OperationId.ToString(),
-                amount: (double) evt.OperationAmount,
+                amount: evt.MeAmount,
                 clientId: evt.ClientId.ToString(),
 
                 transactionId: aggregate.OperationId.ToString(),

@@ -25,6 +25,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
             publisher.PublishEvent(new DepositBalanceDetectedEvent
             {
                 AssetId = command.AssetId,
+                AssetAccuracy = command.AssetAccuracy,
                 BalanceAmount = command.BalanceAmount,
                 BalanceBlock = command.BalanceBlock,
                 BlockchainAssetId = command.BlockchainAssetId,

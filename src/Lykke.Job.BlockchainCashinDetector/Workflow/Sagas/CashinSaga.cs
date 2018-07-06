@@ -55,6 +55,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                 () => CashinAggregate.StartNew
                 (
                     assetId: evt.AssetId,
+                    assetAccuracy: evt.AssetAccuracy,
                     balanceAmount: evt.BalanceAmount,
                     balanceBlock: evt.BalanceBlock,
                     blockchainAssetId: evt.BlockchainAssetId,
@@ -89,6 +90,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                     new EnrollToMatchingEngineCommand
                     {
                         AssetId = aggregate.AssetId,
+                        AssetAccuracy = aggregate.AssetAccuracy,
                         BalanceAmount = aggregate.BalanceAmount,
                         BalanceBlock = aggregate.BalanceBlock,
                         BlockchainAssetId = aggregate.BlockchainAssetId,
@@ -115,7 +117,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
             if (aggregate.OnEnrolledToMatchingEngine(
                 clientId: evt.ClientId,
                 enrolledBalanceAmount: evt.EnrolledBalanceAmount,
-                operationAmount: evt.OperationAmount
+                operationAmount: evt.OperationAmount,
+                meAmount: evt.MeAmount
             ))
             {
                 sender.SendCommand

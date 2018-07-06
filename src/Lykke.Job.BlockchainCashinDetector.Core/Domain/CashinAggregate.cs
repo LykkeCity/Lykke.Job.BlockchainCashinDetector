@@ -7,12 +7,10 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
     public class CashinAggregate
     {
         public string Version { get; }
-
-
+        
         public CashinState State { get; private set; }
         public CashinResult Result { get; private set; }
-
-
+        
         public DateTime CreationMoment { get; }
         public DateTime? StartMoment { get; private set; }
         public DateTime? MatchingEngineEnrollementMoment { get; private set; }
@@ -20,18 +18,17 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
         public DateTime? EnrolledBalanceResetMoment { get; private set; }
         public DateTime? OperationFinishMoment { get; private set; }
         
-
         public Guid OperationId { get; }
         public string BlockchainType { get; }
         public string HotWalletAddress { get; }
         public string DepositWalletAddress { get; }
         public string BlockchainAssetId { get; }
         public string AssetId { get; }
+        public int AssetAccuracy { get; }
         public decimal BalanceAmount { get; }
         public long BalanceBlock { get; }
         public decimal CashinMinimalAmount { get; }
-
-
+        
         public Guid? ClientId { get; private set; }
         public string TransactionHash { get; private set; }
         public long? TransactionBlock { get; private set; }
@@ -39,15 +36,15 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
         public string Error { get; private set; }
         public decimal? EnrolledBalanceAmount { get; private set; }
         public decimal? OperationAmount { get; private set; }
+        public double? MeAmount { get; private set; }
         public decimal? TransactionAmount { get; private set; }
-
-
+        
         public bool IsFinished => Result == CashinResult.Success || Result == CashinResult.Failure;
         public bool IsDustCashin => BalanceAmount <= CashinMinimalAmount;
-
-
+        
         private CashinAggregate(
             string assetId,
+            int assetAccuracy,
             decimal balanceAmount,
             long balanceBlock,
             string blockchainAssetId,
@@ -57,6 +54,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             string hotWalletAddress)
         {
             AssetId = assetId;
+            AssetAccuracy = assetAccuracy;
             BalanceAmount = balanceAmount;
             BalanceBlock = balanceBlock;
             BlockchainAssetId = blockchainAssetId;
@@ -73,6 +71,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
         
         private CashinAggregate(
             string assetId,
+            int assetAccuracy,
             decimal balanceAmount,
             long balanceBlock,
             string blockchainAssetId,
@@ -82,15 +81,20 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             string depositWalletAddress,
             string hotWalletAddress,
             Guid operationId,
-            string version) : this(
-            assetId: assetId,
-            balanceAmount: balanceAmount,
-            balanceBlock: balanceBlock,
-            blockchainAssetId: blockchainAssetId,
-            blockchainType: blockchainType,
-            cashinMinimalAmount: cashinMinimalAmount,
-            depositWalletAddress: depositWalletAddress,
-            hotWalletAddress: hotWalletAddress)
+            string version) : 
+            
+            this
+            (
+                assetId: assetId,
+                assetAccuracy: assetAccuracy,
+                balanceAmount: balanceAmount,
+                balanceBlock: balanceBlock,
+                blockchainAssetId: blockchainAssetId,
+                blockchainType: blockchainType,
+                cashinMinimalAmount: cashinMinimalAmount,
+                depositWalletAddress: depositWalletAddress,
+                hotWalletAddress: hotWalletAddress
+            )
         {
             CreationMoment = creationMoment;
             OperationId = operationId;
@@ -99,6 +103,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
 
         public static CashinAggregate StartNew(
             string assetId,
+            int assetAccuracy,
             decimal balanceAmount,
             long balanceBlock,
             string blockchainAssetId,
@@ -110,6 +115,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             return new CashinAggregate
             (
                 assetId: assetId,
+                assetAccuracy: assetAccuracy,
                 balanceAmount: balanceAmount,
                 balanceBlock: balanceBlock,
                 blockchainAssetId: blockchainAssetId,
@@ -123,6 +129,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
         public static CashinAggregate Restore(
             Guid? clientId,
             string assetId,
+            int assetAccuracy,
             decimal balanceAmount,
             long balanceBlock,
             string blockchainAssetId,
@@ -138,6 +145,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             string hotWalletAddress,
             DateTime? matchingEngineEnrollementMoment,
             decimal? operationAmount,
+            double? meAmount,
             DateTime? operationFinishMoment,
             Guid operationId,
             CashinResult result,
@@ -151,6 +159,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             return new CashinAggregate
             (
                 assetId: assetId,
+                assetAccuracy: assetAccuracy,
                 balanceAmount: balanceAmount,
                 balanceBlock: balanceBlock,
                 blockchainAssetId: blockchainAssetId,
@@ -171,6 +180,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
                 Fee = fee,
                 MatchingEngineEnrollementMoment = matchingEngineEnrollementMoment,
                 OperationAmount = operationAmount,
+                MeAmount = meAmount,
                 OperationFinishMoment = operationFinishMoment,
                 Result = result,
                 StartMoment = startMoment,
@@ -193,7 +203,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             return true;
         }
 
-        public bool OnEnrolledToMatchingEngine(Guid clientId, decimal enrolledBalanceAmount, decimal operationAmount)
+        public bool OnEnrolledToMatchingEngine(Guid clientId, decimal enrolledBalanceAmount, decimal operationAmount, double meAmount)
         {
             if (!SwitchState(CashinState.Started, CashinState.EnrolledToMatchingEngine))
             {
@@ -203,6 +213,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             ClientId = clientId;
             EnrolledBalanceAmount = enrolledBalanceAmount;
             OperationAmount = operationAmount;
+            MeAmount = meAmount;
 
             MatchingEngineEnrollementMoment = DateTime.UtcNow;
             

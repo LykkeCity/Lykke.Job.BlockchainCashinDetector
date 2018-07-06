@@ -139,12 +139,13 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
                                 new DetectDepositBalanceCommand
                                 {
                                     AssetId = asset.Id,
+                                    AssetAccuracy = asset.Accuracy,
                                     BalanceAmount = balance.Balance,
                                     BalanceBlock = balance.Block,
                                     BlockchainAssetId = balance.AssetId,
                                     BlockchainType = _blockchainType,
                                     CashinMinimalAmount = (decimal) asset.CashinMinimalAmount,
-                                    DepositWalletAddress = balance.Address,
+                                    DepositWalletAddress = balance.Address
                                 },
                                 BlockchainCashinDetectorBoundedContext.Name,
                                 BlockchainCashinDetectorBoundedContext.Name
