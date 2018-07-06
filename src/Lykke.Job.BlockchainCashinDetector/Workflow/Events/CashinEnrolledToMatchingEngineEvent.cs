@@ -20,5 +20,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Events
 
         [Key(3)]
         public Guid OperationId { get; set; }
+
+        [Key(4)]
+        public double MeAmount { get; set; }
     }
 }

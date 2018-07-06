@@ -35,6 +35,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Commands
 
         [Key(8)]
         public Guid OperationId { get; set; }
-        
+
+        [Key(9)]
+        public int AssetAccuracy { get; set; }
     }
 }
