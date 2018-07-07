@@ -70,7 +70,12 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                 throw new InvalidOperationException($"Operation amount [{operationAmount}] is lower or equal to zero. It should not been happen.");
             }
 
-            var meAmount = ((double)operationAmount).TruncateDecimalPlaces(command.AssetAccuracy);
+            var matchingEngineOperationAmount = ((double)operationAmount).TruncateDecimalPlaces(command.AssetAccuracy);
+
+            if (matchingEngineOperationAmount <= 0)
+            {
+                throw new InvalidOperationException($"Matching engine operation amount [{matchingEngineOperationAmount}] is lower or equal to zero. It should not been happen.");
+            }
 
             // First level deduplication just to reduce traffic to the ME
             if (await _deduplicationRepository.IsExistsAsync(command.OperationId))
@@ -84,7 +89,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                     ClientId = clientId.Value,
                     EnrolledBalanceAmount = enrolledBalanceAmount,
                     OperationAmount = operationAmount,
-                    MeAmount = meAmount,
+                    MeAmount = matchingEngineOperationAmount,
                     OperationId = command.OperationId
                 });
 
@@ -96,7 +101,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                 id: command.OperationId.ToString(),
                 clientId: clientId.Value.ToString(),
                 assetId: command.AssetId,
-                amount: meAmount
+                amount: matchingEngineOperationAmount
             );
 
             _chaosKitty.Meow(command.OperationId);
@@ -119,7 +124,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                     ClientId = clientId.Value,
                     EnrolledBalanceAmount = enrolledBalanceAmount,
                     OperationAmount = operationAmount,
-                    MeAmount = meAmount,
+                    MeAmount = matchingEngineOperationAmount,
                     OperationId = command.OperationId
                 });
 

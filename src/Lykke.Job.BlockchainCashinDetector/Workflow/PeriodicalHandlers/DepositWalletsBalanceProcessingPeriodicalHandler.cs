@@ -110,9 +110,11 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
 
                                 warningAssets.Add(balance.AssetId);
                             }
+
+                            continue;
                         }
 
-                        if (asset != null && balance.Balance < (decimal)asset.CashinMinimalAmount)
+                        if (balance.Balance < (decimal)asset.CashinMinimalAmount)
                         {
                             ++tooSmallBalanceWalletsCount;
                         }
@@ -124,33 +126,40 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
                                 // We are not sure, that balance is actual
                                 continue;
                             }
+                        }
 
-                            if (balance.Balance - enrolledBalance.Balance <= 0)
-                            {
-                                // Nothing to transfer
-                                continue;
-                            }
-                        }
-                        
-                        if (asset != null)
+                        var operationAmount = balance.Balance - (enrolledBalance?.Balance ?? 0);
+
+                        if (operationAmount <= 0)
                         {
-                            _cqrsEngine.SendCommand
-                            (
-                                new DetectDepositBalanceCommand
-                                {
-                                    AssetId = asset.Id,
-                                    AssetAccuracy = asset.Accuracy,
-                                    BalanceAmount = balance.Balance,
-                                    BalanceBlock = balance.Block,
-                                    BlockchainAssetId = balance.AssetId,
-                                    BlockchainType = _blockchainType,
-                                    CashinMinimalAmount = (decimal) asset.CashinMinimalAmount,
-                                    DepositWalletAddress = balance.Address
-                                },
-                                BlockchainCashinDetectorBoundedContext.Name,
-                                BlockchainCashinDetectorBoundedContext.Name
-                            );
+                            // Nothing to transfer
+                            continue;
                         }
+
+                        var matchingEngineOperationAmount = ((double) operationAmount).TruncateDecimalPlaces(asset.Accuracy);
+
+                        if (matchingEngineOperationAmount <= 0)
+                        {
+                            // Nothing to enroll to the ME
+                            continue;
+                        }
+
+                        _cqrsEngine.SendCommand
+                        (
+                            new DetectDepositBalanceCommand
+                            {
+                                AssetId = asset.Id,
+                                AssetAccuracy = asset.Accuracy,
+                                BalanceAmount = balance.Balance,
+                                BalanceBlock = balance.Block,
+                                BlockchainAssetId = balance.AssetId,
+                                BlockchainType = _blockchainType,
+                                CashinMinimalAmount = (decimal) asset.CashinMinimalAmount,
+                                DepositWalletAddress = balance.Address
+                            },
+                            BlockchainCashinDetectorBoundedContext.Name,
+                            BlockchainCashinDetectorBoundedContext.Name
+                        );
 
                         wallets.Add(balance.Address);
                     }
