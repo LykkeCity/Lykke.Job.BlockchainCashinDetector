@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Common;
 using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Common.Chaos;
@@ -7,8 +8,8 @@ using Lykke.Cqrs;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Commands;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Events;
-using Lykke.MatchingEngine.Connector.Abstractions.Models;
 using Lykke.MatchingEngine.Connector.Abstractions.Services;
+using Lykke.MatchingEngine.Connector.Models.Api;
 using Lykke.Service.BlockchainWallets.Client;
 
 namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
@@ -68,7 +69,14 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
             {
                 throw new InvalidOperationException($"Operation amount [{operationAmount}] is lower or equal to zero. It should not been happen.");
             }
-            
+
+            var matchingEngineOperationAmount = ((double)operationAmount).TruncateDecimalPlaces(command.AssetAccuracy);
+
+            if (matchingEngineOperationAmount <= 0)
+            {
+                throw new InvalidOperationException($"Matching engine operation amount [{matchingEngineOperationAmount}] is lower or equal to zero. It should not been happen.");
+            }
+
             // First level deduplication just to reduce traffic to the ME
             if (await _deduplicationRepository.IsExistsAsync(command.OperationId))
             {
@@ -81,6 +89,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                     ClientId = clientId.Value,
                     EnrolledBalanceAmount = enrolledBalanceAmount,
                     OperationAmount = operationAmount,
+                    MeAmount = matchingEngineOperationAmount,
                     OperationId = command.OperationId
                 });
 
@@ -92,7 +101,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                 id: command.OperationId.ToString(),
                 clientId: clientId.Value.ToString(),
                 assetId: command.AssetId,
-                amount: (double) operationAmount
+                amount: matchingEngineOperationAmount
             );
 
             _chaosKitty.Meow(command.OperationId);
@@ -115,6 +124,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                     ClientId = clientId.Value,
                     EnrolledBalanceAmount = enrolledBalanceAmount,
                     OperationAmount = operationAmount,
+                    MeAmount = matchingEngineOperationAmount,
                     OperationId = command.OperationId
                 });
 
@@ -127,7 +137,14 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                 return CommandHandlingResult.Ok();
             }
 
-            throw new InvalidOperationException($"Cashin into the ME is failed. ME status: {cashInResult.Status}, ME message: {cashInResult.Message}");
+            // Just log and abort cashin for futher manual processing. ME call could not be retried anyway if responce was received.
+
+            _log.WriteWarning(
+                nameof(EnrollToMatchingEngineCommand), 
+                command,
+                $"Cashin into the ME is failed. ME status: {cashInResult.Status}, ME message: {cashInResult.Message}");
+            
+            return CommandHandlingResult.Ok();
         }
     }
 }
