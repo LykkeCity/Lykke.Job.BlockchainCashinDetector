@@ -8,9 +8,9 @@ using Lykke.Job.BlockchainCashinDetector.Workflow.Commands;
 namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
 {
     [UsedImplicitly]
-    public class OperationCompletedCommandsHandler
+    public class NotifyCashinCompletedCommandsHandler
     {
-        public OperationCompletedCommandsHandler(ILog log)
+        public NotifyCashinCompletedCommandsHandler(ILog log)
         {
         }
 

@@ -67,7 +67,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
             builder.RegisterType<DetectDepositBalanceCommandHandler>();
             builder.RegisterType<SetEnrolledBalanceCommandHandler>();
             builder.RegisterType<ResetEnrolledBalanceCommandHandler>();
-            builder.RegisterType<OperationCompletedCommandsHandler>();
+            builder.RegisterType<NotifyCashinCompletedCommandsHandler>();
 
             // Projections
             builder.RegisterType<ClientOperationsProjection>();
@@ -103,7 +103,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
 
                     .ListeningCommands(typeof(NotifyCashinCompletedCommand))
                     .On(defaultRoute)
-                    .WithCommandsHandler<OperationCompletedCommandsHandler>()
+                    .WithCommandsHandler<NotifyCashinCompletedCommandsHandler>()
                     .PublishingEvents(typeof(CashinCompletedEvent))
 
                     .With(eventsRoute)
