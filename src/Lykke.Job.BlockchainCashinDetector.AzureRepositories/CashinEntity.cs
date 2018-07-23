@@ -1,6 +1,5 @@
 ﻿using System;
 using Common;
-using JetBrains.Annotations;
 using Lykke.AzureStorage.Tables;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain;
 
@@ -8,43 +7,6 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
 {
     internal class CashinEntity : AzureTableEntity
     {
-        #region Indices
-
-        public static class Indices
-        {
-            public class Started : AzureTableEntity
-            {
-                [UsedImplicitly(ImplicitUseKindFlags.Assign)]
-                public Guid OperationId { get; set; }
-
-                public static string GetPartitionKey(string blockchainType, string depositWalletAddress)
-                {
-                    // Adds hash to distribute all records to the different partitions
-                    var hash = depositWalletAddress.CalculateHexHash32(3);
-
-                    return $"{blockchainType}-{hash}";
-                }
-
-                public static string GetRowKey(string depositWalletAddress, string blockchainAssetId)
-                {
-                    return $"{depositWalletAddress}-{blockchainAssetId}";
-                }
-
-                public static Started IndexFromDomain(CashinAggregate aggregate)
-                {
-                    return new Started
-                    {
-                        PartitionKey = GetPartitionKey(aggregate.BlockchainType, aggregate.DepositWalletAddress),
-                        RowKey = GetRowKey(aggregate.DepositWalletAddress, aggregate.BlockchainAssetId),
-                        OperationId = aggregate.OperationId
-                    };
-                }
-            }
-        }
-
-        #endregion
-
-
         #region Fields
 
         // ReSharper disable MemberCanBePrivate.Global
@@ -58,6 +20,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
         public DateTime? EnrolledBalanceSetMoment { get; set; }
         public DateTime? EnrolledBalanceResetMoment { get; set; }
         public DateTime? OperationFinishMoment { get; set; }
+        public DateTime? DepositWalletLockReleasedMoment { get; set; }
         
         public Guid OperationId { get; set; }
         public string BlockchainType { get; set; }
@@ -66,8 +29,6 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
         public string BlockchainAssetId { get; set; }
         public string AssetId { get; set; }
         public int AssetAccuracy { get; set; }
-        public decimal BalanceAmount { get; set; }
-        public long BalanceBlock { get; set; }
         public decimal CashinMinimalAmount { get; set; }
         
         public Guid? ClientId { get; set; }
@@ -75,7 +36,10 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
         public long? TransactionBlock { get; set; }
         public decimal? Fee { get; set; }
         public string Error { get; set; }
+        public decimal? BalanceAmount { get; set; }
+        public long? BalanceBlock { get; set; }
         public decimal? EnrolledBalanceAmount { get; set; }
+        public long? EnrolledBalanceBlock { get; set; }
         public decimal? OperationAmount { get; set; }
         public double? MeAmount { get;set; }
         public decimal? TransactionAmount { get; set; }
@@ -105,7 +69,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
 
         #region Conversion
 
-        public static CashinEntity FromDomain(Guid operationId, CashinAggregate aggregate)
+        public static CashinEntity FromDomain(CashinAggregate aggregate)
         {
             return new CashinEntity
             {
@@ -120,6 +84,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 CreationMoment = aggregate.CreationMoment,
                 DepositWalletAddress = aggregate.DepositWalletAddress,
                 EnrolledBalanceAmount = aggregate.EnrolledBalanceAmount,
+                EnrolledBalanceBlock = aggregate.EnrolledBalanceBlock,
                 EnrolledBalanceResetMoment = aggregate.EnrolledBalanceResetMoment,
                 EnrolledBalanceSetMoment = aggregate.EnrolledBalanceSetMoment,
                 Error = aggregate.Error,
@@ -127,27 +92,21 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 HotWalletAddress = aggregate.HotWalletAddress,
                 MatchingEngineEnrollementMoment = aggregate.MatchingEngineEnrollementMoment,
                 OperationFinishMoment = aggregate.OperationFinishMoment,
+                DepositWalletLockReleasedMoment = aggregate.DepositWalletLockReleasedMoment,
                 OperationAmount = aggregate.OperationAmount,
                 MeAmount = aggregate.MeAmount,
-                OperationId = operationId,
+                OperationId = aggregate.OperationId,
                 Result = aggregate.Result,
                 StartMoment = aggregate.StartMoment,
                 State = aggregate.State,
                 TransactionAmount = aggregate.TransactionAmount,
                 TransactionBlock = aggregate.TransactionBlock,
                 TransactionHash = aggregate.TransactionHash,
-
-
-                ETag = string.IsNullOrEmpty(aggregate.Version) ? "*" : aggregate.Version,
-                PartitionKey = GetPartitionKey(operationId),
-                RowKey = GetRowKey(operationId),
                 
+                ETag = string.IsNullOrEmpty(aggregate.Version) ? "*" : aggregate.Version,
+                PartitionKey = GetPartitionKey(aggregate.OperationId),
+                RowKey = GetRowKey(aggregate.OperationId)                
             };
-        }
-
-        public static CashinEntity FromDomain(CashinAggregate aggregate)
-        {
-            return FromDomain(aggregate.OperationId, aggregate);
         }
 
         public CashinAggregate ToDomain()
@@ -165,6 +124,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 creationMoment: CreationMoment,
                 depositWalletAddress: DepositWalletAddress,
                 enrolledBalanceAmount: EnrolledBalanceAmount,
+                enrolledBalanceBlock: EnrolledBalanceBlock,
                 enrolledBalanceResetMoment: EnrolledBalanceResetMoment,
                 enrolledBalanceSetMoment: EnrolledBalanceSetMoment,
                 error: Error,
@@ -174,6 +134,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 operationAmount: OperationAmount,
                 meAmount: MeAmount,
                 operationFinishMoment: OperationFinishMoment,
+                depositWalletLockReleasedMoment: DepositWalletLockReleasedMoment,
                 operationId: OperationId,
                 result: Result,
                 startMoment: StartMoment,

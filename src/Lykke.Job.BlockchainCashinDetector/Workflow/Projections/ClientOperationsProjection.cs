@@ -35,10 +35,15 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
         public async Task Handle(CashinEnrolledToMatchingEngineEvent evt)
         {
             var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
-                
+
+            if (!aggregate.MeAmount.HasValue)
+            {
+                throw new InvalidOperationException("ME operation amount should be not null here");
+            }
+
             await _clientOperationsRepositoryClient.RegisterAsync(new CashInOutOperation(
-                id: evt.OperationId.ToString(),
-                amount: evt.MeAmount,
+                id: aggregate.OperationId.ToString(),
+                amount: aggregate.MeAmount.Value,
                 clientId: evt.ClientId.ToString(),
 
                 transactionId: aggregate.OperationId.ToString(),
@@ -61,7 +66,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
                 isHidden: false
             ));
 
-            _chaosKitty.Meow(evt.OperationId);
+            _chaosKitty.Meow(aggregate.OperationId);
         }
 
         [UsedImplicitly]
