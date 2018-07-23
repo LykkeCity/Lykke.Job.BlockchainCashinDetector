@@ -7,7 +7,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
     {
         Task<IEnumerable<EnrolledBalance>> GetAsync(IEnumerable<DepositWalletKey> keys);
 
-        Task SetBalanceAsync(string blockchainType, string blockchainAssetId, string depositWalletAddress, decimal amount, long balanceBlock);
+        Task SetBalanceAsync(string blockchainType, string blockchainAssetId, string depositWalletAddress, decimal balance, long balanceBlock);
 
         Task ResetBalanceAsync(string blockchainType, string blockchainAssetId, string depositWalletAddress, long transactionBlock);
 

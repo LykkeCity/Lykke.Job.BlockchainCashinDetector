@@ -9,7 +9,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Commands
     public class NotifyCashinCompletedCommand
     {
         public Guid ClientId { get; set; }
-        public decimal Amount { get; set; }
+        public decimal OperationAmount { get; set; }
         public string AssetId { get; set; }
     }
 }

@@ -55,28 +55,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                 throw new InvalidOperationException("Client ID for the blockchain deposit wallet address is not found");
             }
 
-            var enrolledBalance = await _enrolledBalanceRepository.TryGetAsync(new DepositWalletKey
-            (
-                blockchainAssetId: command.BlockchainAssetId,
-                blockchainType: command.BlockchainType,
-                depositWalletAddress: command.DepositWalletAddress
-            ));
-
-            var enrolledBalanceAmount = enrolledBalance?.Balance ?? 0;
-            var operationAmount = command.BalanceAmount - enrolledBalanceAmount;
-
-            if (operationAmount <= 0)
-            {
-                throw new InvalidOperationException($"Operation amount [{operationAmount}] is lower or equal to zero. It should not been happen.");
-            }
-
-            var matchingEngineOperationAmount = ((double)operationAmount).TruncateDecimalPlaces(command.AssetAccuracy);
-
-            if (matchingEngineOperationAmount <= 0)
-            {
-                throw new InvalidOperationException($"Matching engine operation amount [{matchingEngineOperationAmount}] is lower or equal to zero. It should not been happen.");
-            }
-
             // First level deduplication just to reduce traffic to the ME
             if (await _deduplicationRepository.IsExistsAsync(command.OperationId))
             {
@@ -87,9 +65,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                 publisher.PublishEvent(new CashinEnrolledToMatchingEngineEvent
                 {
                     ClientId = clientId.Value,
-                    EnrolledBalanceAmount = enrolledBalanceAmount,
-                    OperationAmount = operationAmount,
-                    MeAmount = matchingEngineOperationAmount,
                     OperationId = command.OperationId
                 });
 
@@ -101,7 +76,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                 id: command.OperationId.ToString(),
                 clientId: clientId.Value.ToString(),
                 assetId: command.AssetId,
-                amount: matchingEngineOperationAmount
+                amount: command.MatchingEngineOperationAmount
             );
 
             _chaosKitty.Meow(command.OperationId);
@@ -122,9 +97,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                 publisher.PublishEvent(new CashinEnrolledToMatchingEngineEvent
                 {
                     ClientId = clientId.Value,
-                    EnrolledBalanceAmount = enrolledBalanceAmount,
-                    OperationAmount = operationAmount,
-                    MeAmount = matchingEngineOperationAmount,
                     OperationId = command.OperationId
                 });
 
