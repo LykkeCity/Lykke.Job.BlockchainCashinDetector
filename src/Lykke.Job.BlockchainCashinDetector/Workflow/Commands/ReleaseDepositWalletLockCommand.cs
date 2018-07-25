@@ -10,12 +10,12 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Commands
         public Guid OperationId { get; set; }
         
         [Key(1)]
-        public string BlockchainType { get; internal set; }
+        public string BlockchainType { get; set; }
         
         [Key(2)]
-        public string DepositWalletAddress { get; internal set; }
+        public string DepositWalletAddress { get; set; }
         
         [Key(3)]
-        public string BlockchainAssetId { get; internal set; }
+        public string BlockchainAssetId { get; set; }
     }
 }
