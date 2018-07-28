@@ -4,11 +4,14 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
 {
     public enum CashinState
     {
-        Starting,
+        WaitingForActualBalance,
         Started,
         EnrolledToMatchingEngine,
         EnrolledBalanceSet,
-        OperationIsFinished,
-        EnrolledBalanceReset
+        DustEnrolledBalanceSet,
+        OperationCompleted,
+        OperationFailed,
+        EnrolledBalanceReset,
+        DepositWalletLockIsReleased
     }
 }

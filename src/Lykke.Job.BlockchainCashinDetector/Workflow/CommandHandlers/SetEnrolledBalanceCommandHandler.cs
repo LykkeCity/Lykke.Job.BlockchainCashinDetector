@@ -25,7 +25,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                 blockchainType: command.BlockchainType,
                 blockchainAssetId: command.BlockchainAssetId,
                 depositWalletAddress: command.DepositWalletAddress,
-                amount: command.EnrolledBalanceAmount + command.OperationAmount,
+                balance: command.EnrolledBalanceAmount + command.OperationAmount,
                 balanceBlock: command.BalanceBlock
             );
 
