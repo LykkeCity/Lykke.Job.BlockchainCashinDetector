@@ -13,5 +13,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Contract.Events
         public decimal Amount { get; set; }
 
         public Guid ClientId { get; set; }
+
+        public Guid OperationId { get; set; }
+
+        public string TransactionHash { get; set; }
     }
 }
