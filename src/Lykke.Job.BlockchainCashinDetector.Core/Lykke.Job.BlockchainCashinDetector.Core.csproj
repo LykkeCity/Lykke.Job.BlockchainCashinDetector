@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Lykke.Common" Version="6.8.1" />
+    <PackageReference Include="Lykke.Common" Version="7.0.3" />
     <PackageReference Include="Lykke.Service.BlockchainApi.Client" Version="16.0.1" />
   </ItemGroup>
 
