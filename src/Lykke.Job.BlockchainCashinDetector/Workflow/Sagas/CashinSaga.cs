@@ -183,7 +183,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                         {
                             OperationAmount = aggregate.OperationAmount.Value,
                             AssetId = aggregate.AssetId,
-                            ClientId = aggregate.ClientId.Value
+                            ClientId = aggregate.ClientId.Value,
+                            OperationId = aggregate.OperationId,
+                            TransactionHash = aggregate.IsDustCashin ? @"0x" : aggregate.TransactionHash
                         },
                         Self
                     );
