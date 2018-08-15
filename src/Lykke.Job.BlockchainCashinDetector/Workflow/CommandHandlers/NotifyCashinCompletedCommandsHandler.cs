@@ -21,7 +21,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
             {
                 ClientId = command.ClientId,
                 AssetId = command.AssetId,
-                Amount = command.Amount,
+                Amount = command.OperationAmount,
                 OperationId = command.OperationId,
                 TransactionHash = command.TransactionHash
             });
