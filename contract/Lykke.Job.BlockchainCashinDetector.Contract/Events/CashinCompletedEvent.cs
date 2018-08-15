@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using MessagePack;
 
 namespace Lykke.Job.BlockchainCashinDetector.Contract.Events
