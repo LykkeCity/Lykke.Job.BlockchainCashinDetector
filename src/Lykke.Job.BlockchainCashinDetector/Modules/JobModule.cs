@@ -54,12 +54,16 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
             builder.RegisterType<ShutdownManager>()
                 .As<IShutdownManager>();
 
-            _services.RegisterAssetsClient(new AssetServiceSettings
-            {
-                BaseUri = new Uri(_assetsSettings.ServiceUrl),
-                AssetsCacheExpirationPeriod = _assetsSettings.CacheExpirationPeriod,
-                AssetPairsCacheExpirationPeriod = _assetsSettings.CacheExpirationPeriod
-            });
+            _services.RegisterAssetsClient
+            (
+                new AssetServiceSettings
+                {
+                    BaseUri = new Uri(_assetsSettings.ServiceUrl),
+                    AssetsCacheExpirationPeriod = _assetsSettings.CacheExpirationPeriod,
+                    AssetPairsCacheExpirationPeriod = _assetsSettings.CacheExpirationPeriod
+                },
+                _log
+            );
 
             builder.RegisterOperationsRepositoryClients(new OperationsRepositoryServiceClientSettings
             {
