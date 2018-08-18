@@ -15,6 +15,7 @@ using Lykke.Job.BlockchainOperationsExecutor.Contract;
 using Lykke.Messaging;
 using Lykke.Messaging.Contract;
 using Lykke.Messaging.RabbitMq;
+using Lykke.Messaging.Serialization;
 
 
 namespace Lykke.Job.BlockchainCashinDetector.Modules
@@ -94,7 +95,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                 true,
                 Register.DefaultEndpointResolver(new RabbitMqConventionEndpointResolver(
                     "RabbitMq",
-                    "messagepack",
+                    SerializationFormat.MessagePack,
                     environment: "lykke")),
 
                 Register.BoundedContext(Self)
