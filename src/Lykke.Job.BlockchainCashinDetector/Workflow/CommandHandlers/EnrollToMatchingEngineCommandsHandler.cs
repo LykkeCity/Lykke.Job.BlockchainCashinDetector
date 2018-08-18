@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Common;
 using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Common.Chaos;
@@ -22,22 +21,19 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
         private readonly IBlockchainWalletsClient _walletsClient;
         private readonly IMatchingEngineCallsDeduplicationRepository _deduplicationRepository;
         private readonly IMatchingEngineClient _meClient;
-        private readonly IEnrolledBalanceRepository _enrolledBalanceRepository;
 
         public EnrollToMatchingEngineCommandsHandler(
             IChaosKitty chaosKitty,
             ILog log,
             IBlockchainWalletsClient walletsClient,
             IMatchingEngineCallsDeduplicationRepository deduplicationRepository, 
-            IMatchingEngineClient meClient,
-            IEnrolledBalanceRepository enrolledBalanceRepository)
+            IMatchingEngineClient meClient)
         {
             _chaosKitty = chaosKitty;
             _log = log;
             _walletsClient = walletsClient;
             _deduplicationRepository = deduplicationRepository;
             _meClient = meClient;
-            _enrolledBalanceRepository = enrolledBalanceRepository;
         }
 
         [UsedImplicitly]
@@ -86,37 +82,37 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                 throw new InvalidOperationException("ME response is null, don't know what to do");
             }
 
-            if (cashInResult.Status == MeStatusCodes.Ok ||
-                cashInResult.Status == MeStatusCodes.Duplicate)
+            switch (cashInResult.Status)
             {
-                if (cashInResult.Status == MeStatusCodes.Duplicate)
-                {
-                    _log.WriteInfo(nameof(EnrollToMatchingEngineCommand), command.OperationId, "Deduplicated by the ME");
-                }
+                case MeStatusCodes.Ok:
+                case MeStatusCodes.Duplicate:
+                    if (cashInResult.Status == MeStatusCodes.Duplicate)
+                    {
+                        _log.WriteInfo(nameof(EnrollToMatchingEngineCommand), command.OperationId, "Deduplicated by the ME");
+                    }
 
-                publisher.PublishEvent(new CashinEnrolledToMatchingEngineEvent
-                {
-                    ClientId = clientId.Value,
-                    OperationId = command.OperationId
-                });
+                    publisher.PublishEvent(new CashinEnrolledToMatchingEngineEvent
+                    {
+                        ClientId = clientId.Value,
+                        OperationId = command.OperationId
+                    });
 
-                _chaosKitty.Meow(command.OperationId);
+                    _chaosKitty.Meow(command.OperationId);
 
-                await _deduplicationRepository.InsertOrReplaceAsync(command.OperationId);
+                    await _deduplicationRepository.InsertOrReplaceAsync(command.OperationId);
 
-                _chaosKitty.Meow(command.OperationId);
+                    _chaosKitty.Meow(command.OperationId);
 
-                return CommandHandlingResult.Ok();
+                    return CommandHandlingResult.Ok();
+
+                case MeStatusCodes.Runtime:
+                    // Retry forever with the default delay + log the error outside.
+                    throw new Exception($"Cashin into the ME is failed. ME status: {cashInResult.Status}, ME message: {cashInResult.Message}");
+
+                default:
+                    // Just abort cashin for futher manual processing. ME call could not be retried anyway if responce was received.
+                    return CommandHandlingResult.Ok();
             }
-
-            // Just log and abort cashin for futher manual processing. ME call could not be retried anyway if responce was received.
-
-            _log.WriteWarning(
-                nameof(EnrollToMatchingEngineCommand), 
-                command,
-                $"Cashin into the ME is failed. ME status: {cashInResult.Status}, ME message: {cashInResult.Message}");
-            
-            return CommandHandlingResult.Ok();
         }
     }
 }
