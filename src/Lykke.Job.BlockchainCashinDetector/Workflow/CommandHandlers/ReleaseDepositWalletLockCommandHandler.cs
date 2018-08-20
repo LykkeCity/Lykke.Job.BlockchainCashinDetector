@@ -20,11 +20,16 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
         [UsedImplicitly]
         public async Task<CommandHandlingResult> Handle(ReleaseDepositWalletLockCommand command, IEventPublisher publisher)
         {
-            await _depositWalletLockRepository.ReleaseAsync(
-                command.BlockchainType,
-                command.DepositWalletAddress,
-                command.BlockchainAssetId,
-                command.OperationId);
+            await _depositWalletLockRepository.ReleaseAsync
+            (
+                new DepositWalletKey
+                (
+                    command.BlockchainAssetId,
+                    command.BlockchainType,
+                    command.DepositWalletAddress
+                ),
+                command.OperationId
+            );
 
             publisher.PublishEvent(new DepositWalletLockReleasedEvent
             {
