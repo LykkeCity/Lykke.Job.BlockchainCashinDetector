@@ -76,16 +76,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Tests
             hotWalletProviderMock
                 .Setup(x => x.GetHotWalletAddress(It.Is<string>(b => b == blockchainType)))
                 .Returns(hotWallet);
-            
-            depositWalletLockRepository
-                .Setup(x => x.LockAsync
-                (
-                    It.Is<string>(b => b == blockchainType),
-                    It.Is<string>(d => d == depositWallet),
-                    It.Is<string>(a => a == xlmBlockchainAsset.AssetId),
-                    It.IsAny<Func<Guid>>()
-                ))
-                .ReturnsAsync(operationId);
 
             cashinRepositoryMock
                 .Setup(x => x.GetOrAddAsync
@@ -128,6 +118,29 @@ namespace Lykke.Job.BlockchainCashinDetector.Tests
 
             // Arrange
 
+            depositWalletLockRepository
+                .Setup(x => x.LockAsync
+                (
+                    It.Is<DepositWalletKey>(k =>
+                        k.DepositWalletAddress == depositWallet
+                        && k.BlockchainType == blockchainType
+                        && k.BlockchainAssetId == xlmBlockchainAsset.AssetId),
+                    It.Is<decimal>(b => b == 100),
+                    It.Is<long>(d => d == 5000),
+                    It.IsAny<Func<Guid>>()
+                ))
+                .ReturnsAsync<DepositWalletKey, decimal, long, Func<Guid>, IDepositWalletLockRepository, DepositWalletLock>
+                (
+                    (key, balance, block, newOperationIdFactory) =>
+                        DepositWalletLock.Create
+                        (
+                            key,
+                            operationId,
+                            100,
+                            5000
+                        )
+                );
+
             blockchainApiClientMock
                 .Setup(x => x.EnumerateWalletBalanceBatchesAsync
                 (
@@ -169,6 +182,17 @@ namespace Lykke.Job.BlockchainCashinDetector.Tests
                 await balanceProcessor.ProcessAsync(100);
             });
 
+            depositWalletLockRepository.Verify(x => x.LockAsync
+            (
+                It.Is<DepositWalletKey>(k =>
+                    k.DepositWalletAddress == depositWallet
+                    && k.BlockchainType == blockchainType
+                    && k.BlockchainAssetId == xlmBlockchainAsset.AssetId),
+                It.Is<decimal>(b => b == 100),
+                It.Is<long>(d => d == 5000),
+                It.IsAny<Func<Guid>>()
+            ));
+
             cqrsEngineMock.Verify(
                 x => x.SendCommand
                 (
@@ -196,6 +220,29 @@ namespace Lykke.Job.BlockchainCashinDetector.Tests
             // There should be the same balance 100 at block 5000 as in first iteration
 
             // Arrange
+
+            depositWalletLockRepository
+                .Setup(x => x.LockAsync
+                (
+                    It.Is<DepositWalletKey>(k =>
+                        k.DepositWalletAddress == depositWallet
+                        && k.BlockchainType == blockchainType
+                        && k.BlockchainAssetId == xlmBlockchainAsset.AssetId),
+                    It.Is<decimal>(b => b == 300),
+                    It.Is<long>(d => d == 5001),
+                    It.IsAny<Func<Guid>>()
+                ))
+                .ReturnsAsync<DepositWalletKey, decimal, long, Func<Guid>, IDepositWalletLockRepository, DepositWalletLock>
+                (
+                    (key, balance, block, newOperationIdFactory) =>
+                        DepositWalletLock.Create
+                        (
+                            key,
+                            operationId,
+                            100,
+                            5000
+                        )
+                );
 
             blockchainApiClientMock
                 .Setup(x => x.EnumerateWalletBalanceBatchesAsync
@@ -231,6 +278,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Tests
                 .Setup(x => x.SaveAsync(It.IsAny<CashinAggregate>()))
                 .Returns(Task.CompletedTask);
 
+            depositWalletLockRepository.ResetCalls();
             cqrsEngineMock.ResetCalls();
             cashinRepositoryMock.ResetCalls();
 
@@ -239,6 +287,19 @@ namespace Lykke.Job.BlockchainCashinDetector.Tests
             await balanceProcessor.ProcessAsync(100);
 
             // Verify
+
+            depositWalletLockRepository.Verify(
+                x => x.LockAsync
+                (
+                    It.Is<DepositWalletKey>(k =>
+                        k.DepositWalletAddress == depositWallet
+                        && k.BlockchainType == blockchainType
+                        && k.BlockchainAssetId == xlmBlockchainAsset.AssetId),
+                    It.Is<decimal>(b => b == 300),
+                    It.Is<long>(d => d == 5001),
+                    It.IsAny<Func<Guid>>()
+                ),
+                Times.Once);
 
             cqrsEngineMock.Verify(
                 x => x.SendCommand

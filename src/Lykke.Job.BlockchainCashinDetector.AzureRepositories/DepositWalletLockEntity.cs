@@ -2,6 +2,7 @@
 using Common;
 using JetBrains.Annotations;
 using Lykke.AzureStorage.Tables;
+using Lykke.Job.BlockchainCashinDetector.Core.Domain;
 
 namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
 {
@@ -9,27 +10,39 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
     {
         [UsedImplicitly(ImplicitUseKindFlags.Assign)]
         public Guid OperationId { get; set; }
+        
+        [UsedImplicitly(ImplicitUseKindFlags.Assign)]
+        public decimal Balance { get; set; }
 
-        public static string GetPartitionKey(string blockchainType, string depositWalletAddress)
+        [UsedImplicitly(ImplicitUseKindFlags.Assign)]
+        public long Block { get; set; }
+
+        public static string GetPartitionKey(DepositWalletKey key)
         {
             // Adds hash to distribute all records to the different partitions
-            var hash = depositWalletAddress.CalculateHexHash32(3);
+            var hash = key.DepositWalletAddress.CalculateHexHash32(3);
 
-            return $"{blockchainType}-{hash}";
+            return $"{key.BlockchainType}-{hash}";
         }
 
-        public static string GetRowKey(string depositWalletAddress, string blockchainAssetId)
+        public static string GetRowKey(DepositWalletKey key)
         {
-            return $"{depositWalletAddress}-{blockchainAssetId}";
+            return $"{key.DepositWalletAddress}-{key.BlockchainAssetId}";
         }
 
-        public static DepositWalletLockEntity Create(string blockchainType, string depositWalletAddress, string blockchainAssetId, Guid operationId)
+        public static DepositWalletLockEntity Create(
+            DepositWalletKey key,
+            decimal balance,
+            long block,
+            Guid operationId)
         {
             return new DepositWalletLockEntity
             {
-                PartitionKey = GetPartitionKey(blockchainType, depositWalletAddress),
-                RowKey = GetRowKey(depositWalletAddress, blockchainAssetId),
-                OperationId = operationId
+                PartitionKey = GetPartitionKey(key),
+                RowKey = GetRowKey(key),
+                OperationId = operationId,
+                Balance = balance,
+                Block = block
             };
         }
     }

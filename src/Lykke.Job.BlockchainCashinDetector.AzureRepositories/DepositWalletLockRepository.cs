@@ -10,7 +10,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
 {
     public class DepositWalletLockRepository : IDepositWalletLockRepository
     {
-        private INoSQLTableStorage<DepositWalletLockEntity> _storage;
+        private readonly INoSQLTableStorage<DepositWalletLockEntity> _storage;
 
         public static IDepositWalletLockRepository Create(IReloadingManager<string> connectionString, ILog log)
         {
@@ -27,27 +27,36 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
             _storage = storage;
         }
 
-        public async Task<Guid> LockAsync(string blockchainType, string depositWalletAddress, string blockchainAssetId, Func<Guid> operationIdFactory)
+        public async Task<DepositWalletLock> LockAsync(
+            DepositWalletKey key,
+            decimal balance,
+            long block,
+            Func<Guid> operationIdFactory)
         {
-            var partitionKey = DepositWalletLockEntity.GetPartitionKey(blockchainType, depositWalletAddress);
-            var rowKey = DepositWalletLockEntity.GetRowKey(depositWalletAddress, blockchainAssetId);
+            var partitionKey = DepositWalletLockEntity.GetPartitionKey(key);
+            var rowKey = DepositWalletLockEntity.GetRowKey(key);
 
-            var entity = await _storage.GetOrInsertAsync(
+            var entity = await _storage.GetOrInsertAsync
+            (
                 partitionKey,
                 rowKey,
                 // ReSharper disable once ImplicitlyCapturedClosure
-                () =>
-                {
-                    return DepositWalletLockEntity.Create(blockchainType, depositWalletAddress, blockchainAssetId, operationIdFactory());
-                });
+                () => DepositWalletLockEntity.Create
+                (
+                    key,
+                    balance,
+                    block,
+                    operationIdFactory()
+                )
+            );
 
-            return entity.OperationId;
+            return DepositWalletLock.Create(key, entity.OperationId, entity.Balance, entity.Block);
         }
 
-        public async Task ReleaseAsync(string blockchainType, string depositWalletAddress, string blockchainAssetId, Guid operationId)
+        public async Task ReleaseAsync(DepositWalletKey key, Guid operationId)
         {
-            var partitionKey = DepositWalletLockEntity.GetPartitionKey(blockchainType, depositWalletAddress);
-            var rowKey = DepositWalletLockEntity.GetRowKey(depositWalletAddress, blockchainAssetId);
+            var partitionKey = DepositWalletLockEntity.GetPartitionKey(key);
+            var rowKey = DepositWalletLockEntity.GetRowKey(key);
 
             await _storage.DeleteIfExistAsync(partitionKey, rowKey, e => e.OperationId == operationId);
         }
