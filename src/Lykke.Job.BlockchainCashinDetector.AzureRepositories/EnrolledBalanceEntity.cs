@@ -1,5 +1,6 @@
 ﻿using Common;
 using Lykke.AzureStorage.Tables;
+using Lykke.Job.BlockchainCashinDetector.Core.Domain;
 
 namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
 {
@@ -16,14 +17,14 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
         public string DepositWalletAddress { get; set; }
 
 
-        public static string GetPartitionKey(string blockchainType, string blockchainAssetId, string depositWalletAddress)
+        public static string GetPartitionKey(DepositWalletKey key)
         {
-            return $"{blockchainType}-{blockchainAssetId}-{depositWalletAddress.CalculateHexHash32(3)}";
+            return $"{key.BlockchainType}-{key.BlockchainAssetId}-{key.DepositWalletAddress.CalculateHexHash32(3)}";
         }
 
-        public static string GetRowKey(string depositWalletAddress)
+        public static string GetRowKey(DepositWalletKey key)
         {
-            return depositWalletAddress;
+            return key.DepositWalletAddress;
         }
     }
 }

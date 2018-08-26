@@ -21,9 +21,12 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
         {
             await _enrolledBalanceRepository.ResetBalanceAsync
             (
-                command.BlockchainType,
-                command.BlockchainAssetId,
-                command.DepositWalletAddress,
+                new DepositWalletKey
+                (
+                    command.BlockchainAssetId,
+                    command.BlockchainType,
+                    command.DepositWalletAddress
+                ),
                 command.TransactionBlock
             );
 

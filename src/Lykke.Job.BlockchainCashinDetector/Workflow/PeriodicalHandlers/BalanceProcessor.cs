@@ -111,37 +111,44 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
                 return;
             }
 
-            var operationId = await _depositWalletLockRepository.LockAsync(
-                _blockchainType, 
-                depositWallet.Address, 
-                depositWallet.AssetId, 
-                CashinAggregate.GetNextId);
+            var depositWalletLock = await _depositWalletLockRepository.LockAsync
+            (
+                new DepositWalletKey
+                (
+                    depositWallet.AssetId,
+                    _blockchainType,
+                    depositWallet.Address
+                ),
+                depositWallet.Balance,
+                depositWallet.Block,
+                CashinAggregate.GetNextId
+            );
 
-            _chaosKitty.Meow(operationId);
+            _chaosKitty.Meow(depositWalletLock.OperationId);
 
             var aggregate = await _cashinRepository.GetOrAddAsync
             (
-                _blockchainType,
-                depositWallet.Address,
-                depositWallet.AssetId,
-                operationId,
+                depositWalletLock.Key.BlockchainType,
+                depositWalletLock.Key.DepositWalletAddress,
+                depositWalletLock.Key.BlockchainAssetId,
+                depositWalletLock.OperationId,
                 () => CashinAggregate.WaitForActualBalance
                 (
-                    operationId: operationId,
+                    operationId: depositWalletLock.OperationId,
                     assetId: asset.Id,
                     assetAccuracy: asset.Accuracy,
-                    blockchainAssetId: depositWallet.AssetId,
-                    blockchainType: _blockchainType,
+                    blockchainAssetId: depositWalletLock.Key.BlockchainAssetId,
+                    blockchainType: depositWalletLock.Key.BlockchainType,
                     cashinMinimalAmount: (decimal)asset.CashinMinimalAmount,
-                    depositWalletAddress: depositWallet.Address,
+                    depositWalletAddress: depositWalletLock.Key.DepositWalletAddress,
                     hotWalletAddress: _hotWalletAddress
                 )
             );
 
             var isCashinStarted = aggregate.Start
             (
-                balanceAmount: depositWallet.Balance,
-                balanceBlock: depositWallet.Block,
+                balanceAmount: depositWalletLock.Balance,
+                balanceBlock: depositWalletLock.Block,
                 enrolledBalanceAmount: enrolledBalance?.Balance ?? 0,
                 enrolledBalanceBlock: enrolledBalance?.Block ?? 0
             );
@@ -185,7 +192,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
 
             return (await _enrolledBalanceRepository.GetAsync(walletKeys))
                 .ToDictionary(
-                    x => x.DepositWalletAddress,
+                    x => x.Key.DepositWalletAddress,
                     y => y);
         }
 

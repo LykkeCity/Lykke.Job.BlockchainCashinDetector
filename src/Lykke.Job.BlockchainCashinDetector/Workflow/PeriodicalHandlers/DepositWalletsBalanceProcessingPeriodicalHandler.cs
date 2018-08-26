@@ -77,7 +77,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
 
         private async Task ProcessBalancesAsync(ITimerTrigger timer, TimerTriggeredHandlerArgs args, CancellationToken cancellationToken)
         {
-            var assets = (await _assetsService.GetAllAssetsAsync(false))
+            var assets = (await _assetsService.GetAllAssetsAsync(false, cancellationToken))
                 .Where(a => a.BlockchainIntegrationLayerId == _blockchainType)
                 .ToDictionary(
                     a => a.BlockchainIntegrationLayerAssetId,

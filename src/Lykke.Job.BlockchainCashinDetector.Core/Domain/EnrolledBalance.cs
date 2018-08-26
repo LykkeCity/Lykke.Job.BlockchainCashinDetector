@@ -1,33 +1,24 @@
-﻿using JetBrains.Annotations;
-
-namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
+﻿namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
 {
     public sealed class EnrolledBalance
     {
-        public EnrolledBalance(
+        public DepositWalletKey Key { get; }
+        public decimal Balance { get; }
+        public long Block { get; }
+
+        private EnrolledBalance(
+            DepositWalletKey key,
             decimal balance,
-            string blockchainType,
-            string blockchainAssetId,
-            string depositWalletAddress,
             long block)
         {
             Balance = balance;
-            BlockchainType = blockchainType;
-            BlockchainAssetId = blockchainAssetId;
-            DepositWalletAddress = depositWalletAddress;
+            Key = key;
             Block = block;
         }
 
-        public decimal Balance { get; }
-        
-        [UsedImplicitly(ImplicitUseKindFlags.Access)]
-        public string BlockchainType { get; }
-
-        [UsedImplicitly(ImplicitUseKindFlags.Access)]
-        public string BlockchainAssetId { get; }
-
-        public string DepositWalletAddress { get; }
-
-        public long Block { get; }
+        public static EnrolledBalance Create(DepositWalletKey key, decimal balance, long block)
+        {
+            return new EnrolledBalance(key, balance, block);
+        }
     }
 }

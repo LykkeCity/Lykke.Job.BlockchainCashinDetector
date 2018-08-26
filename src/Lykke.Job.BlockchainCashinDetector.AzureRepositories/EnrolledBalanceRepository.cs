@@ -34,32 +34,37 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
 
         public async Task<IEnumerable<EnrolledBalance>> GetAsync(IEnumerable<DepositWalletKey> keys)
         {
-            var entityKeys = keys.Select(x => new Tuple<string, string>
+            var entityKeys = keys.Select(key => new Tuple<string, string>
             (
-                EnrolledBalanceEntity.GetPartitionKey(x.BlockchainType, x.BlockchainAssetId, x.DepositWalletAddress),
-                EnrolledBalanceEntity.GetRowKey(x.DepositWalletAddress)
+                EnrolledBalanceEntity.GetPartitionKey(key),
+                EnrolledBalanceEntity.GetRowKey(key)
             ));
 
             return (await _storage.GetDataAsync(entityKeys))
-                .Select(ConvertEntityToDto);
+                .Select(e => EnrolledBalance.Create
+                (
+                    new DepositWalletKey(e.BlockchainAssetId, e.BlockchainType, e.DepositWalletAddress),
+                    e.Balance,
+                    e.Block
+                ));
         }
 
-        public async Task SetBalanceAsync(string blockchainType, string blockchainAssetId, string depositWalletAddress, decimal balance, long balanceBlock)
+        public async Task SetBalanceAsync(DepositWalletKey key, decimal balance, long balanceBlock)
         {
-            var partitionKey = EnrolledBalanceEntity.GetPartitionKey(blockchainType, blockchainAssetId, depositWalletAddress);
-            var rowKey = EnrolledBalanceEntity.GetRowKey(depositWalletAddress);
+            var partitionKey = EnrolledBalanceEntity.GetPartitionKey(key);
+            var rowKey = EnrolledBalanceEntity.GetRowKey(key);
             
             EnrolledBalanceEntity CreateEntity()
             {
                 return new EnrolledBalanceEntity
                 {
-                    Balance = balance,
-                    BlockchainType = blockchainType,
-                    BlockchainAssetId = blockchainAssetId,
-                    DepositWalletAddress = depositWalletAddress,
-
                     PartitionKey = partitionKey,
-                    RowKey = rowKey
+                    RowKey = rowKey,
+                    BlockchainType = key.BlockchainType,
+                    BlockchainAssetId = key.BlockchainAssetId,
+                    DepositWalletAddress = key.DepositWalletAddress,
+                    Balance = balance,
+                    Block = balanceBlock
                 };
             }
             
@@ -84,47 +89,36 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
             );
         }
 
-        public async Task ResetBalanceAsync(string blockchainType, string blockchainAssetId, string depositWalletAddress, long transactionBlock)
+        public async Task ResetBalanceAsync(DepositWalletKey key, long transactionBlock)
         {
             var entity = new EnrolledBalanceEntity
             {
+                PartitionKey = EnrolledBalanceEntity.GetPartitionKey(key),
+                RowKey = EnrolledBalanceEntity.GetRowKey(key),
+                BlockchainType = key.BlockchainType,
+                BlockchainAssetId = key.BlockchainAssetId,
+                DepositWalletAddress = key.DepositWalletAddress,
                 Balance = 0,
-                Block = transactionBlock,
-                BlockchainType = blockchainType,
-                BlockchainAssetId = blockchainAssetId,
-                DepositWalletAddress = depositWalletAddress,
-
-                PartitionKey = EnrolledBalanceEntity.GetPartitionKey(blockchainType, blockchainAssetId, depositWalletAddress),
-                RowKey = EnrolledBalanceEntity.GetRowKey(depositWalletAddress)
+                Block = transactionBlock
             };
 
             await _storage.InsertOrReplaceAsync
             (
                 entity,
-                x => x.Block < entity.Block
+                x => x.Block < transactionBlock
             );
         }
 
         public async Task<EnrolledBalance> TryGetAsync(DepositWalletKey key)
         {
-            var partitionKey = EnrolledBalanceEntity.GetPartitionKey(key.BlockchainType, key.BlockchainAssetId, key.DepositWalletAddress);
-            var rowKey = EnrolledBalanceEntity.GetRowKey(key.DepositWalletAddress);
+            var partitionKey = EnrolledBalanceEntity.GetPartitionKey(key);
+            var rowKey = EnrolledBalanceEntity.GetRowKey(key);
 
             var entity = await _storage.GetDataAsync(partitionKey, rowKey);
 
-            return (entity != null) ? ConvertEntityToDto(entity) : null;
-        }
-
-        private static EnrolledBalance ConvertEntityToDto(EnrolledBalanceEntity entity)
-        {
-            return new EnrolledBalance
-            (
-                balance: entity.Balance,
-                blockchainType: entity.BlockchainType,
-                blockchainAssetId: entity.BlockchainAssetId,
-                depositWalletAddress: entity.DepositWalletAddress,
-                block: entity.Block
-            );
+            return entity != null
+                ? EnrolledBalance.Create(key, entity.Balance, entity.Block)
+                : null;
         }
     }
 }
