@@ -56,7 +56,12 @@ namespace Lykke.Job.BlockchainCashinDetector
                 });
 
                 var builder = new ContainerBuilder();
-                var appSettings = Configuration.LoadSettings<AppSettings>();
+                var appSettings = Configuration.LoadSettings<AppSettings>(options =>
+                {
+                    options.SetConnString(x => x.SlackNotifications.AzureQueue.ConnectionString);
+                    options.SetQueueName(x => x.SlackNotifications.AzureQueue.QueueName);
+                    options.SenderName = "Lykke.Job.BlockchainCashinDetector";
+                });
 
                 Log = CreateLogWithSlack(services, appSettings);
 
