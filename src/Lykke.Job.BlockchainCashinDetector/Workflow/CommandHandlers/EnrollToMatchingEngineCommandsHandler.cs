@@ -111,6 +111,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
 
                 default:
                     // Just abort cashin for futher manual processing. ME call could not be retried anyway if responce was received.
+                    _log.WriteWarning(nameof(EnrollToMatchingEngineCommand), command.OperationId, $"Unexpected response from ME. Status: {cashInResult.Status}, ME message: {cashInResult.Message}");
                     return CommandHandlingResult.Ok();
             }
         }
