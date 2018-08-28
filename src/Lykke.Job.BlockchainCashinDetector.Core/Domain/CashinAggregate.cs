@@ -147,7 +147,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             return Guid.NewGuid();
         }
 
-        public static CashinAggregate WaitForActualBalance(
+        public static CashinAggregate StartWaitingForActualBalance(
             Guid operationId,
             string assetId,
             int assetAccuracy,
@@ -179,7 +179,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             return CouldBeStarted(balanceAmount, balanceBlock, enrolledBalanceAmount, enrolledBalanceBlock, assetAccuracy, out var _, out var _);
         }
 
-        public bool Start(decimal balanceAmount, long balanceBlock, decimal enrolledBalanceAmount, long enrolledBalanceBlock)
+        public CashinStartResult Start(decimal balanceAmount, long balanceBlock, decimal enrolledBalanceAmount, long enrolledBalanceBlock)
         {
             var couldBeStarted = CouldBeStarted(
                 balanceAmount, 
@@ -192,12 +192,14 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
 
             if(!couldBeStarted)
             {
-                return false;
+                Result = CashinResult.OutdatedBalance;
+
+                return CashinStartResult.OutdatedBalance;
             }
 
             if (!SwitchState(CashinState.WaitingForActualBalance, CashinState.Started))
             {
-                return false;
+                return CashinStartResult.CashinInProgress;
             }
 
             BalanceAmount = balanceAmount;
@@ -209,7 +211,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
 
             StartMoment = DateTime.UtcNow;
 
-            return true;
+            return CashinStartResult.Started;
         }
 
         public bool OnEnrolledToMatchingEngine(Guid clientId)
@@ -296,6 +298,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
         {
             var validStates = new[]
             {
+                CashinState.WaitingForActualBalance,
                 CashinState.DustEnrolledBalanceSet,
                 CashinState.EnrolledBalanceReset,
                 CashinState.OperationFailed                

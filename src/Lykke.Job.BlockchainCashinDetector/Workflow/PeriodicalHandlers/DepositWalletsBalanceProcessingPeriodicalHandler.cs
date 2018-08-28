@@ -91,9 +91,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
                 _blockchainApiClient,
                 _cqrsEngine,
                 _enrolledBalanceRepository,
-                _cashinRepository,
-                _depositWalletLockRepository,
-                _chaosKitty,
                 assets,
                 blockchainAssets);
 
