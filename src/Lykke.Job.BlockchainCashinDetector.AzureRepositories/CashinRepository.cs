@@ -74,11 +74,11 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
             return entity?.ToDomain();
         }
 
-        public async Task SaveAsync(CashinAggregate aggregate)
+        public Task SaveAsync(CashinAggregate aggregate)
         {
             var entity = CashinEntity.FromDomain(aggregate);
             
-            await _storage.ReplaceAsync(entity);
+            return _storage.ReplaceAsync(entity);
         }
     }
 }

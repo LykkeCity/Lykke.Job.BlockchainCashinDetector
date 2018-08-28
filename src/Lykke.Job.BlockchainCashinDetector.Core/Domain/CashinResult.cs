@@ -4,6 +4,7 @@
     {
         Unknown,
         Success,
-        Failure
+        Failure,
+        OutdatedBalance
     }
 }
