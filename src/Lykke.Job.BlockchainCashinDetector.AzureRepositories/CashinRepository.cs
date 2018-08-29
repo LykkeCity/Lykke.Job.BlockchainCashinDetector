@@ -4,6 +4,7 @@ using AzureStorage;
 using AzureStorage.Tables;
 using Common.Log;
 using JetBrains.Annotations;
+using Lykke.Common.Chaos;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain;
 using Lykke.SettingsReader;
 
@@ -13,20 +14,28 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
     public class CashinRepository : ICashinRepository
     {
         private readonly INoSQLTableStorage<CashinEntity> _storage;
+        private readonly IChaosKitty _chaosKitty;
 
-        public static ICashinRepository Create(IReloadingManager<string> connectionString, ILog log)
+        public static ICashinRepository Create(
+            IReloadingManager<string> connectionString, 
+            ILog log,
+            IChaosKitty chaosKitty)
         {
+            if (chaosKitty == null) throw new ArgumentNullException(nameof(chaosKitty));
             var storage = AzureTableStorage<CashinEntity>.Create(
                 connectionString,
                 "Cashin",
                 log);
 
-            return new CashinRepository(storage);
+            return new CashinRepository(storage, chaosKitty);
         }
 
-        private CashinRepository(INoSQLTableStorage<CashinEntity> storage)
+        private CashinRepository(
+            INoSQLTableStorage<CashinEntity> storage, 
+            IChaosKitty chaosKitty)
         {
             _storage = storage;
+            _chaosKitty = chaosKitty;
         }
 
         public async Task<CashinAggregate> GetOrAddAsync(
@@ -74,11 +83,13 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
             return entity?.ToDomain();
         }
 
-        public Task SaveAsync(CashinAggregate aggregate)
+        public async Task SaveAsync(CashinAggregate aggregate)
         {
             var entity = CashinEntity.FromDomain(aggregate);
             
-            return _storage.ReplaceAsync(entity);
+            await _storage.ReplaceAsync(entity);
+
+            _chaosKitty.Meow(aggregate.OperationId);
         }
     }
 }

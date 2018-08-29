@@ -1,5 +1,5 @@
-﻿using System.Threading.Tasks;
-using Common.Log;
+﻿using System;
+using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Lykke.Common.Chaos;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain;
@@ -44,7 +44,12 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
         {
             var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
 
-            if (aggregate.IsDustCashin)
+            if (!aggregate.IsDustCashin.HasValue)
+            {
+                throw new InvalidOperationException("IsDustCashin should be not null here");
+            }
+
+            if (aggregate.IsDustCashin.Value)
             {
                 await _deduplicationRepository.TryRemoveAsync(evt.OperationId);
             }
