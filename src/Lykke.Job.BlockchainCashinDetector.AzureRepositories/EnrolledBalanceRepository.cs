@@ -74,6 +74,8 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 if (balanceBlock >= entity.Block)
                 {
                     entity.Balance = balance;
+                    entity.Block = balanceBlock;
+
                     return true;
                 }
                 

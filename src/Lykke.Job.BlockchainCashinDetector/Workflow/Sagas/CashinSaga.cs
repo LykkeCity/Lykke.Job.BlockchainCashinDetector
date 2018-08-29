@@ -5,6 +5,7 @@ using Lykke.Common.Chaos;
 using Lykke.Cqrs;
 using Lykke.Job.BlockchainCashinDetector.Contract;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain;
+using Lykke.Job.BlockchainCashinDetector.StateMachine;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Commands;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Events;
 using Lykke.Job.BlockchainOperationsExecutor.Contract;
@@ -51,7 +52,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                 )
             );
 
-            var startResult = aggregate.Start
+            var transitionResult = aggregate.Start
             (
                 balanceAmount: evt.LockedAtBalance,
                 balanceBlock: evt.LockedAtBlock,
@@ -59,54 +60,53 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                 enrolledBalanceBlock: evt.EnrolledBlock
             );
 
-            switch (startResult)
+            if(transitionResult.ShouldSaveAggregate())
             {
-                case CashinStartResult.Started when !aggregate.MeAmount.HasValue:
-                    throw new InvalidOperationException("ME operation amount should be not null here");
+                await _cashinRepository.SaveAsync(aggregate);
+            }
 
-                case CashinStartResult.Started:
-                    sender.SendCommand
-                    (
-                        new EnrollToMatchingEngineCommand
-                        {
-                            AssetId = aggregate.AssetId,
-                            BlockchainAssetId = aggregate.BlockchainAssetId,
-                            BlockchainType = aggregate.BlockchainType,
-                            DepositWalletAddress = aggregate.DepositWalletAddress,
-                            OperationId = aggregate.OperationId,
-                            MatchingEngineOperationAmount = aggregate.MeAmount.Value
-                        },
-                        BlockchainCashinDetectorBoundedContext.Name
-                    );
+            if (transitionResult.ShouldSendCommands())
+            {
+                switch (aggregate.State)
+                {
+                    case CashinState.Started when !aggregate.MeAmount.HasValue:
+                        throw new InvalidOperationException("ME operation amount should be not null here");
 
-                    _chaosKitty.Meow(aggregate.OperationId);
+                    case CashinState.Started:
+                        sender.SendCommand
+                        (
+                            new EnrollToMatchingEngineCommand
+                            {
+                                AssetId = aggregate.AssetId,
+                                BlockchainAssetId = aggregate.BlockchainAssetId,
+                                BlockchainType = aggregate.BlockchainType,
+                                DepositWalletAddress = aggregate.DepositWalletAddress,
+                                OperationId = aggregate.OperationId,
+                                MatchingEngineOperationAmount = aggregate.MeAmount.Value
+                            },
+                            BlockchainCashinDetectorBoundedContext.Name
+                        );
+                        break;
 
-                    await _cashinRepository.SaveAsync(aggregate);
-                    break;
+                    case CashinState.OutdatedBalance:
+                        sender.SendCommand
+                        (
+                            new ReleaseDepositWalletLockCommand
+                            {
+                                BlockchainAssetId = aggregate.BlockchainAssetId,
+                                BlockchainType = aggregate.BlockchainType,
+                                DepositWalletAddress = aggregate.DepositWalletAddress,
+                                OperationId = aggregate.OperationId
+                            },
+                            BlockchainCashinDetectorBoundedContext.Name
+                        );
+                        break;
 
-                case CashinStartResult.OutdatedBalance:
-                    sender.SendCommand
-                    (
-                        new ReleaseDepositWalletLockCommand
-                        {
-                            BlockchainAssetId = aggregate.BlockchainAssetId,
-                            BlockchainType = aggregate.BlockchainType,
-                            DepositWalletAddress = aggregate.DepositWalletAddress,
-                            OperationId = aggregate.OperationId
-                        },
-                        BlockchainCashinDetectorBoundedContext.Name
-                    );
+                    default:
+                        throw new InvalidOperationException($"Unexpected aggregate state {aggregate.State}");
+                }
 
-                    _chaosKitty.Meow(aggregate.OperationId);
-
-                    await _cashinRepository.SaveAsync(aggregate);
-                    break;
-
-                case CashinStartResult.CashinInProgress:
-                    return;
-
-                default:
-                    throw new InvalidOperationException($"Unexpected start result {startResult}");
+                _chaosKitty.Meow(aggregate.OperationId);
             }
         }
 
@@ -115,21 +115,30 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         {
             var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
 
-            if (aggregate.OnEnrolledToMatchingEngine(clientId: evt.ClientId))
+            var transitionResult = aggregate.OnEnrolledToMatchingEngine(clientId: evt.ClientId);
+
+            if (transitionResult.ShouldSaveAggregate())
+            {
+                await _cashinRepository.SaveAsync(aggregate);
+            }
+
+            if (transitionResult.ShouldSendCommands())
             {
                 if (!aggregate.BalanceBlock.HasValue)
                 {
                     throw new InvalidOperationException("Balance block should be not null here");
                 }
+
                 if (!aggregate.EnrolledBalanceAmount.HasValue)
                 {
                     throw new InvalidOperationException("Enrolled balance amount should be not null here");
                 }
+
                 if (!aggregate.OperationAmount.HasValue)
                 {
                     throw new InvalidOperationException("Operation amount should be not null here");
                 }
-                
+
                 sender.SendCommand
                 (
                     new SetEnrolledBalanceCommand
@@ -145,9 +154,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                     Self
                 );
 
-                _chaosKitty.Meow(evt.OperationId);
-
-                await _cashinRepository.SaveAsync(aggregate);
+                _chaosKitty.Meow(aggregate.OperationId);
             }
         }
 
@@ -156,9 +163,21 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         {
             var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
 
-            if (aggregate.OnEnrolledBalanceSet())
+            var transitionResult = aggregate.OnEnrolledBalanceSet();
+
+            if (transitionResult.ShouldSaveAggregate())
             {
-                if (!aggregate.IsDustCashin)
+                await _cashinRepository.SaveAsync(aggregate);
+            }
+
+            if (transitionResult.ShouldSendCommands())
+            {
+                if (!aggregate.IsDustCashin.HasValue)
+                {
+                    throw new InvalidOperationException("IsDustCashin should be not null here");
+                }
+
+                if (!aggregate.IsDustCashin.Value)
                 {
                     if (!aggregate.BalanceAmount.HasValue)
                     {
@@ -194,9 +213,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                     );
                 }
 
-                _chaosKitty.Meow(evt.OperationId);
-
-                await _cashinRepository.SaveAsync(aggregate);
+                _chaosKitty.Meow(aggregate.OperationId);
             }
         }
 
@@ -211,7 +228,14 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                 return;
             }
 
-            if (aggregate.OnTransactionCompleted(evt.TransactionHash, evt.Block, evt.TransactionAmount, evt.Fee))
+            var transitionResult = aggregate.OnTransactionCompleted(evt.TransactionHash, evt.Block, evt.TransactionAmount, evt.Fee);
+
+            if (transitionResult.ShouldSaveAggregate())
+            {
+                await _cashinRepository.SaveAsync(aggregate);
+            }
+
+            if (transitionResult.ShouldSendCommands())
             {
                 if (!aggregate.TransactionBlock.HasValue)
                 {
@@ -233,31 +257,40 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
 
                 _chaosKitty.Meow(evt.OperationId);
 
-                if (aggregate.OperationAmount.HasValue &&
-                    aggregate.OperationAmount.Value != 0)
+                if (!aggregate.OperationAmount.HasValue)
                 {
-                    if (!aggregate.ClientId.HasValue)
-                    {
-                        throw new ArgumentException($"Operation {evt.OperationId} has no client associated with it. Fix it!");
-                    }
-
-                    sender.SendCommand
-                    (
-                        new NotifyCashinCompletedCommand
-                        {
-                            OperationAmount = aggregate.OperationAmount.Value,
-                            AssetId = aggregate.AssetId,
-                            ClientId = aggregate.ClientId.Value,
-                            OperationId = aggregate.OperationId,
-                            TransactionHash = aggregate.IsDustCashin ? @"0x" : aggregate.TransactionHash
-                        },
-                        Self
-                    );
-
-                    _chaosKitty.Meow(evt.OperationId);
+                    throw new InvalidOperationException("Operation amount should be not null here");
                 }
 
-                await _cashinRepository.SaveAsync(aggregate);
+                if (aggregate.OperationAmount.Value == 0)
+                {
+                    throw new InvalidOperationException("Operation amount should be not 0 here");
+                }
+
+                if (!aggregate.ClientId.HasValue)
+                {
+                    throw new InvalidOperationException("Client ID should be not null here");
+                }
+
+                if (!aggregate.IsDustCashin.HasValue)
+                {
+                    throw new InvalidOperationException("IsDustCashin should be not null here");
+                }
+
+                sender.SendCommand
+                (
+                    new NotifyCashinCompletedCommand
+                    {
+                        OperationAmount = aggregate.OperationAmount.Value,
+                        AssetId = aggregate.AssetId,
+                        ClientId = aggregate.ClientId.Value,
+                        OperationId = aggregate.OperationId,
+                        TransactionHash = aggregate.IsDustCashin.Value ? @"0x" : aggregate.TransactionHash
+                    },
+                    Self
+                );
+                
+                _chaosKitty.Meow(aggregate.OperationId);
             }
         }
 
@@ -266,20 +299,28 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         {
             var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
 
-            if (aggregate.OnEnrolledBalanceReset())
+            var transitionResult = aggregate.OnEnrolledBalanceReset();
+
+            if (transitionResult.ShouldSaveAggregate())
             {
-                sender.SendCommand(new ReleaseDepositWalletLockCommand
-                {
-                    OperationId = aggregate.OperationId,
-                    BlockchainType = aggregate.BlockchainType,
-                    BlockchainAssetId = aggregate.BlockchainAssetId,
-                    DepositWalletAddress = aggregate.DepositWalletAddress
-                },
-                Self);
-
-                _chaosKitty.Meow(evt.OperationId);
-
                 await _cashinRepository.SaveAsync(aggregate);
+            }
+
+            if (transitionResult.ShouldSendCommands())
+            {
+                sender.SendCommand
+                (
+                    new ReleaseDepositWalletLockCommand
+                    {
+                        OperationId = aggregate.OperationId,
+                        BlockchainType = aggregate.BlockchainType,
+                        BlockchainAssetId = aggregate.BlockchainAssetId,
+                        DepositWalletAddress = aggregate.DepositWalletAddress
+                    },
+                    Self
+                );
+
+                _chaosKitty.Meow(aggregate.OperationId);
             }
         }
 
@@ -294,20 +335,28 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                 return;
             }
 
-            if (aggregate.OnTransactionFailed(evt.Error))
+            var transitionResult = aggregate.OnTransactionFailed(evt.Error);
+
+            if (transitionResult.ShouldSaveAggregate())
             {
-                sender.SendCommand(new ReleaseDepositWalletLockCommand
-                {
-                    OperationId = aggregate.OperationId,
-                    BlockchainType = aggregate.BlockchainType,
-                    BlockchainAssetId = aggregate.BlockchainAssetId,
-                    DepositWalletAddress = aggregate.DepositWalletAddress
-                },
-                Self);
-
-                _chaosKitty.Meow(evt.OperationId);
-
                 await _cashinRepository.SaveAsync(aggregate);
+            }
+
+            if (transitionResult.ShouldSendCommands())
+            {
+                sender.SendCommand
+                (
+                    new ReleaseDepositWalletLockCommand
+                    {
+                        OperationId = aggregate.OperationId,
+                        BlockchainType = aggregate.BlockchainType,
+                        BlockchainAssetId = aggregate.BlockchainAssetId,
+                        DepositWalletAddress = aggregate.DepositWalletAddress
+                    },
+                    Self
+                );
+
+                _chaosKitty.Meow(aggregate.OperationId);
             }
         }
 
@@ -316,7 +365,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         {
             var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
 
-            if (aggregate.OnDepositWalletLockReleased())
+            var transitionResult = aggregate.OnDepositWalletLockReleased();
+
+            if (transitionResult.ShouldSaveAggregate())
             {
                 await _cashinRepository.SaveAsync(aggregate);
             }
