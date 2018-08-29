@@ -13,23 +13,6 @@ using Lykke.Job.BlockchainOperationsExecutor.Contract.Events;
 
 namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
 {
-    /// <summary>
-    /// -> DepositWalletsBalanceProcessingPeriodicalHandler : EnrollToMatchingEngineCommand
-    ///     -> CashinEnrolledToMatchingEngineEvent
-    /// -> SetEnrolledBalanceCommand
-    ///     -> EnrolledBalanceSetEvent
-    /// ||                                                  || if(IsDustCashin)
-    /// ||                                                  ||  -> ReleaseDepositWalletLockCommand
-    /// ||                                                  ||      -> DepositWalletLockReleasedEvent
-    /// ||                                                  ||  -> x
-    /// -> StartOperationExecutionCommand
-    ///     -> OperationExecutionCompletedEvent             ||      -> OperationExecutionFailedEvent
-    /// -> ResetEnrolledBalanceCommand                      ||  -> ReleaseDepositWalletLockCommand
-    ///     -> EnrolledBalanceResetEvent                    ||      -> DepositWalletLockReleasedEvent
-    /// -> ReleaseDepositWalletLockCommand                  ||  -> x
-    ///     -> DepositWalletLockReleasedEvent
-    /// -> x
-    /// </summary>
     [UsedImplicitly]
     public class CashinSaga
     {
@@ -44,6 +27,87 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         {
             _chaosKitty = chaosKitty;
             _cashinRepository = cashinRepository;
+        }
+
+        [UsedImplicitly]
+        private async Task Handle(DepositWalletLockedEvent evt, ICommandSender sender)
+        {
+           var aggregate = await _cashinRepository.GetOrAddAsync
+            (
+                evt.BlockchainType,
+                evt.DepositWalletAddress,
+                evt.BlockchainAssetId,
+                evt.OperationId,
+                () => CashinAggregate.StartWaitingForActualBalance
+                (
+                    operationId: evt.OperationId,
+                    assetId: evt.AssetId,
+                    assetAccuracy: evt.AssetAccuracy,
+                    blockchainAssetId: evt.BlockchainAssetId,
+                    blockchainType: evt.BlockchainType,
+                    cashinMinimalAmount: evt.CashinMinimalAmount,
+                    depositWalletAddress: evt.DepositWalletAddress,
+                    hotWalletAddress: evt.HotWalletAddress
+                )
+            );
+
+            var startResult = aggregate.Start
+            (
+                balanceAmount: evt.LockedAtBalance,
+                balanceBlock: evt.LockedAtBlock,
+                enrolledBalanceAmount: evt.EnrolledBalance,
+                enrolledBalanceBlock: evt.EnrolledBlock
+            );
+
+            switch (startResult)
+            {
+                case CashinStartResult.Started when !aggregate.MeAmount.HasValue:
+                    throw new InvalidOperationException("ME operation amount should be not null here");
+
+                case CashinStartResult.Started:
+                    sender.SendCommand
+                    (
+                        new EnrollToMatchingEngineCommand
+                        {
+                            AssetId = aggregate.AssetId,
+                            BlockchainAssetId = aggregate.BlockchainAssetId,
+                            BlockchainType = aggregate.BlockchainType,
+                            DepositWalletAddress = aggregate.DepositWalletAddress,
+                            OperationId = aggregate.OperationId,
+                            MatchingEngineOperationAmount = aggregate.MeAmount.Value
+                        },
+                        BlockchainCashinDetectorBoundedContext.Name
+                    );
+
+                    _chaosKitty.Meow(aggregate.OperationId);
+
+                    await _cashinRepository.SaveAsync(aggregate);
+                    break;
+
+                case CashinStartResult.OutdatedBalance:
+                    sender.SendCommand
+                    (
+                        new ReleaseDepositWalletLockCommand
+                        {
+                            BlockchainAssetId = aggregate.BlockchainAssetId,
+                            BlockchainType = aggregate.BlockchainType,
+                            DepositWalletAddress = aggregate.DepositWalletAddress,
+                            OperationId = aggregate.OperationId
+                        },
+                        BlockchainCashinDetectorBoundedContext.Name
+                    );
+
+                    _chaosKitty.Meow(aggregate.OperationId);
+
+                    await _cashinRepository.SaveAsync(aggregate);
+                    break;
+
+                case CashinStartResult.CashinInProgress:
+                    return;
+
+                default:
+                    throw new InvalidOperationException($"Unexpected start result {startResult}");
+            }
         }
 
         [UsedImplicitly]

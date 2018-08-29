@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Common.Log;
-using Lykke.Common.Chaos;
 using Lykke.Cqrs;
 using Lykke.Job.BlockchainCashinDetector.Contract;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain;
@@ -23,9 +22,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
         private readonly IBlockchainApiClient _blockchainApiClient;
         private readonly ICqrsEngine _cqrsEngine;
         private readonly IEnrolledBalanceRepository _enrolledBalanceRepository;
-        private readonly ICashinRepository _cashinRepository;
-        private readonly IDepositWalletLockRepository _depositWalletLockRepository;
-        private readonly IChaosKitty _chaosKitty;
         private readonly IReadOnlyDictionary<string, Asset> _assets;
         private readonly HashSet<string> _warningAssets;
 
@@ -38,9 +34,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
             IBlockchainApiClient blockchainApiClient,
             ICqrsEngine cqrsEngine,
             IEnrolledBalanceRepository enrolledBalanceRepository,
-            ICashinRepository cashinRepository,
-            IDepositWalletLockRepository depositWalletLockRepository,
-            IChaosKitty chaosKitty,
             IReadOnlyDictionary<string, Asset> assets,
             IReadOnlyDictionary<string, BlockchainAsset> blockchainAssets)
         {
@@ -50,9 +43,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
             _blockchainApiClient = blockchainApiClient;
             _cqrsEngine = cqrsEngine;
             _enrolledBalanceRepository = enrolledBalanceRepository;
-            _cashinRepository = cashinRepository;
-            _depositWalletLockRepository = depositWalletLockRepository;
-            _chaosKitty = chaosKitty;
             _assets = assets;
             _blockchainAssets = blockchainAssets;
 
@@ -77,11 +67,11 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
 
             foreach (var balance in batch)
             {
-                await ProcessBalanceAsync(balance, enrolledBalances);
+                ProcessBalance(balance, enrolledBalances);
             }
         }
 
-        private async Task ProcessBalanceAsync(
+        private void ProcessBalance(
             WalletBalance depositWallet,
             IReadOnlyDictionary<string, EnrolledBalance> enrolledBalances)
         {
@@ -89,7 +79,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
             {
                 if (!_warningAssets.Contains(depositWallet.AssetId))
                 {
-                    _log.WriteWarning(nameof(ProcessBalanceAsync), depositWallet, "Lykke asset for the blockchain asset is not found");
+                    _log.WriteWarning(nameof(ProcessBalance), depositWallet,
+                        "Lykke asset for the blockchain asset is not found");
 
                     _warningAssets.Add(depositWallet.AssetId);
                 }
@@ -111,74 +102,23 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
                 return;
             }
 
-            var depositWalletLock = await _depositWalletLockRepository.LockAsync
+            _cqrsEngine.SendCommand
             (
-                new DepositWalletKey
-                (
-                    depositWallet.AssetId,
-                    _blockchainType,
-                    depositWallet.Address
-                ),
-                depositWallet.Balance,
-                depositWallet.Block,
-                CashinAggregate.GetNextId
-            );
-
-            _chaosKitty.Meow(depositWalletLock.OperationId);
-
-            var aggregate = await _cashinRepository.GetOrAddAsync
-            (
-                depositWalletLock.Key.BlockchainType,
-                depositWalletLock.Key.DepositWalletAddress,
-                depositWalletLock.Key.BlockchainAssetId,
-                depositWalletLock.OperationId,
-                () => CashinAggregate.WaitForActualBalance
-                (
-                    operationId: depositWalletLock.OperationId,
-                    assetId: asset.Id,
-                    assetAccuracy: asset.Accuracy,
-                    blockchainAssetId: depositWalletLock.Key.BlockchainAssetId,
-                    blockchainType: depositWalletLock.Key.BlockchainType,
-                    cashinMinimalAmount: (decimal)asset.CashinMinimalAmount,
-                    depositWalletAddress: depositWalletLock.Key.DepositWalletAddress,
-                    hotWalletAddress: _hotWalletAddress
-                )
-            );
-
-            var isCashinStarted = aggregate.Start
-            (
-                balanceAmount: depositWalletLock.Balance,
-                balanceBlock: depositWalletLock.Block,
-                enrolledBalanceAmount: enrolledBalance?.Balance ?? 0,
-                enrolledBalanceBlock: enrolledBalance?.Block ?? 0
-            );
-
-            if (isCashinStarted)
-            {
-                if (!aggregate.MeAmount.HasValue)
+                new LockDepositWalletCommand
                 {
-                    throw new InvalidOperationException("ME operation amount should be not null here");
-                }
-
-                _cqrsEngine.SendCommand
-                (
-                    new EnrollToMatchingEngineCommand
-                    {
-                        AssetId = aggregate.AssetId,
-                        BlockchainAssetId = aggregate.BlockchainAssetId,
-                        BlockchainType = aggregate.BlockchainType,
-                        DepositWalletAddress = aggregate.DepositWalletAddress,
-                        OperationId = aggregate.OperationId,
-                        MatchingEngineOperationAmount = aggregate.MeAmount.Value
-                    },
-                    BlockchainCashinDetectorBoundedContext.Name,
-                    BlockchainCashinDetectorBoundedContext.Name
-                );
-
-                _chaosKitty.Meow(aggregate.OperationId);
-
-                await _cashinRepository.SaveAsync(aggregate);
-            }
+                    BlockchainType = _blockchainType,
+                    BlockchainAssetId = depositWallet.AssetId,
+                    DepositWalletAddress = depositWallet.Address,
+                    DepositWalletBalance = depositWallet.Balance,
+                    DepositWalletBlock = depositWallet.Block,
+                    AssetId = asset.Id,
+                    AssetAccuracy = asset.Accuracy,
+                    CashinMinimalAmount = (decimal)asset.CashinMinimalAmount,
+                    HotWalletAddress = _hotWalletAddress
+                },
+                BlockchainCashinDetectorBoundedContext.Name,
+                BlockchainCashinDetectorBoundedContext.Name
+            );
         }
 
         private async Task<IReadOnlyDictionary<string, EnrolledBalance>> GetEnrolledBalancesAsync(IEnumerable<WalletBalance> balances)

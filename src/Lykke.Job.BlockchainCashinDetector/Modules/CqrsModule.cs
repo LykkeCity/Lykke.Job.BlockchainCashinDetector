@@ -63,6 +63,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
             builder.RegisterType<CashinSaga>();
 
             // Command handlers
+            builder.RegisterType<LockDepositWalletCommandsHandler>();
             builder.RegisterType<EnrollToMatchingEngineCommandsHandler>();
             builder.RegisterType<SetEnrolledBalanceCommandHandler>();
             builder.RegisterType<ResetEnrolledBalanceCommandHandler>();
@@ -101,9 +102,15 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                 Register.BoundedContext(Self)
                     .FailedCommandRetryDelay(defaultRetryDelay)
 
-                    .ListeningCommands(typeof(EnrollToMatchingEngineCommand))
+                    .ListeningCommands(typeof(LockDepositWalletCommand))
                     .On(defaultRoute)
                     .WithLoopback()
+                    .WithCommandsHandler<LockDepositWalletCommandsHandler>()
+                    .PublishingEvents(typeof(DepositWalletLockedEvent))
+                    .With(defaultPipeline)
+
+                    .ListeningCommands(typeof(EnrollToMatchingEngineCommand))
+                    .On(defaultRoute)
                     .WithCommandsHandler<EnrollToMatchingEngineCommandsHandler>()
                     .PublishingEvents(typeof(CashinEnrolledToMatchingEngineEvent))
                     .With(defaultPipeline)
@@ -173,6 +180,15 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .ProcessingOptions(defaultRoute).MultiThreaded(8).QueueCapacity(1024),
 
                 Register.Saga<CashinSaga>($"{Self}.saga")
+                    .ListeningEvents(typeof(DepositWalletLockedEvent))
+                    .From(Self)
+                    .On(defaultRoute)
+                    .PublishingCommands(
+                        typeof(EnrollToMatchingEngineCommand),
+                        typeof(ReleaseDepositWalletLockCommand))
+                    .To(Self)
+                    .With(defaultPipeline)
+
                     .ListeningEvents(typeof(CashinEnrolledToMatchingEngineEvent))
                     .From(Self)
                     .On(defaultRoute)
