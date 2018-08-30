@@ -97,7 +97,12 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
         {
             var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
 
-            if (aggregate.IsDustCashin)
+            if (!aggregate.IsDustCashin.HasValue)
+            {
+                throw new InvalidOperationException("IsDustCashin should be not null here");
+            }
+
+            if (aggregate.IsDustCashin.Value)
             {
                 var clientId = await GetClientIdAsync(aggregate);
                     

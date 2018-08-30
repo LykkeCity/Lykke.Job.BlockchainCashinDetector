@@ -14,6 +14,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
         
         public DateTime CreationMoment { get; }
         public DateTime? StartMoment { get; private set; }
+        public DateTime? BalanceOutdatingMoment { get; private set; }
         public DateTime? MatchingEngineEnrollementMoment { get; private set; }
         public DateTime? EnrolledBalanceSetMoment { get; private set; }
         public DateTime? EnrolledBalanceResetMoment { get; private set; }
@@ -41,8 +42,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
         public decimal? OperationAmount { get; private set; }
         public double? MeAmount { get; private set; }
         public decimal? TransactionAmount { get; private set; }
-
-        public bool IsDustCashin => BalanceAmount <= CashinMinimalAmount;
+        public bool? IsDustCashin { get; private set; }
                
         private CashinAggregate(
             Guid operationId,
@@ -98,10 +98,12 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             Guid operationId,
             CashinResult result,
             DateTime? startMoment,
+            DateTime? balanceOutdatingMoment,
             decimal? transactionAmount,
             long? transactionBlock,
             string transactionHash,
             CashinState state,
+            bool? isDustCashin,
             string version)
         {
             return new CashinAggregate
@@ -121,12 +123,13 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             )
             {
                 StartMoment = startMoment,
+                BalanceOutdatingMoment = balanceOutdatingMoment,
                 MatchingEngineEnrollementMoment = matchingEngineEnrollementMoment,
                 EnrolledBalanceSetMoment = enrolledBalanceSetMoment,
                 EnrolledBalanceResetMoment = enrolledBalanceResetMoment,
                 OperationFinishMoment = operationFinishMoment,
                 DepositWalletLockReleasedMoment = depositWalletLockReleasedMoment,
-                
+
                 ClientId = clientId,
                 TransactionHash = transactionHash,
                 TransactionBlock = transactionBlock,
@@ -138,7 +141,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
                 EnrolledBalanceBlock = enrolledBalanceBlock,
                 OperationAmount = operationAmount,
                 MeAmount = meAmount,
-                TransactionAmount = transactionAmount                
+                TransactionAmount = transactionAmount,
+                IsDustCashin = isDustCashin
             };
         }
 
@@ -179,7 +183,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             return CouldBeStarted(balanceAmount, balanceBlock, enrolledBalanceAmount, enrolledBalanceBlock, assetAccuracy, out var _, out var _);
         }
 
-        public CashinStartResult Start(decimal balanceAmount, long balanceBlock, decimal enrolledBalanceAmount, long enrolledBalanceBlock)
+        public TransitionResult Start(decimal balanceAmount, long balanceBlock, decimal enrolledBalanceAmount, long enrolledBalanceBlock)
         {
             var couldBeStarted = CouldBeStarted(
                 balanceAmount, 
@@ -190,49 +194,68 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
                 out var operationAmount,
                 out var matchingEngineOperationAmount);
 
-            if(!couldBeStarted)
-            {
-                Result = CashinResult.OutdatedBalance;
+            var nextState = couldBeStarted
+                ? CashinState.Started
+                : CashinState.OutdatedBalance;
 
-                return CashinStartResult.OutdatedBalance;
+            switch (SwitchState(CashinState.WaitingForActualBalance, nextState))
+            {
+                case TransitionResult.AlreadyInFutureState:
+                    return TransitionResult.AlreadyInFutureState;
+
+                case TransitionResult.AlreadyInTargetState:
+                    return TransitionResult.AlreadyInTargetState;
             }
 
-            if (!SwitchState(CashinState.WaitingForActualBalance, CashinState.Started))
+            if(couldBeStarted)
             {
-                return CashinStartResult.CashinInProgress;
+                BalanceAmount = balanceAmount;
+                BalanceBlock = balanceBlock;
+                EnrolledBalanceAmount = enrolledBalanceAmount;
+                EnrolledBalanceBlock = enrolledBalanceBlock;
+                OperationAmount = operationAmount;
+                MeAmount = matchingEngineOperationAmount;
+                IsDustCashin = balanceAmount <= CashinMinimalAmount;
+
+                StartMoment = DateTime.UtcNow;
+
+                return TransitionResult.Switched;
             }
 
-            BalanceAmount = balanceAmount;
-            BalanceBlock = balanceBlock;
-            EnrolledBalanceAmount = enrolledBalanceAmount;
-            EnrolledBalanceBlock = enrolledBalanceBlock;
-            OperationAmount = operationAmount;
-            MeAmount = matchingEngineOperationAmount;
+            Result = CashinResult.OutdatedBalance;
 
-            StartMoment = DateTime.UtcNow;
+            BalanceOutdatingMoment = DateTime.UtcNow;
 
-            return CashinStartResult.Started;
+            return TransitionResult.Switched;
         }
 
-        public bool OnEnrolledToMatchingEngine(Guid clientId)
+        public TransitionResult OnEnrolledToMatchingEngine(Guid clientId)
         {
-            if (!SwitchState(CashinState.Started, CashinState.EnrolledToMatchingEngine))
+            switch (SwitchState(CashinState.Started, CashinState.EnrolledToMatchingEngine))
             {
-                return false;
+                case TransitionResult.AlreadyInFutureState:
+                    return TransitionResult.AlreadyInFutureState;
+
+                case TransitionResult.AlreadyInTargetState:
+                    return TransitionResult.AlreadyInTargetState;
             }
 
             ClientId = clientId;
 
             MatchingEngineEnrollementMoment = DateTime.UtcNow;
             
-            return true;
+            return TransitionResult.Switched;
         }
 
-        public bool OnTransactionCompleted(string transactionHash, long transactionBlock, decimal transactionAmount, decimal fee)
+        public TransitionResult OnTransactionCompleted(string transactionHash, long transactionBlock, decimal transactionAmount, decimal fee)
         {
-            if (!SwitchState(CashinState.EnrolledBalanceSet, CashinState.OperationCompleted))
+            switch (SwitchState(CashinState.EnrolledBalanceSet, CashinState.OperationCompleted))
             {
-                return false;
+                case TransitionResult.AlreadyInFutureState:
+                    return TransitionResult.AlreadyInFutureState;
+
+                case TransitionResult.AlreadyInTargetState:
+                    return TransitionResult.AlreadyInTargetState;
             }
 
             OperationFinishMoment = DateTime.UtcNow;
@@ -244,88 +267,110 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             
             MarkOperationAsFinished(true);
 
-            return true;
+            return TransitionResult.Switched;
         }
 
-        public bool OnEnrolledBalanceReset()
+        public TransitionResult OnEnrolledBalanceReset()
         {
-            if (!SwitchState(CashinState.OperationCompleted, CashinState.EnrolledBalanceReset))
+            switch (SwitchState(CashinState.OperationCompleted, CashinState.EnrolledBalanceReset))
             {
-                return false;
+                case TransitionResult.AlreadyInFutureState:
+                    return TransitionResult.AlreadyInFutureState;
+
+                case TransitionResult.AlreadyInTargetState:
+                    return TransitionResult.AlreadyInTargetState;
             }
 
             EnrolledBalanceResetMoment = DateTime.UtcNow;
 
-            return true;
+            return TransitionResult.Switched;
         }
 
-        public bool OnTransactionFailed(string error)
+        public TransitionResult OnTransactionFailed(string error)
         {
-            if (!SwitchState(CashinState.EnrolledBalanceSet, CashinState.OperationFailed))
+            switch (SwitchState(CashinState.EnrolledBalanceSet, CashinState.OperationFailed))
             {
-                return false;
+                case TransitionResult.AlreadyInFutureState:
+                    return TransitionResult.AlreadyInFutureState;
+
+                case TransitionResult.AlreadyInTargetState:
+                    return TransitionResult.AlreadyInTargetState;
             }
 
             Error = error;
 
             MarkOperationAsFinished(false);
 
-            return true;
+            return TransitionResult.Switched;
         }
 
-        public bool OnEnrolledBalanceSet()
+        public TransitionResult OnEnrolledBalanceSet()
         {
-            var nextState = IsDustCashin 
+            if (!IsDustCashin.HasValue)
+            {
+                throw new InvalidOperationException("IsDustCashin should be not null here");
+            }
+
+            var nextState = IsDustCashin.Value
                 ? CashinState.DustEnrolledBalanceSet
                 : CashinState.EnrolledBalanceSet;
 
-            if (!SwitchState(CashinState.EnrolledToMatchingEngine, nextState))
+            switch (SwitchState(CashinState.EnrolledToMatchingEngine, nextState))
             {
-                return false;
+                case TransitionResult.AlreadyInFutureState:
+                    return TransitionResult.AlreadyInFutureState;
+
+                case TransitionResult.AlreadyInTargetState:
+                    return TransitionResult.AlreadyInTargetState;
             }
             
             EnrolledBalanceSetMoment = DateTime.UtcNow;
 
-            if (IsDustCashin)
+            // ReSharper disable once PossibleInvalidOperationException
+            if (IsDustCashin.Value)
             {
                 MarkOperationAsFinished(true);
             }
 
-            return true;
+            return TransitionResult.Switched;
         }
         
-        public bool OnDepositWalletLockReleased()
+        public TransitionResult OnDepositWalletLockReleased()
         {
             var validStates = new[]
             {
-                CashinState.WaitingForActualBalance,
+                CashinState.OutdatedBalance,
                 CashinState.DustEnrolledBalanceSet,
                 CashinState.EnrolledBalanceReset,
                 CashinState.OperationFailed                
             };
 
-            if (!SwitchState(validStates, CashinState.DepositWalletLockIsReleased))
+            switch (SwitchState(validStates, CashinState.DepositWalletLockIsReleased))
             {
-                return false;
+                case TransitionResult.AlreadyInFutureState:
+                    return TransitionResult.AlreadyInFutureState;
+
+                case TransitionResult.AlreadyInTargetState:
+                    return TransitionResult.AlreadyInTargetState;
             }
             
             DepositWalletLockReleasedMoment = DateTime.UtcNow;
 
-            return true;
+            return TransitionResult.Switched;
         }
 
-        private bool SwitchState(CashinState expectedState, CashinState nextState)
+        private TransitionResult SwitchState(CashinState expectedState, CashinState nextState)
         {
             return SwitchState(new[] {expectedState}, nextState);
         }
 
-        private bool SwitchState(IList<CashinState> expectedStates, CashinState nextState)
+        private TransitionResult SwitchState(IList<CashinState> expectedStates, CashinState nextState)
         {
             if (expectedStates.Contains(State))
             {
                 State = nextState;
 
-                return true;
+                return TransitionResult.Switched;
             }
 
             if (State < expectedStates.Max())
@@ -337,7 +382,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             if (State > expectedStates.Min())
             {
                 // Aggregate already in the next state, so this event can be just ignored
-                return false;
+                return State == nextState
+                    ? TransitionResult.AlreadyInTargetState
+                    : TransitionResult.AlreadyInFutureState;
             }
 
             throw new InvalidOperationException("This shouldn't be happened");

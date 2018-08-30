@@ -16,6 +16,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
         
         public DateTime CreationMoment { get; set; }
         public DateTime? StartMoment { get; set; }
+        public DateTime? BalanceOutdatingMoment { get; set; }
         public DateTime? MatchingEngineEnrollementMoment { get; set; }
         public DateTime? EnrolledBalanceSetMoment { get; set; }
         public DateTime? EnrolledBalanceResetMoment { get; set; }
@@ -43,6 +44,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
         public decimal? OperationAmount { get; set; }
         public double? MeAmount { get;set; }
         public decimal? TransactionAmount { get; set; }
+        public bool? IsDustCashin { get; set; }
 
         // ReSharper restore MemberCanBePrivate.Global
 
@@ -98,10 +100,12 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 OperationId = aggregate.OperationId,
                 Result = aggregate.Result,
                 StartMoment = aggregate.StartMoment,
+                BalanceOutdatingMoment = aggregate.BalanceOutdatingMoment,
                 State = aggregate.State,
                 TransactionAmount = aggregate.TransactionAmount,
                 TransactionBlock = aggregate.TransactionBlock,
                 TransactionHash = aggregate.TransactionHash,
+                IsDustCashin = aggregate.IsDustCashin,
                 
                 ETag = string.IsNullOrEmpty(aggregate.Version) ? "*" : aggregate.Version,
                 PartitionKey = GetPartitionKey(aggregate.OperationId),
@@ -138,10 +142,12 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 operationId: OperationId,
                 result: Result,
                 startMoment: StartMoment,
+                balanceOutdatingMoment: BalanceOutdatingMoment,
                 transactionAmount: TransactionAmount,
                 transactionBlock: TransactionBlock,
                 transactionHash: TransactionHash,
                 state: State,
+                isDustCashin: IsDustCashin,
                 version: ETag
             );
         }

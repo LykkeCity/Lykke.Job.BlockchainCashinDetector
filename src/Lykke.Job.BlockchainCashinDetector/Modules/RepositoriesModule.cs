@@ -33,7 +33,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
 
             builder.Register(c => CashinRepository.Create(
                     _dbSettings.Nested(x => x.DataConnString),
-                    _log))
+                    _log,
+                    c.Resolve<IChaosKitty>()))
                 .As<ICashinRepository>()
                 .SingleInstance();
 
