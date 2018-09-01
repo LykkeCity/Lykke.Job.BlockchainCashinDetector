@@ -69,6 +69,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
             builder.RegisterType<ResetEnrolledBalanceCommandHandler>();
             builder.RegisterType<NotifyCashinCompletedCommandsHandler>();
             builder.RegisterType<ReleaseDepositWalletLockCommandHandler>();
+            builder.RegisterType<NotifyCashinFailedCommandsHandler>();
 
             // Projections
             builder.RegisterType<ClientOperationsProjection>();
@@ -138,6 +139,13 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .WithCommandsHandler<NotifyCashinCompletedCommandsHandler>()
                     .PublishingEvents(typeof(CashinCompletedEvent))
                     .With(eventsRoute)
+
+                    .ListeningCommands(typeof(NotifyCashinFailedCommand))
+                    .On(defaultRoute)
+                    .WithCommandsHandler<NotifyCashinFailedCommandsHandler>()
+                    .PublishingEvents(typeof(CashinFailedEvent))
+                    .With(eventsRoute)
+
 
                     .ListeningEvents(typeof(EnrolledBalanceSetEvent))
                     .From(Self)
@@ -221,6 +229,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .ListeningEvents(typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent))
                     .From(BlockchainOperationsExecutorBoundedContext.Name)
                     .On(defaultRoute)
+                    .PublishingCommands(typeof(NotifyCashinFailedCommand))
+                    .To(Self)
+                    .With(defaultPipeline)
 
                     .ListeningEvents(typeof(DepositWalletLockReleasedEvent))
                     .From(Self)
