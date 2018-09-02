@@ -5,6 +5,7 @@
         Unknown,
         Success,
         Failure,
-        OutdatedBalance
+        OutdatedBalance,
+        AmountTooSmall
     }
 }
