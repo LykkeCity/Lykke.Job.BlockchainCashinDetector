@@ -358,29 +358,15 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                 );
 
 
-                if (!aggregate.OperationAmount.HasValue)
-                {
-                    throw new InvalidOperationException("Operation amount should be not null here");
-                }
+                aggregate.OnTransactionExecutionFailedMap(evt.ErrorCode.MapToChashinResult(), evt.Error);
 
-                if (aggregate.OperationAmount.Value == 0)
-                {
-                    throw new InvalidOperationException("Operation amount should be not 0 here");
-                }
-
-                if (!aggregate.ClientId.HasValue)
-                {
-                    throw new InvalidOperationException("Client ID should be not null here");
-                }
-
-         
                 sender.SendCommand
                 (
                     new NotifyCashinFailedCommand
                     {
                         OperationId = aggregate.OperationId,
-                        Amount = aggregate.OperationAmount.Value,
-                        ClientId= aggregate.ClientId.Value,
+                        Amount = aggregate.OperationAmount,
+                        ClientId = aggregate.ClientId,
                         AssetId = aggregate.AssetId,
                         Error = aggregate.Error,
                         ErrorCode = aggregate.Result.MapToChashinErrorCode()
