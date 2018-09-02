@@ -338,6 +338,23 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
 
             var transitionResult = aggregate.OnTransactionFailed(evt.Error);
 
+
+            aggregate.OnTransactionFailedCodeMapp(evt.ErrorCode.MapToChashinResult());
+
+            sender.SendCommand
+            (
+                new NotifyCashinFailedCommand
+                {
+                    OperationId = aggregate.OperationId,
+                    Amount = aggregate.OperationAmount,
+                    ClientId = aggregate.ClientId,
+                    AssetId = aggregate.AssetId,
+                    Error = aggregate.Error,
+                    ErrorCode = aggregate.Result.MapToChashinErrorCode()
+                },
+                Self
+            );
+
             if (transitionResult.ShouldSaveAggregate())
             {
                 await _cashinRepository.SaveAsync(aggregate);   
@@ -358,21 +375,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                 );
 
 
-                aggregate.OnTransactionExecutionFailedMap(evt.ErrorCode.MapToChashinResult(), evt.Error);
-
-                sender.SendCommand
-                (
-                    new NotifyCashinFailedCommand
-                    {
-                        OperationId = aggregate.OperationId,
-                        Amount = aggregate.OperationAmount,
-                        ClientId = aggregate.ClientId,
-                        AssetId = aggregate.AssetId,
-                        Error = aggregate.Error,
-                        ErrorCode = aggregate.Result.MapToChashinErrorCode()
-                    },
-                    Self
-                );
 
                 _chaosKitty.Meow(aggregate.OperationId);
             }
