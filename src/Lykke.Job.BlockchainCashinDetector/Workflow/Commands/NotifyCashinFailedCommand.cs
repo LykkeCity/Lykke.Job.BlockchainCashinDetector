@@ -9,8 +9,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Commands
     [MessagePackObject(keyAsPropertyName: true)]
     public class NotifyCashinFailedCommand
     {
-        public Guid ClientId { get; set; }
-        public decimal Amount { get; set; }
+        public Guid? ClientId { get; set; }
+        public decimal? Amount { get; set; }
         public string AssetId { get; set; }
         public Guid OperationId { get; set; }
         public string Error { get; set; }

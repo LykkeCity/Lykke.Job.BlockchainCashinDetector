@@ -304,6 +304,12 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             return TransitionResult.Switched;
         }
 
+        public void OnTransactionExecutionFailedMap(CashinResult errorCode, string error)
+        {
+            Result = errorCode;
+            Error = error;
+        }
+
         public TransitionResult OnEnrolledBalanceSet()
         {
             if (!IsDustCashin.HasValue)
