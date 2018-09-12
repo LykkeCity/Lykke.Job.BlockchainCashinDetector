@@ -156,11 +156,12 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
             return asset.Accuracy;
         }
 
+        // If any changes needed, both overloads must be altered simultaneously:
         private string GetEnrolledBalancesDictionaryKey(DepositWalletKey walletKey)
         {
             return $"{walletKey.DepositWalletAddress}:{walletKey.BlockchainAssetId}";
         }
-
+        // If any changes needed, both overloads must be altered simultaneously:
         private string GetEnrolledBalancesDictionaryKey(WalletBalance balance)
         {
             return $"{balance.Address}:{balance.AssetId}";
