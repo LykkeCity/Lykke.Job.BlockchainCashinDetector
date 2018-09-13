@@ -4,6 +4,7 @@ using JetBrains.Annotations;
 using Lykke.Common.Chaos;
 using Lykke.Cqrs;
 using Lykke.Job.BlockchainCashinDetector.Contract;
+using Lykke.Job.BlockchainCashinDetector.Contract.Events;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain;
 using Lykke.Job.BlockchainCashinDetector.StateMachine;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Commands;
@@ -139,6 +140,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                     throw new InvalidOperationException("Operation amount should be not null here");
                 }
 
+                // Sending the main command.
                 sender.SendCommand
                 (
                     new SetEnrolledBalanceCommand
@@ -153,6 +155,26 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                     },
                     Self
                 );
+
+                // Sending the "off-blockchain operation" event, if needed.
+                if (aggregate.IsDustCashin.HasValue && aggregate.IsDustCashin.Value)
+                {
+                    sender.SendCommand
+                    (
+                        new NotifyCashinCompletedCommand
+                        {
+                            OperationAmount = 0,
+                            MeOperationAmount = aggregate.MeAmount ?? 0,
+                            Fee = 0M,
+                            AssetId = aggregate.AssetId,
+                            ClientId = aggregate.ClientId.Value,
+                            OperationType = CashinOperationType.OffBlockchain,
+                            OperationId = aggregate.OperationId,
+                            TransactionHash = "0x"
+                        },
+                        Self
+                    );
+                }
 
                 _chaosKitty.Meow(aggregate.OperationId);
             }
@@ -277,15 +299,32 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                     throw new InvalidOperationException("IsDustCashin should be not null here");
                 }
 
+                // Prepare data depending on operation type: on-blockchain or off-blockchain.
+                var amount = 0M;
+                var fee = 0M;
+                var operationType = CashinOperationType.OffBlockchain;
+                var transactionHash = "0x";
+
+                if (!aggregate.IsDustCashin.Value)
+                {
+                    amount = aggregate.OperationAmount ?? 0M;
+                    fee = aggregate.Fee ?? 0M;
+                    operationType = CashinOperationType.OnBlockchain;
+                    transactionHash = aggregate.TransactionHash;
+                }
+
                 sender.SendCommand
                 (
                     new NotifyCashinCompletedCommand
                     {
-                        OperationAmount = aggregate.OperationAmount.Value,
+                        OperationAmount = amount,
+                        MeOperationAmount = 0,
+                        Fee = fee,
                         AssetId = aggregate.AssetId,
                         ClientId = aggregate.ClientId.Value,
+                        OperationType = operationType,
                         OperationId = aggregate.OperationId,
-                        TransactionHash = aggregate.IsDustCashin.Value ? @"0x" : aggregate.TransactionHash
+                        TransactionHash = transactionHash
                     },
                     Self
                 );
