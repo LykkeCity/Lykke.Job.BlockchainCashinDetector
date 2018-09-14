@@ -127,8 +127,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Projections
 
             var clientId = await _walletsClient.TryGetClientIdAsync
             (
-                aggregate.BlockchainType,
-                aggregate.BlockchainAssetId,
+                aggregate.BlockchainType,                
                 aggregate.DepositWalletAddress
             );
 
