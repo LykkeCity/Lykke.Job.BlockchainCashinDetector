@@ -1,10 +1,8 @@
 ﻿namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
 {
-    public enum CashinResult
+    public enum CashinErrorCode
     {
         Unknown,
-        Success,
-        Failure,
-        OutdatedBalance
+        AmountTooSmall
     }
 }

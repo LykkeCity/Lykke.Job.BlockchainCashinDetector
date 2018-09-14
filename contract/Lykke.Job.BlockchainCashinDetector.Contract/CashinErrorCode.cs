@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Lykke.Job.BlockchainCashinDetector.Contract
+﻿namespace Lykke.Job.BlockchainCashinDetector.Contract
 {
     public enum CashinErrorCode
     {
