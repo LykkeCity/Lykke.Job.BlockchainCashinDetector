@@ -4,6 +4,7 @@ using JetBrains.Annotations;
 using Lykke.Common.Chaos;
 using Lykke.Cqrs;
 using Lykke.Job.BlockchainCashinDetector.Contract;
+using Lykke.Job.BlockchainCashinDetector.Contract.Events;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain;
 using Lykke.Job.BlockchainCashinDetector.Mappers;
 using Lykke.Job.BlockchainCashinDetector.StateMachine;
@@ -140,6 +141,12 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                     throw new InvalidOperationException("Operation amount should be not null here");
                 }
 
+                if (!aggregate.IsDustCashin.HasValue)
+                {
+                    throw new InvalidOperationException("IsDustCashin should be not null here");
+                }
+
+                // Sending the main command.
                 sender.SendCommand
                 (
                     new SetEnrolledBalanceCommand
@@ -154,6 +161,26 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                     },
                     Self
                 );
+
+                // Sending the "off-blockchain operation" event, if needed.
+                if (aggregate.IsDustCashin.Value)
+                {
+                    sender.SendCommand
+                    (
+                        new NotifyCashinCompletedCommand
+                        {
+                            OperationAmount = aggregate.OperationAmount.Value,
+                            TransactionnAmount = 0M,
+                            Fee = 0M,
+                            AssetId = aggregate.AssetId,
+                            ClientId = aggregate.ClientId.Value,
+                            OperationType = CashinOperationType.OffBlockchain,
+                            OperationId = aggregate.OperationId,
+                            TransactionHash = "0x"
+                        },
+                        Self
+                    );
+                }
 
                 _chaosKitty.Meow(aggregate.OperationId);
             }
@@ -263,9 +290,24 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                     throw new InvalidOperationException("Operation amount should be not null here");
                 }
 
-                if (aggregate.OperationAmount.Value == 0)
+                if (aggregate.OperationAmount.Value == 0M)
                 {
                     throw new InvalidOperationException("Operation amount should be not 0 here");
+                }
+
+                if (!aggregate.TransactionAmount.HasValue)
+                {
+                    throw new InvalidOperationException("Transaction amount should be not null here");
+                }
+
+                if (aggregate.TransactionAmount.Value == 0M)
+                {
+                    throw new InvalidOperationException("Transaction amount should be not 0 here");
+                }
+
+                if (!aggregate.Fee.HasValue)
+                {
+                    throw new InvalidOperationException("Fee should be not null here");
                 }
 
                 if (!aggregate.ClientId.HasValue)
@@ -283,10 +325,13 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                     new NotifyCashinCompletedCommand
                     {
                         OperationAmount = aggregate.OperationAmount.Value,
+                        TransactionnAmount = aggregate.TransactionAmount.Value,
+                        Fee = aggregate.Fee.Value,
                         AssetId = aggregate.AssetId,
                         ClientId = aggregate.ClientId.Value,
+                        OperationType = CashinOperationType.OnBlockchain,
                         OperationId = aggregate.OperationId,
-                        TransactionHash = aggregate.IsDustCashin.Value ? @"0x" : aggregate.TransactionHash
+                        TransactionHash = aggregate.TransactionHash
                     },
                     Self
                 );
