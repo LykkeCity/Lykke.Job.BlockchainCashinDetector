@@ -307,10 +307,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             return TransitionResult.Switched;
         }
 
-        public void OnTransactionFailedCodeMapp(CashinResult errorCode)
-        {
-            Result = errorCode;
-        }
 
         public TransitionResult OnEnrolledBalanceSet()
         {
