@@ -145,7 +145,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                     throw new InvalidOperationException("IsDustCashin should be not null here");
                 }
 
-                // Sending the main command.
                 sender.SendCommand
                 (
                     new SetEnrolledBalanceCommand
@@ -160,26 +159,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                     },
                     Self
                 );
-
-                // Sending the "off-blockchain operation" event, if needed.
-                if (aggregate.IsDustCashin.Value)
-                {
-                    sender.SendCommand
-                    (
-                        new NotifyCashinCompletedCommand
-                        {
-                            OperationAmount = aggregate.OperationAmount.Value,
-                            TransactionnAmount = 0M,
-                            Fee = 0M,
-                            AssetId = aggregate.AssetId,
-                            ClientId = aggregate.ClientId.Value,
-                            OperationType = CashinOperationType.OffBlockchain,
-                            OperationId = aggregate.OperationId,
-                            TransactionHash = "0x"
-                        },
-                        Self
-                    );
-                }
 
                 _chaosKitty.Meow(aggregate.OperationId);
             }
@@ -411,6 +390,27 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
             var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
 
             var transitionResult = aggregate.OnDepositWalletLockReleased();
+
+            // Sending the "off-blockchain operation" event, if needed.
+            if (aggregate.IsDustCashin.Value &&
+                transitionResult.ShouldSendCommands())
+            {
+                sender.SendCommand
+                (
+                    new NotifyCashinCompletedCommand
+                    {
+                        OperationAmount = aggregate.OperationAmount.Value,
+                        TransactionnAmount = 0M,
+                        Fee = 0M,
+                        AssetId = aggregate.AssetId,
+                        ClientId = aggregate.ClientId.Value,
+                        OperationType = CashinOperationType.OffBlockchain,
+                        OperationId = aggregate.OperationId,
+                        TransactionHash = "0x"
+                    },
+                    Self
+                );
+            }
 
             if (transitionResult.ShouldSaveAggregate())
             {
