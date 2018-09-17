@@ -285,7 +285,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
 
                 if (!aggregate.Fee.HasValue)
                 {
-                    throw new InvalidOperationException("Fee should be not null here");
+                    throw new InvalidOperationException("TransactionFee should be not null here");
                 }
 
                 if (!aggregate.ClientId.HasValue)
@@ -304,7 +304,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                     {
                         OperationAmount = aggregate.OperationAmount.Value,
                         TransactionnAmount = aggregate.TransactionAmount.Value,
-                        Fee = aggregate.Fee.Value,
+                        TransactionFee = aggregate.Fee.Value,
                         AssetId = aggregate.AssetId,
                         ClientId = aggregate.ClientId.Value,
                         OperationType = CashinOperationType.OnBlockchain,
@@ -391,7 +391,17 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
 
             var transitionResult = aggregate.OnDepositWalletLockReleased();
 
+            if (transitionResult.ShouldSaveAggregate())
+            {
+                await _cashinRepository.SaveAsync(aggregate);
+            }
+
             // Sending the "off-blockchain operation" event, if needed.
+            if (!aggregate.IsDustCashin.HasValue)
+            {
+                throw new InvalidOperationException("IsDustCashin should be not null here");
+            }
+
             if (aggregate.IsDustCashin.Value &&
                 transitionResult.ShouldSendCommands())
             {
@@ -401,7 +411,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                     {
                         OperationAmount = aggregate.OperationAmount.Value,
                         TransactionnAmount = 0M,
-                        Fee = 0M,
+                        TransactionFee = 0M,
                         AssetId = aggregate.AssetId,
                         ClientId = aggregate.ClientId.Value,
                         OperationType = CashinOperationType.OffBlockchain,
@@ -410,11 +420,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                     },
                     Self
                 );
-            }
-
-            if (transitionResult.ShouldSaveAggregate())
-            {
-                await _cashinRepository.SaveAsync(aggregate);
             }
         }
     }

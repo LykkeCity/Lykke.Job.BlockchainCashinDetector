@@ -12,7 +12,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Contract.Events
 
         public decimal TransactionAmount { get; set; }
 
-        public decimal Fee { get; set; }
+        public decimal TransactionFee { get; set; }
 
         public Guid ClientId { get; set; }
 
