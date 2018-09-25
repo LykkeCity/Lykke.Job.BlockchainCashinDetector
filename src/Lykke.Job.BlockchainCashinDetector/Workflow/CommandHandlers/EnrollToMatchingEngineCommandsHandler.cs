@@ -42,8 +42,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
             // TODO: Add client cache for the walletsClient
 
             var clientId = await _walletsClient.TryGetClientIdAsync(
-                command.BlockchainType,
-                command.BlockchainAssetId,
+                command.BlockchainType,                
                 command.DepositWalletAddress);
 
             if (clientId == null)
