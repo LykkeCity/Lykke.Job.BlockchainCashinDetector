@@ -88,7 +88,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
                 return;
             }
 
-            enrolledBalances.TryGetValue(depositWallet.Address, out var enrolledBalance);
+            enrolledBalances.TryGetValue(GetEnrolledBalancesDictionaryKey(depositWallet.Address, depositWallet.AssetId), out var enrolledBalance);
 
             var cashinCouldBeStarted = CashinAggregate.CouldBeStarted(
                 depositWallet.Balance,
@@ -132,7 +132,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
 
             return (await _enrolledBalanceRepository.GetAsync(walletKeys))
                 .ToDictionary(
-                    x => x.Key.DepositWalletAddress,
+                    x => GetEnrolledBalancesDictionaryKey(x.Key.DepositWalletAddress, x.Key.BlockchainAssetId),
                     y => y);
         }
 
@@ -156,5 +156,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
             return asset.Accuracy;
         }
 
+        private string GetEnrolledBalancesDictionaryKey(string address, string assetId)
+        {
+            return $"{address}:{assetId}";
+        }
     }
 }
