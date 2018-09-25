@@ -88,7 +88,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
                 return;
             }
 
-            enrolledBalances.TryGetValue(GetEnrolledBalancesDictionaryKey(depositWallet), out var enrolledBalance);
+            enrolledBalances.TryGetValue(GetEnrolledBalancesDictionaryKey(depositWallet.Address, depositWallet.AssetId), out var enrolledBalance);
 
             var cashinCouldBeStarted = CashinAggregate.CouldBeStarted(
                 depositWallet.Balance,
@@ -132,7 +132,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
 
             return (await _enrolledBalanceRepository.GetAsync(walletKeys))
                 .ToDictionary(
-                    x => GetEnrolledBalancesDictionaryKey(x.Key),
+                    x => GetEnrolledBalancesDictionaryKey(x.Key.DepositWalletAddress, x.Key.BlockchainAssetId),
                     y => y);
         }
 
@@ -156,16 +156,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
             return asset.Accuracy;
         }
 
-        // If any changes needed, both overloads must be altered simultaneously:
-        private string GetEnrolledBalancesDictionaryKey(DepositWalletKey walletKey)
+        private string GetEnrolledBalancesDictionaryKey(string address, string assetId)
         {
-            return $"{walletKey.DepositWalletAddress}:{walletKey.BlockchainAssetId}";
+            return $"{address}:{assetId}";
         }
-        // If any changes needed, both overloads must be altered simultaneously:
-        private string GetEnrolledBalancesDictionaryKey(WalletBalance balance)
-        {
-            return $"{balance.Address}:{balance.AssetId}";
-        }
-
     }
 }
