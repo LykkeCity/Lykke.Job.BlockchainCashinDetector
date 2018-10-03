@@ -8,10 +8,11 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
     public class CashinAggregate
     {
         public string Version { get; }
-        
+
         public CashinState State { get; private set; }
         public CashinResult Result { get; private set; }
-        
+        public CashinErrorCode? ErrorCode { get; private set; }
+
         public DateTime CreationMoment { get; }
         public DateTime? StartMoment { get; private set; }
         public DateTime? BalanceOutdatingMoment { get; private set; }
@@ -19,8 +20,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
         public DateTime? EnrolledBalanceSetMoment { get; private set; }
         public DateTime? EnrolledBalanceResetMoment { get; private set; }
         public DateTime? OperationFinishMoment { get; private set; }
-        public DateTime? DepositWalletLockReleasedMoment{ get; private set; }
-        
+        public DateTime? DepositWalletLockReleasedMoment { get; private set; }
+
         public Guid OperationId { get; }
         public string BlockchainType { get; }
         public string HotWalletAddress { get; }
@@ -29,7 +30,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
         public string AssetId { get; }
         public int AssetAccuracy { get; }
         public decimal CashinMinimalAmount { get; }
-        
+
         public Guid? ClientId { get; private set; }
         public string TransactionHash { get; private set; }
         public long? TransactionBlock { get; private set; }
@@ -43,7 +44,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
         public double? MeAmount { get; private set; }
         public decimal? TransactionAmount { get; private set; }
         public bool? IsDustCashin { get; private set; }
-               
+
         private CashinAggregate(
             Guid operationId,
             string assetId,
@@ -53,7 +54,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             decimal cashinMinimalAmount,
             string depositWalletAddress,
             string hotWalletAddress,
-            DateTime creationMoment,            
+            DateTime creationMoment,
             CashinResult result,
             CashinState state,
             string version)
@@ -156,7 +157,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             string assetId,
             int assetAccuracy,
             string blockchainAssetId,
-            string blockchainType, 
+            string blockchainType,
             decimal cashinMinimalAmount,
             string depositWalletAddress,
             string hotWalletAddress)
@@ -186,11 +187,11 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
         public TransitionResult Start(decimal balanceAmount, long balanceBlock, decimal enrolledBalanceAmount, long enrolledBalanceBlock)
         {
             var couldBeStarted = CouldBeStarted(
-                balanceAmount, 
-                balanceBlock, 
-                enrolledBalanceAmount, 
-                enrolledBalanceBlock, 
-                AssetAccuracy, 
+                balanceAmount,
+                balanceBlock,
+                enrolledBalanceAmount,
+                enrolledBalanceBlock,
+                AssetAccuracy,
                 out var operationAmount,
                 out var matchingEngineOperationAmount);
 
@@ -207,7 +208,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
                     return TransitionResult.AlreadyInTargetState;
             }
 
-            if(couldBeStarted)
+            if (couldBeStarted)
             {
                 BalanceAmount = balanceAmount;
                 BalanceBlock = balanceBlock;
@@ -243,7 +244,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             ClientId = clientId;
 
             MatchingEngineEnrollementMoment = DateTime.UtcNow;
-            
+
             return TransitionResult.Switched;
         }
 
@@ -264,7 +265,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             TransactionHash = transactionHash;
             TransactionBlock = transactionBlock;
             Fee = fee;
-            
+
             MarkOperationAsFinished(true);
 
             return TransitionResult.Switched;
@@ -286,7 +287,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             return TransitionResult.Switched;
         }
 
-        public TransitionResult OnTransactionFailed(string error)
+        public TransitionResult OnTransactionFailed(string error, CashinErrorCode errorCode)
         {
             switch (SwitchState(CashinState.EnrolledBalanceSet, CashinState.OperationFailed))
             {
@@ -299,10 +300,13 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
 
             Error = error;
 
+            ErrorCode = errorCode;
+
             MarkOperationAsFinished(false);
 
             return TransitionResult.Switched;
         }
+
 
         public TransitionResult OnEnrolledBalanceSet()
         {
@@ -323,7 +327,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
                 case TransitionResult.AlreadyInTargetState:
                     return TransitionResult.AlreadyInTargetState;
             }
-            
+
             EnrolledBalanceSetMoment = DateTime.UtcNow;
 
             // ReSharper disable once PossibleInvalidOperationException
@@ -334,7 +338,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
 
             return TransitionResult.Switched;
         }
-        
+
         public TransitionResult OnDepositWalletLockReleased()
         {
             var validStates = new[]
@@ -342,7 +346,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
                 CashinState.OutdatedBalance,
                 CashinState.DustEnrolledBalanceSet,
                 CashinState.EnrolledBalanceReset,
-                CashinState.OperationFailed                
+                CashinState.OperationFailed
             };
 
             switch (SwitchState(validStates, CashinState.DepositWalletLockIsReleased))
@@ -353,7 +357,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
                 case TransitionResult.AlreadyInTargetState:
                     return TransitionResult.AlreadyInTargetState;
             }
-            
+
             DepositWalletLockReleasedMoment = DateTime.UtcNow;
 
             return TransitionResult.Switched;
@@ -361,7 +365,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
 
         private TransitionResult SwitchState(CashinState expectedState, CashinState nextState)
         {
-            return SwitchState(new[] {expectedState}, nextState);
+            return SwitchState(new[] { expectedState }, nextState);
         }
 
         private TransitionResult SwitchState(IList<CashinState> expectedStates, CashinState nextState)
@@ -391,10 +395,10 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
         }
 
         private static bool CouldBeStarted(
-            decimal balanceAmount, 
-            long balanceBlock, 
-            decimal enrolledBalanceAmount, 
-            long enrolledBalanceBlock, 
+            decimal balanceAmount,
+            long balanceBlock,
+            decimal enrolledBalanceAmount,
+            long enrolledBalanceBlock,
             int assetAccuracy,
             out decimal operationAmount,
             out double matchingEngineOperationAmount)

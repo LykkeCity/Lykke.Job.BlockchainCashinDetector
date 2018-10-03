@@ -6,6 +6,7 @@ using Lykke.Cqrs;
 using Lykke.Job.BlockchainCashinDetector.Contract;
 using Lykke.Job.BlockchainCashinDetector.Contract.Events;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain;
+using Lykke.Job.BlockchainCashinDetector.Mappers;
 using Lykke.Job.BlockchainCashinDetector.StateMachine;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Commands;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Events;
@@ -34,24 +35,24 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         [UsedImplicitly]
         private async Task Handle(DepositWalletLockedEvent evt, ICommandSender sender)
         {
-           var aggregate = await _cashinRepository.GetOrAddAsync
-            (
-                evt.BlockchainType,
-                evt.DepositWalletAddress,
-                evt.BlockchainAssetId,
-                evt.OperationId,
-                () => CashinAggregate.StartWaitingForActualBalance
-                (
-                    operationId: evt.OperationId,
-                    assetId: evt.AssetId,
-                    assetAccuracy: evt.AssetAccuracy,
-                    blockchainAssetId: evt.BlockchainAssetId,
-                    blockchainType: evt.BlockchainType,
-                    cashinMinimalAmount: evt.CashinMinimalAmount,
-                    depositWalletAddress: evt.DepositWalletAddress,
-                    hotWalletAddress: evt.HotWalletAddress
-                )
-            );
+            var aggregate = await _cashinRepository.GetOrAddAsync
+             (
+                 evt.BlockchainType,
+                 evt.DepositWalletAddress,
+                 evt.BlockchainAssetId,
+                 evt.OperationId,
+                 () => CashinAggregate.StartWaitingForActualBalance
+                 (
+                     operationId: evt.OperationId,
+                     assetId: evt.AssetId,
+                     assetAccuracy: evt.AssetAccuracy,
+                     blockchainAssetId: evt.BlockchainAssetId,
+                     blockchainType: evt.BlockchainType,
+                     cashinMinimalAmount: evt.CashinMinimalAmount,
+                     depositWalletAddress: evt.DepositWalletAddress,
+                     hotWalletAddress: evt.HotWalletAddress
+                 )
+             );
 
             var transitionResult = aggregate.Start
             (
@@ -61,7 +62,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                 enrolledBalanceBlock: evt.EnrolledBlock
             );
 
-            if(transitionResult.ShouldSaveAggregate())
+            if (transitionResult.ShouldSaveAggregate())
             {
                 await _cashinRepository.SaveAsync(aggregate);
             }
@@ -313,7 +314,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                     },
                     Self
                 );
-                
+
                 _chaosKitty.Meow(aggregate.OperationId);
             }
         }
@@ -359,7 +360,26 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                 return;
             }
 
-            var transitionResult = aggregate.OnTransactionFailed(evt.Error);
+            var transitionResult = aggregate.OnTransactionFailed(evt.Error, evt.ErrorCode.MapToCashinErrorCode());
+
+            if (!aggregate.ErrorCode.HasValue)
+            {
+                throw new InvalidOperationException("ErrorCode should be not null here");
+            }
+
+            sender.SendCommand
+             (
+                 new NotifyCashinFailedCommand
+                 {
+                     OperationId = aggregate.OperationId,
+                     Amount = aggregate.OperationAmount,
+                     ClientId = aggregate.ClientId,
+                     AssetId = aggregate.AssetId,
+                     Error = aggregate.Error,
+                     ErrorCode = aggregate.ErrorCode.Value.MapToCashinErrorCode()
+                 },
+                 Self
+             );
 
             if (transitionResult.ShouldSaveAggregate())
             {
@@ -379,6 +399,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                     },
                     Self
                 );
+
+
 
                 _chaosKitty.Meow(aggregate.OperationId);
             }
