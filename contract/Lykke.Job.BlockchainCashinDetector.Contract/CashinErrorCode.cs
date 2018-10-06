@@ -3,6 +3,7 @@
     public enum CashinErrorCode
     {
         Unknown,
-        AmountTooSmall
+        AmountTooSmall,
+        DepositRejected//https://lykkex.atlassian.net/browse/LWDEV-9755
     }
 }

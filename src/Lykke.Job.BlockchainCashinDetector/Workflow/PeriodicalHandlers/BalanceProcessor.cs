@@ -12,6 +12,8 @@ using Lykke.Job.BlockchainCashinDetector.Workflow.Commands;
 using Lykke.Service.Assets.Client.Models;
 using Lykke.Service.BlockchainApi.Client;
 using Lykke.Service.BlockchainApi.Client.Models;
+using Lykke.Service.BlockchainWallets.Client;
+using Lykke.Service.BlockchainWallets.Contract;
 
 namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
 {
@@ -27,6 +29,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
         private readonly HashSet<string> _warningAssets;
 
         private IReadOnlyDictionary<string, BlockchainAsset> _blockchainAssets;
+        private readonly IBlockchainWalletsClient _blockchainWalletsClient;
 
         public BalanceProcessor(
             string blockchainType,
@@ -36,7 +39,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
             ICqrsEngine cqrsEngine,
             IEnrolledBalanceRepository enrolledBalanceRepository,
             IReadOnlyDictionary<string, Asset> assets,
-            IReadOnlyDictionary<string, BlockchainAsset> blockchainAssets)
+            IReadOnlyDictionary<string, BlockchainAsset> blockchainAssets,
+            IBlockchainWalletsClient blockchainWalletsClient)
         {
             _blockchainType = blockchainType;
             _log = logFactory.CreateLog(this);
@@ -46,6 +50,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
             _enrolledBalanceRepository = enrolledBalanceRepository;
             _assets = assets;
             _blockchainAssets = blockchainAssets;
+            _blockchainWalletsClient = blockchainWalletsClient;
 
             _warningAssets = new HashSet<string>();
         }
@@ -68,11 +73,11 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
 
             foreach (var balance in batch)
             {
-                ProcessBalance(balance, enrolledBalances);
+                await ProcessBalance(balance, enrolledBalances);
             }
         }
 
-        private void ProcessBalance(
+        private async Task ProcessBalance(
             WalletBalance depositWallet,
             IReadOnlyDictionary<string, EnrolledBalance> enrolledBalances)
         {
@@ -101,6 +106,21 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
             if (!cashinCouldBeStarted)
             {
                 return;
+            }
+
+            var wallet = await _blockchainWalletsClient.GetWalletAsync(_blockchainType, depositWallet.Address);
+
+            if (wallet == null)
+            {
+                _log.WriteWarning(nameof(ProcessBalance), depositWallet,
+                    "Blockchain wallet was not found, but deposit was detected");
+
+                return;
+            }
+
+            if (wallet.CreatedBy == CreatorType.LykkePay)
+            {
+
             }
 
             _cqrsEngine.SendCommand

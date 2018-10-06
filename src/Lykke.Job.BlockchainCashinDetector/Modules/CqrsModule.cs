@@ -214,6 +214,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .From(Self)
                     .On(defaultRoute)
                     .PublishingCommands(
+                        typeof(ObtainDepositWalletCommand),
                         typeof(EnrollToMatchingEngineCommand),
                         typeof(ReleaseDepositWalletLockCommand))
                     .To(Self)

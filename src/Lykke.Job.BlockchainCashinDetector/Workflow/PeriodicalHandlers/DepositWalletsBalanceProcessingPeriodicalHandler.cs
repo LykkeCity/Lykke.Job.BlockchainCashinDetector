@@ -10,8 +10,10 @@ using Lykke.Common.Log;
 using Lykke.Cqrs;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain;
 using Lykke.Job.BlockchainCashinDetector.Core.Services.BLockchains;
+using Lykke.Job.BlockchainCashinDetector.Core.Services.LykkePay;
 using Lykke.Service.Assets.Client;
 using Lykke.Service.BlockchainApi.Client;
+using Lykke.Service.BlockchainWallets.Client;
 
 namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
 {
@@ -30,6 +32,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
         private readonly IDepositWalletLockRepository _depositWalletLockRepository;
         private readonly IChaosKitty _chaosKitty;
         private readonly ILogFactory _logFactory;
+        private readonly IBlockchainWalletsClient _blockchainWalletsClient;
 
         private readonly ITimerTrigger _timer;
 
@@ -45,7 +48,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
             IHotWalletsProvider hotWalletsProvider,
             ICashinRepository cashinRepository,
             IDepositWalletLockRepository depositWalletLockRepository,
-            IChaosKitty chaosKitty)
+            IChaosKitty chaosKitty,
+            IBlockchainWalletsClient blockchainWalletsClient)
         {
             _logFactory = logFactory;
             _log = logFactory.CreateLog(this);
@@ -59,6 +63,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
             _cashinRepository = cashinRepository;
             _depositWalletLockRepository = depositWalletLockRepository;
             _chaosKitty = chaosKitty;
+            _blockchainWalletsClient = blockchainWalletsClient;
 
             _timer = new TimerTrigger(
                 $"{nameof(DepositWalletsBalanceProcessingPeriodicalHandler)} : {blockchainType}",
@@ -95,7 +100,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
                 _cqrsEngine,
                 _enrolledBalanceRepository,
                 assets,
-                blockchainAssets);
+                blockchainAssets,
+                _blockchainWalletsClient);
 
             await balanceProcessor.ProcessAsync(_batchSize);            
         }

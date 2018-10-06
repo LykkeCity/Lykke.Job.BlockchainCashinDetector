@@ -99,7 +99,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Tests
                     depositWallet,
                     hotWallet
                 ));
-            
+
             var balanceProcessor = new BalanceProcessor(
                 blockchainType,
                 logFactory.Object,
@@ -108,7 +108,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Tests
                 cqrsEngineMock.Object,
                 enrolledBalanceRepositoryMock.Object,
                 assets,
-                blockchainAssets);
+                blockchainAssets,
+                null);//TODO: Mock BW client
 
             // 1. Deposit 100 is detected on DW at block 5000
             // 2. Balance processor has detected this balance, published EnrollToMatchingEngineCommand with balance 100,

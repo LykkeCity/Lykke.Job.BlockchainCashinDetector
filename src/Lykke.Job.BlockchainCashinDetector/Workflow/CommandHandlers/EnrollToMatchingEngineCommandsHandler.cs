@@ -42,14 +42,16 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
         {
             // TODO: Add client cache for the walletsClient
 
-            var clientId = await _walletsClient.TryGetClientIdAsync(
-                command.BlockchainType,                
+            var wallet = await _walletsClient.GetWalletAsync(
+                command.BlockchainType,
                 command.DepositWalletAddress);
 
-            if (clientId == null)
+            if (wallet == null)
             {
                 throw new InvalidOperationException("Client ID for the blockchain deposit wallet address is not found");
             }
+
+            var clientId = wallet.ClientId;
 
             // First level deduplication just to reduce traffic to the ME
             if (await _deduplicationRepository.IsExistsAsync(command.OperationId))
@@ -60,7 +62,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
 
                 publisher.PublishEvent(new CashinEnrolledToMatchingEngineEvent
                 {
-                    ClientId = clientId.Value,
+                    ClientId = clientId,
                     OperationId = command.OperationId
                 });
 
@@ -70,7 +72,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
             var cashInResult = await _meClient.CashInOutAsync
             (
                 id: command.OperationId.ToString(),
-                clientId: clientId.Value.ToString(),
+                clientId: clientId.ToString(),
                 assetId: command.AssetId,
                 amount: command.MatchingEngineOperationAmount
             );
@@ -93,7 +95,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
 
                     publisher.PublishEvent(new CashinEnrolledToMatchingEngineEvent
                     {
-                        ClientId = clientId.Value,
+                        ClientId = clientId,
                         OperationId = command.OperationId
                     });
 

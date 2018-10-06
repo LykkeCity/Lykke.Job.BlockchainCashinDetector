@@ -6,6 +6,7 @@ using Lykke.Cqrs;
 using Lykke.Job.BlockchainCashinDetector.Contract;
 using Lykke.Job.BlockchainCashinDetector.Contract.Events;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain;
+using Lykke.Job.BlockchainCashinDetector.Core.Services.LykkePay;
 using Lykke.Job.BlockchainCashinDetector.Mappers;
 using Lykke.Job.BlockchainCashinDetector.StateMachine;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Commands;
@@ -13,6 +14,8 @@ using Lykke.Job.BlockchainCashinDetector.Workflow.Events;
 using Lykke.Job.BlockchainOperationsExecutor.Contract;
 using Lykke.Job.BlockchainOperationsExecutor.Contract.Commands;
 using Lykke.Job.BlockchainOperationsExecutor.Contract.Events;
+using Lykke.Service.BlockchainWallets.Contract;
+using CashinErrorCode = Lykke.Job.BlockchainCashinDetector.Core.Domain.CashinErrorCode;
 
 namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
 {
@@ -23,13 +26,16 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
 
         private readonly IChaosKitty _chaosKitty;
         private readonly ICashinRepository _cashinRepository;
+        private readonly IPayInternalServiceWrapper _payInternalServiceWrapper;
 
         public CashinSaga(
             IChaosKitty chaosKitty,
-            ICashinRepository cashinRepository)
+            ICashinRepository cashinRepository,
+            IPayInternalServiceWrapper payInternalServiceWrapper)
         {
             _chaosKitty = chaosKitty;
             _cashinRepository = cashinRepository;
+            _payInternalServiceWrapper = payInternalServiceWrapper;
         }
 
         [UsedImplicitly]
@@ -77,7 +83,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                     case CashinState.Started:
                         sender.SendCommand
                         (
-                            new EnrollToMatchingEngineCommand
+                            new ObtainDepositWalletCommand
                             {
                                 AssetId = aggregate.AssetId,
                                 BlockchainAssetId = aggregate.BlockchainAssetId,
@@ -182,6 +188,21 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                 if (!aggregate.IsDustCashin.HasValue)
                 {
                     throw new InvalidOperationException("IsDustCashin should be not null here");
+                }
+
+                if (aggregate.ErrorCode.HasValue && aggregate.ErrorCode == CashinErrorCode.DepositRejected)
+                {
+                    sender.SendCommand
+                    (
+                        new ReleaseDepositWalletLockCommand
+                        {
+                            OperationId = aggregate.OperationId,
+                            BlockchainType = aggregate.BlockchainType,
+                            BlockchainAssetId = aggregate.BlockchainAssetId,
+                            DepositWalletAddress = aggregate.DepositWalletAddress
+                        },
+                        Self
+                    );
                 }
 
                 if (!aggregate.IsDustCashin.Value)
@@ -294,6 +315,42 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
 
                 _chaosKitty.Meow(aggregate.OperationId);
             }
+        }
+
+        [UsedImplicitly]
+        public async Task Handle(DepositWalletObtainedEvent evt, ICommandSender sender)
+        {
+            if (evt.CreatedBy == CreatorType.LykkePay)
+            {
+                ValidateLykkePayCashinCommand validateLykkePayCashinCommand = new ValidateLykkePayCashinCommand();
+                sender.SendCommand(validateLykkePayCashinCommand, Self);
+
+                return;
+            }
+
+            EnrollToMatchingEngineCommand enrollToMatchingEngineCommand = new EnrollToMatchingEngineCommand();
+
+            sender.SendCommand(enrollToMatchingEngineCommand, Self);
+        }
+
+        [UsedImplicitly]
+        public async Task Handle(CashinValidatedEvent evt, ICommandSender sender)
+        {
+            var command = new EnrollToMatchingEngineCommand();
+
+            sender.SendCommand(command, Self);
+        }
+
+        [UsedImplicitly]
+        public async Task Handle(CashinRejectedEvent evt, ICommandSender sender)
+        {
+            NotifyCashinFailedCommand notifyCashinFailedCommand = new NotifyCashinFailedCommand();
+
+            sender.SendCommand(notifyCashinFailedCommand, Self);
+
+            SetEnrolledBalanceCommand setEnrolledBalanceCommand = new SetEnrolledBalanceCommand();
+
+            sender.SendCommand(setEnrolledBalanceCommand, Self);
         }
 
         [UsedImplicitly]
