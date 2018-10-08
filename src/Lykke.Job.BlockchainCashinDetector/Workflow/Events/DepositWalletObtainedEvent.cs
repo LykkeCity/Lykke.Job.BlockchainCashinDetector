@@ -11,5 +11,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Events
         public string DepositWalletAddress { get; set; }
         public Guid ClientId { get; set; }
         public CreatorType CreatedBy { get; set; }
+        public Guid OperationId { get; set; }
     }
 }

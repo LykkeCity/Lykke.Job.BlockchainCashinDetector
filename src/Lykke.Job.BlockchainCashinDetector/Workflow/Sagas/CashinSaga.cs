@@ -320,9 +320,18 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         [UsedImplicitly]
         public async Task Handle(DepositWalletObtainedEvent evt, ICommandSender sender)
         {
+            var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
+
             if (evt.CreatedBy == CreatorType.LykkePay)
             {
-                ValidateLykkePayCashinCommand validateLykkePayCashinCommand = new ValidateLykkePayCashinCommand();
+                ValidateLykkePayCashinCommand validateLykkePayCashinCommand = new ValidateLykkePayCashinCommand()
+                {
+                    DepositWalletAddress = evt.DepositWalletAddress,
+                    TransferAmount = aggregate.BalanceAmount.Value, //Could it be null here?
+                    IntegrationLayerId = evt.BlockchainType,
+                    OperationId = evt.OperationId
+                };
+
                 sender.SendCommand(validateLykkePayCashinCommand, Self);
 
                 return;
@@ -336,7 +345,16 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         [UsedImplicitly]
         public async Task Handle(CashinValidatedEvent evt, ICommandSender sender)
         {
-            var command = new EnrollToMatchingEngineCommand();
+            var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
+            var command = new EnrollToMatchingEngineCommand()
+            {
+                DepositWalletAddress = aggregate.DepositWalletAddress,
+                BlockchainType = aggregate.BlockchainType,
+                OperationId = aggregate.OperationId,
+                AssetId = aggregate.AssetId,
+                BlockchainAssetId = aggregate.BlockchainAssetId,
+                MatchingEngineOperationAmount = aggregate.MeAmount.Value,
+            };
 
             sender.SendCommand(command, Self);
         }

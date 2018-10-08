@@ -27,7 +27,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
         private readonly CqrsSettings _settings;
         private readonly string _rabbitMqVirtualHost;
 
-        public CqrsModule(CqrsSettings settings ,string rabbitMqVirtualHost = null)
+        public CqrsModule(CqrsSettings settings, string rabbitMqVirtualHost = null)
         {
             _settings = settings;
             _rabbitMqVirtualHost = rabbitMqVirtualHost;
@@ -68,6 +68,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     }
                 }),
                 new RabbitMqTransportFactory(logFactory));
+#pragma warning restore CS0612 // Type or member is obsolete
 
             return messagingEngine;
         }
@@ -95,6 +96,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
             builder.RegisterType<NotifyCashinCompletedCommandsHandler>();
             builder.RegisterType<ReleaseDepositWalletLockCommandHandler>();
             builder.RegisterType<NotifyCashinFailedCommandsHandler>();
+            builder.RegisterType<ValidateLykkePayCashinCommandsHandler>();
+            builder.RegisterType<ObtainDepositWalletCommandsHandler>();
 
             // Projections
             builder.RegisterType<ClientOperationsProjection>();
@@ -124,6 +127,21 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                 Register.DefaultEndpointResolver(GetDefaultEndpointResolver()),
                 Register.BoundedContext(Self)
                     .FailedCommandRetryDelay(defaultRetryDelay)
+
+                    .ListeningCommands(typeof(ObtainDepositWalletCommand))
+                    .On(defaultRoute)
+                    .WithLoopback()
+                    .WithCommandsHandler<ObtainDepositWalletCommandsHandler>()
+                    .PublishingEvents(typeof(DepositWalletObtainedEvent))
+                    .With(defaultPipeline)
+
+                    .ListeningCommands(typeof(ValidateLykkePayCashinCommand))
+                    .On(defaultRoute)
+                    .WithLoopback()
+                    .WithCommandsHandler<ValidateLykkePayCashinCommandsHandler>()
+                    .PublishingEvents(typeof(CashinValidatedEvent),
+                        typeof(CashinRejectedEvent))
+                    .With(defaultPipeline)
 
                     .ListeningCommands(typeof(LockDepositWalletCommand))
                     .On(defaultRoute)
@@ -252,6 +270,28 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .From(BlockchainOperationsExecutorBoundedContext.Name)
                     .On(defaultRoute)
 
+                    .ListeningEvents(typeof(DepositWalletObtainedEvent))
+                    .From(Self)
+                    .On(defaultRoute)
+                    .PublishingCommands(typeof(ValidateLykkePayCashinCommand))
+                    .To(Self)
+                    .With(defaultPipeline)
+
+                    .ListeningEvents(typeof(CashinValidatedEvent))
+                    .From(Self)
+                    .On(defaultRoute)
+                    .PublishingCommands(typeof(EnrollToMatchingEngineCommand))
+                    .To(Self)
+                    .With(defaultPipeline)
+
+                    .ListeningEvents(typeof(CashinRejectedEvent))
+                    .From(Self)
+                    .On(defaultRoute)
+                    .PublishingCommands(typeof(NotifyCashinFailedCommand), 
+                        typeof(SetEnrolledBalanceCommand))
+                    .To(Self)
+                    .With(defaultPipeline)
+
                     .ListeningEvents(typeof(DepositWalletLockReleasedEvent))
                     .From(Self)
                     .On(defaultRoute)
@@ -278,6 +318,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                 new DefaultEndpointProvider(),
                 true,
                 registration.ToArray());
+#pragma warning restore CS0612 // Type or member is obsolete
         }
     }
 }

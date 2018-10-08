@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Common.Chaos;
+using Lykke.Common.Log;
 using Lykke.Cqrs;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Commands;
@@ -24,21 +25,19 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
 
         public ObtainDepositWalletCommandsHandler(
             IChaosKitty chaosKitty,
-            ILog log,
+            ILogFactory logFactory,
             IBlockchainWalletsClient walletsClient)
         {
             _chaosKitty = chaosKitty;
-            _log = log;
+            _log = logFactory.CreateLog(this);
             _walletsClient = walletsClient;
         }
 
         [UsedImplicitly]
         public async Task<CommandHandlingResult> Handle(ObtainDepositWalletCommand command, IEventPublisher publisher)
         {
-            // TODO: Add client cache for the walletsClient
-
             var wallet = await _walletsClient.GetWalletAsync(
-                command.BlockchainType,                
+                command.BlockchainType,
                 command.DepositWalletAddress);
 
             if (wallet == null)
@@ -46,10 +45,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                 throw new InvalidOperationException("Client ID for the blockchain deposit wallet address is not found");
             }
 
-            var clientId = wallet.ClientId;
-
             var @event = new DepositWalletObtainedEvent()
             {
+                OperationId = command.OperationId,
                 ClientId = wallet.ClientId,
                 BlockchainType = wallet.BlockchainType,
                 CreatedBy = wallet.CreatedBy,

@@ -103,6 +103,8 @@ namespace Lykke.Job.BlockchainCashinDetector
                     appSettings.CurrentValue.BlockchainWalletsServiceClient));
                 builder.RegisterModule(new CqrsModule(
                     appSettings.CurrentValue.BlockchainCashinDetectorJob.Cqrs));
+                builder.RegisterModule(new LykkePayModule(
+                    appSettings.CurrentValue.PayInternalServiceClient));
 
                 ApplicationContainer = builder.Build();
                 Log = ApplicationContainer.Resolve<ILogFactory>().CreateLog(this);

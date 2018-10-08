@@ -5,7 +5,9 @@ using Common.Log;
 using Lykke.Common.Chaos;
 using Lykke.Common.Log;
 using Lykke.Job.BlockchainCashinDetector.Core.Services;
+using Lykke.Job.BlockchainCashinDetector.Core.Services.LykkePay;
 using Lykke.Job.BlockchainCashinDetector.Services;
+using Lykke.Job.BlockchainCashinDetector.Services.LykkePay;
 using Lykke.Job.BlockchainCashinDetector.Settings.Assets;
 using Lykke.Job.BlockchainCashinDetector.Settings.MeSettings;
 using Lykke.MatchingEngine.Connector.Services;
@@ -38,6 +40,10 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
 
         protected override void Load(ContainerBuilder builder)
         {
+            builder.RegisterType<PayInternalServiceWrapper>()
+                .As<IPayInternalServiceWrapper>()
+                .SingleInstance();
+
             builder.RegisterType<HealthService>()
                 .As<IHealthService>()
                 .SingleInstance();

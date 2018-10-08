@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Common.Chaos;
+using Lykke.Common.Log;
 using Lykke.Cqrs;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain;
 using Lykke.Job.BlockchainCashinDetector.Core.Services.LykkePay;
@@ -19,18 +20,15 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
     {
         private readonly IChaosKitty _chaosKitty;
         private readonly ILog _log;
-        private readonly IBlockchainWalletsClient _walletsClient;
-        private readonly IMatchingEngineCallsDeduplicationRepository _deduplicationRepository;
-        private readonly IMatchingEngineClient _meClient;
         private readonly IPayInternalServiceWrapper _payInternalServiceWrapper;
 
         public ValidateLykkePayCashinCommandsHandler(
             IChaosKitty chaosKitty,
-            ILog log,
+            ILogFactory logFactory,
             IPayInternalServiceWrapper payInternalServiceWrapper)
         {
             _chaosKitty = chaosKitty;
-            _log = log;
+            _log = logFactory.CreateLog(this);
             _payInternalServiceWrapper = payInternalServiceWrapper;
         }
 
@@ -38,19 +36,21 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
         public async Task<CommandHandlingResult> Handle(ValidateLykkePayCashinCommand command, IEventPublisher publisher)
         {
             var validationResult = await _payInternalServiceWrapper.ValidateDepoistTransferAsync(command.IntegrationLayerId,
-                command.DepositWalletAddress, 
+                command.DepositWalletAddress,
                 command.TransferAmount);
 
-            if (validationResult)
-            {
-                CashinValidatedEvent cashinValidatedEvent = new CashinValidatedEvent();
-                publisher.PublishEvent(cashinValidatedEvent);
-            }
-            else
-            {
-                CashinRejectedEvent cashinRejectedEvent = new CashinRejectedEvent();
-                publisher.PublishEvent(cashinRejectedEvent);
-            }
+            object @event = (validationResult
+                ? (object)new CashinValidatedEvent()
+                {
+                    OperationId = command.OperationId
+                }
+                :
+                new CashinRejectedEvent()
+                {
+                    OperationId = command.OperationId
+                });
+
+            publisher.PublishEvent(@event);
 
             return CommandHandlingResult.Ok();
         }

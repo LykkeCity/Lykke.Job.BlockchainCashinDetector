@@ -118,11 +118,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
                 return;
             }
 
-            if (wallet.CreatedBy == CreatorType.LykkePay)
-            {
-
-            }
-
             _cqrsEngine.SendCommand
             (
                 new LockDepositWalletCommand

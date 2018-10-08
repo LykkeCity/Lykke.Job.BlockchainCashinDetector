@@ -69,6 +69,10 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                         .WithParameter(TypedParameter.From(_settings.Requests.BatchSize))
                         .WithParameter(TypedParameter.From(blockchain.Type));
                 }
+                //else
+                //{
+                //    _log.WriteWarning("Blockchains registration", "", $"Cashins for blockchain {blockchain.Type} are disabled");
+                //}
             }
         }
     }

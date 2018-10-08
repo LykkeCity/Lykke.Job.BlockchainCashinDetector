@@ -19,6 +19,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
         [UsedImplicitly]
         public async Task<CommandHandlingResult> Handle(ResetEnrolledBalanceCommand command, IEventPublisher publisher)
         {
+            //TODO
             await _enrolledBalanceRepository.ResetBalanceAsync
             (
                 new DepositWalletKey
