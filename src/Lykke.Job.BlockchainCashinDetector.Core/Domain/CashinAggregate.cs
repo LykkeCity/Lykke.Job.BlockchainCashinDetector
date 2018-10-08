@@ -309,7 +309,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             return TransitionResult.Switched;
         }
 
-
         public TransitionResult OnEnrolledBalanceSet()
         {
             if (!IsDustCashin.HasValue)

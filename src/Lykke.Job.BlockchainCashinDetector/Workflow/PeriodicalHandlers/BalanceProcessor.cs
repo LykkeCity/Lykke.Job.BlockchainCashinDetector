@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Common.Log;
+using Lykke.Common.Log;
 using Lykke.Cqrs;
 using Lykke.Job.BlockchainCashinDetector.Contract;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain;
@@ -29,7 +30,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
 
         public BalanceProcessor(
             string blockchainType,
-            ILog log, 
+            ILogFactory logFactory, 
             IHotWalletsProvider hotWalletsProvider,
             IBlockchainApiClient blockchainApiClient,
             ICqrsEngine cqrsEngine,
@@ -38,7 +39,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
             IReadOnlyDictionary<string, BlockchainAsset> blockchainAssets)
         {
             _blockchainType = blockchainType;
-            _log = log;
+            _log = logFactory.CreateLog(this);
             _hotWalletAddress = hotWalletsProvider.GetHotWalletAddress(blockchainType);
             _blockchainApiClient = blockchainApiClient;
             _cqrsEngine = cqrsEngine;
