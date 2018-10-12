@@ -31,7 +31,8 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
         public string AssetId { get; set; }
         public int AssetAccuracy { get; set; }
         public decimal CashinMinimalAmount { get; set; }
-        
+        public CashinErrorCode? ErrorCode { get; set; }
+
         public Guid? ClientId { get; set; }
         public string TransactionHash { get; set; }
         public long? TransactionBlock { get; set; }
@@ -109,7 +110,8 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 
                 ETag = string.IsNullOrEmpty(aggregate.Version) ? "*" : aggregate.Version,
                 PartitionKey = GetPartitionKey(aggregate.OperationId),
-                RowKey = GetRowKey(aggregate.OperationId)                
+                RowKey = GetRowKey(aggregate.OperationId),
+                ErrorCode = aggregate.ErrorCode
             };
         }
 
@@ -148,7 +150,8 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 transactionHash: TransactionHash,
                 state: State,
                 isDustCashin: IsDustCashin,
-                version: ETag
+                version: ETag,
+                cashinErrorCode: ErrorCode
             );
         }
 

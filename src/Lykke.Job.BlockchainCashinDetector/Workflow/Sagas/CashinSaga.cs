@@ -342,21 +342,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
             {
                 throw new InvalidOperationException("ErrorCode should be not null here");
             }
-
-            sender.SendCommand
-             (
-                 new NotifyCashinFailedCommand
-                 {
-                     OperationId = aggregate.OperationId,
-                     Amount = aggregate.OperationAmount,
-                     ClientId = aggregate.ClientId,
-                     AssetId = aggregate.AssetId,
-                     Error = aggregate.Error,
-                     ErrorCode = aggregate.ErrorCode.Value.MapToCashinErrorCode()
-                 },
-                 Self
-             );
-
+            
             if (transitionResult.ShouldSaveAggregate())
             {
                 await _cashinRepository.SaveAsync(aggregate);
@@ -376,7 +362,19 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                     Self
                 );
 
-
+                sender.SendCommand
+                (
+                    new NotifyCashinFailedCommand
+                    {
+                        OperationId = aggregate.OperationId,
+                        Amount = aggregate.OperationAmount,
+                        ClientId = aggregate.ClientId,
+                        AssetId = aggregate.AssetId,
+                        Error = aggregate.Error,
+                        ErrorCode = aggregate.ErrorCode.Value.MapToCashinErrorCode()
+                    },
+                    Self
+                );
 
                 _chaosKitty.Meow(aggregate.OperationId);
             }
