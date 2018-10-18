@@ -105,7 +105,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             string transactionHash,
             CashinState state,
             bool? isDustCashin,
-            string version)
+            string version,
+            CashinErrorCode? cashinErrorCode)
         {
             return new CashinAggregate
             (
@@ -143,7 +144,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
                 OperationAmount = operationAmount,
                 MeAmount = meAmount,
                 TransactionAmount = transactionAmount,
-                IsDustCashin = isDustCashin
+                IsDustCashin = isDustCashin,
+                ErrorCode = cashinErrorCode
             };
         }
 
