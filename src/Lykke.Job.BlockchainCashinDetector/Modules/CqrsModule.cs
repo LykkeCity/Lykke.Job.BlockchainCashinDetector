@@ -15,18 +15,19 @@ using Lykke.Messaging;
 using Lykke.Messaging.RabbitMq;
 using Lykke.Messaging.Serialization;
 using System.Collections.Generic;
-
+using MoreLinq;
+using System.Linq;
 
 namespace Lykke.Job.BlockchainCashinDetector.Modules
 {
     public class CqrsModule : Module
     {
-        private static readonly string Self = BlockchainCashinDetectorBoundedContext.Name;
+        public static readonly string Self = BlockchainCashinDetectorBoundedContext.Name;
 
         private readonly CqrsSettings _settings;
         private readonly string _rabbitMqVirtualHost;
 
-        public CqrsModule(CqrsSettings settings, string rabbitMqVirtualHost = null)
+        public CqrsModule(CqrsSettings settings ,string rabbitMqVirtualHost = null)
         {
             _settings = settings;
             _rabbitMqVirtualHost = rabbitMqVirtualHost;
@@ -37,6 +38,11 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
             builder.Register(context => new AutofacDependencyResolver(context)).As<IDependencyResolver>().SingleInstance();
 
             RegisterInfrastructure(builder);
+        }
+
+        protected virtual IRegistration[] GetInterceptors()
+        {
+            return null;
         }
 
         protected virtual MessagingEngine RegisterMessagingEngine(IComponentContext ctx)
@@ -68,6 +74,16 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
 
         protected void RegisterInfrastructure(ContainerBuilder builder)
         {
+            RegisterWorkflowDependencies(builder);
+
+            builder.Register(ctx => CreateEngine(ctx))
+                .As<ICqrsEngine>()
+                .SingleInstance()
+                .AutoActivate();
+        }
+
+        protected virtual void RegisterWorkflowDependencies(ContainerBuilder builder)
+        {
             // Sagas
             builder.RegisterType<CashinSaga>();
 
@@ -83,11 +99,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
             // Projections
             builder.RegisterType<ClientOperationsProjection>();
             builder.RegisterType<MatchingEngineCallDeduplicationsProjection>();
-
-            builder.Register(ctx => CreateEngine(ctx))
-                .As<ICqrsEngine>()
-                .SingleInstance()
-                .AutoActivate();
         }
 
         protected virtual IEndpointResolver GetDefaultEndpointResolver()
@@ -109,20 +120,16 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
             const string eventsRoute = "evets";
 
 #pragma warning disable CS0612 // Type or member is obsolete
-            return new CqrsEngine(
-                logFactory,
-                ctx.Resolve<IDependencyResolver>(),
-                messagingEngine,
-                new DefaultEndpointProvider(),
-                true,
-                Register.DefaultEndpointResolver(GetDefaultEndpointResolver()),
 
+            var registration = new List<IRegistration>()
+            {
+                Register.DefaultEndpointResolver(GetDefaultEndpointResolver()),
                 Register.BoundedContext(Self)
                     .FailedCommandRetryDelay(defaultRetryDelay)
 
                     .ListeningCommands(typeof(LockDepositWalletCommand))
                     .On(defaultRoute)
-                    .WithLoopback()
+                    .WithLoopback()//When it is sent not from saga
                     .WithCommandsHandler<LockDepositWalletCommandsHandler>()
                     .PublishingEvents(typeof(DepositWalletLockedEvent))
                     .With(defaultPipeline)
@@ -231,7 +238,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .ListeningEvents(typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent))
                     .From(BlockchainOperationsExecutorBoundedContext.Name)
                     .On(defaultRoute)
-                    .PublishingCommands(typeof(ResetEnrolledBalanceCommand), 
+                    .PublishingCommands(typeof(ResetEnrolledBalanceCommand),
                                         typeof(NotifyCashinCompletedCommand))
                     .To(Self)
                     .With(defaultPipeline)
@@ -254,7 +261,24 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .From(Self)
                     .On(defaultRoute)
 
-                    .ProcessingOptions(defaultRoute).MultiThreaded(8).QueueCapacity(1024));
+                    .ProcessingOptions(defaultRoute).MultiThreaded(8).QueueCapacity(1024)
+            };
+
+            var interceptors = GetInterceptors();
+
+            if (interceptors != null)
+            {
+                registration.AddRange(interceptors);
+            }
+
+            return new CqrsEngine(
+                logFactory,
+                ctx.Resolve<IDependencyResolver>(),
+                messagingEngine,
+                new DefaultEndpointProvider(),
+                true,
+                registration.ToArray());
+
 #pragma warning restore CS0612 // Type or member is obsolete
         }
     }

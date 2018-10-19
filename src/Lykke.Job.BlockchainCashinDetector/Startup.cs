@@ -9,6 +9,7 @@ using Lykke.Common.Api.Contract.Responses;
 using Lykke.Common.ApiLibrary.Middleware;
 using Lykke.Common.ApiLibrary.Swagger;
 using Lykke.Common.Log;
+using Lykke.Cqrs;
 using Lykke.Job.BlockchainCashinDetector.Core.Services;
 using Lykke.Job.BlockchainCashinDetector.Modules;
 using Lykke.Job.BlockchainCashinDetector.Settings;
@@ -95,7 +96,7 @@ namespace Lykke.Job.BlockchainCashinDetector
                     appSettings.CurrentValue.BlockchainsIntegration,
                     appSettings.CurrentValue.BlockchainWalletsServiceClient));
                 builder.RegisterModule(new CqrsModule(
-                    appSettings.CurrentValue.BlockchainCashinDetectorJob.Cqrs));
+                    appSettings.CurrentValue.BlockchainCashinDetectorJob.Cqrs, "vhost5"));
 
                 ApplicationContainer = builder.Build();
                 Log = ApplicationContainer.Resolve<ILogFactory>().CreateLog(this);
@@ -119,7 +120,7 @@ namespace Lykke.Job.BlockchainCashinDetector
                     app.UseDeveloperExceptionPage();
                 }
 
-                app.UseLykkeMiddleware("BlockchainCashinDetector", ex => ErrorResponse.Create("Technical problem"));
+                app.UseLykkeMiddleware(ex => ErrorResponse.Create("Technical problem"));
 
                 app.UseMvc();
                 app.UseSwagger(c =>
@@ -151,6 +152,7 @@ namespace Lykke.Job.BlockchainCashinDetector
                 // NOTE: Job not yet recieve and process IsAlive requests here
 
                 await ApplicationContainer.Resolve<IStartupManager>().StartAsync();
+                ApplicationContainer.Resolve<ICqrsEngine>().Start();
                 await Log.WriteMonitorAsync("", "", "Started");
             }
             catch (Exception ex)
