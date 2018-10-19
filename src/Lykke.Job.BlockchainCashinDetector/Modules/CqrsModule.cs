@@ -27,7 +27,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
         private readonly CqrsSettings _settings;
         private readonly string _rabbitMqVirtualHost;
 
-        public CqrsModule(CqrsSettings settings, string rabbitMqVirtualHost = null)
+        public CqrsModule(CqrsSettings settings ,string rabbitMqVirtualHost = null)
         {
             _settings = settings;
             _rabbitMqVirtualHost = rabbitMqVirtualHost;
@@ -130,14 +130,12 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
 
                     .ListeningCommands(typeof(ObtainDepositWalletCommand))
                     .On(defaultRoute)
-                    .WithLoopback()
                     .WithCommandsHandler<ObtainDepositWalletCommandsHandler>()
                     .PublishingEvents(typeof(DepositWalletObtainedEvent))
                     .With(defaultPipeline)
 
                     .ListeningCommands(typeof(ValidateLykkePayCashinCommand))
                     .On(defaultRoute)
-                    .WithLoopback()
                     .WithCommandsHandler<ValidateLykkePayCashinCommandsHandler>()
                     .PublishingEvents(typeof(CashinValidatedEvent),
                         typeof(CashinRejectedEvent))
@@ -287,7 +285,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .ListeningEvents(typeof(CashinRejectedEvent))
                     .From(Self)
                     .On(defaultRoute)
-                    .PublishingCommands(typeof(NotifyCashinFailedCommand), 
+                    .PublishingCommands(typeof(NotifyCashinFailedCommand),
                         typeof(SetEnrolledBalanceCommand))
                     .To(Self)
                     .With(defaultPipeline)

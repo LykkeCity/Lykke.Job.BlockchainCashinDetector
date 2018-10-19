@@ -40,7 +40,7 @@ namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests
         public BaseTest()
         {
         }
-
+            var services = new ServiceCollection();
         [Fact(Skip = "Should be update after refactoring")]
         public async Task BalanceProcessorStarted__BalanceIsGtThanZero_DepositWalletLockedEventSent()
         {

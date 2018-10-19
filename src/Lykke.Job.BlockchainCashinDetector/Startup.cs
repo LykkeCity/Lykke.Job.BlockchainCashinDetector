@@ -102,7 +102,7 @@ namespace Lykke.Job.BlockchainCashinDetector
                     appSettings.CurrentValue.BlockchainsIntegration,
                     appSettings.CurrentValue.BlockchainWalletsServiceClient));
                 builder.RegisterModule(new CqrsModule(
-                    appSettings.CurrentValue.BlockchainCashinDetectorJob.Cqrs));
+                    appSettings.CurrentValue.BlockchainCashinDetectorJob.Cqrs, "vhost5"));
                 builder.RegisterModule(new LykkePayModule(
                     appSettings.CurrentValue.PayInternalServiceClient));
 
