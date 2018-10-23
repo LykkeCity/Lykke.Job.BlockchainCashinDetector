@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using AzureStorage;
 using AzureStorage.Tables;
-using Common.Log;
+using Lykke.Common.Log;
 using JetBrains.Annotations;
 using Lykke.Common.Chaos;
 using Lykke.Common.Log;
@@ -19,14 +19,14 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
 
         public static ICashinRepository Create(
             IReloadingManager<string> connectionString, 
-            ILogFactory log,
+            ILogFactory logFactory,
             IChaosKitty chaosKitty)
         {
             if (chaosKitty == null) throw new ArgumentNullException(nameof(chaosKitty));
             var storage = AzureTableStorage<CashinEntity>.Create(
                 connectionString,
                 "Cashin",
-                log);
+                logFactory);
 
             return new CashinRepository(storage, chaosKitty);
         }

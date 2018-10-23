@@ -3,19 +3,15 @@ using Lykke.Job.BlockchainCashinDetector.Settings.Assets;
 using Lykke.Job.BlockchainCashinDetector.Settings.Blockchain;
 using Lykke.Job.BlockchainCashinDetector.Settings.JobSettings;
 using Lykke.Job.BlockchainCashinDetector.Settings.MeSettings;
-using Lykke.Job.BlockchainCashinDetector.Settings.SlackNotifications;
-
+using Lykke.Sdk.Settings;
 
 namespace Lykke.Job.BlockchainCashinDetector.Settings
 {
     [UsedImplicitly]
-    public class AppSettings
+    public class AppSettings : BaseAppSettings
     {
         [UsedImplicitly(ImplicitUseKindFlags.Assign)]
         public BlockchainCashinDetectorSettings BlockchainCashinDetectorJob { get; set; }
-
-        [UsedImplicitly(ImplicitUseKindFlags.Assign)]
-        public SlackNotificationsSettings SlackNotifications { get; set; }
 
         [UsedImplicitly(ImplicitUseKindFlags.Assign)]
         public BlockchainsIntegrationSettings BlockchainsIntegration { get; set; }

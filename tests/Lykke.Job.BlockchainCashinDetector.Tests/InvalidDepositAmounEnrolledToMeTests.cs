@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Common.Log;
 using Lykke.Common.Chaos;
 using Lykke.Common.Log;
 using Lykke.Cqrs;
@@ -10,6 +9,7 @@ using Lykke.Job.BlockchainCashinDetector.Core.Domain;
 using Lykke.Job.BlockchainCashinDetector.Core.Services.BLockchains;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Commands;
 using Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers;
+using Lykke.Logs;
 using Lykke.Service.Assets.Client.Models;
 using Lykke.Service.BlockchainApi.Client;
 using Lykke.Service.BlockchainApi.Client.Models;
@@ -102,7 +102,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Tests
             
             var balanceProcessor = new BalanceProcessor(
                 blockchainType,
-                logFactory.Object,
+                EmptyLogFactory.Instance,
                 hotWalletProviderMock.Object,
                 blockchainApiClientMock.Object,
                 cqrsEngineMock.Object,
@@ -278,9 +278,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Tests
                 .Setup(x => x.SaveAsync(It.IsAny<CashinAggregate>()))
                 .Returns(Task.CompletedTask);
 
-            depositWalletLockRepository.ResetCalls();
-            cqrsEngineMock.ResetCalls();
-            cashinRepositoryMock.ResetCalls();
+            depositWalletLockRepository.Invocations.Clear();
+            cqrsEngineMock.Invocations.Clear();
+            cashinRepositoryMock.Invocations.Clear();
 
             // Act
 
