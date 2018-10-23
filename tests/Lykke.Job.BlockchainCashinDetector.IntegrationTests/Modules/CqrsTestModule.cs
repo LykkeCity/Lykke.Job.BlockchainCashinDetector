@@ -28,13 +28,13 @@ namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests.Modules
         public static TestCommandsInterceptor CommandsInterceptor {get; protected set;}
         public static TestEventsInterceptor EventsInterceptor { get; protected set; }
 
-        //protected override IRegistration[] GetInterceptors()
-        //{
-        //    return new IRegistration[]
-        //    {
-        //        Register.CommandInterceptors(CommandsInterceptor),
-        //        Register.EventInterceptors(EventsInterceptor)
-        //    };
-        //}
+        protected override IRegistration[] GetInterceptors()
+        {
+            return new IRegistration[]
+            {
+                Register.CommandInterceptors(CommandsInterceptor),
+                Register.EventInterceptors(EventsInterceptor)
+            };
+        }
     }
 }

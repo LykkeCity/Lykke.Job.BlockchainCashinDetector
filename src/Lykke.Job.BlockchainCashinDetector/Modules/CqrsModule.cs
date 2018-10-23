@@ -47,6 +47,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
 
         protected virtual MessagingEngine RegisterMessagingEngine(IComponentContext ctx)
         {
+            var logFactory = ctx.Resolve<ILogFactory>();
             var rabbitMqSettings = new RabbitMQ.Client.ConnectionFactory
             {
                 Uri = _settings.RabbitConnectionString
@@ -55,7 +56,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                 ? rabbitMqSettings.Endpoint.ToString()
                 : $"{rabbitMqSettings.Endpoint}/{_rabbitMqVirtualHost}";
 #pragma warning disable CS0612 // Type or member is obsolete
-            var messagingEngine = new MessagingEngine(ctx.Resolve<ILogFactory>(),
+            var messagingEngine = new MessagingEngine(logFactory,
                 new TransportResolver(new Dictionary<string, TransportInfo>
                 {
                     {
@@ -66,7 +67,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                             rabbitMqSettings.Password, "None", "RabbitMq")
                     }
                 }),
-                new RabbitMqTransportFactory());
+                new RabbitMqTransportFactory(logFactory));
 #pragma warning restore CS0612 // Type or member is obsolete
 
             return messagingEngine;
@@ -238,8 +239,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .ListeningEvents(typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent))
                     .From(BlockchainOperationsExecutorBoundedContext.Name)
                     .On(defaultRoute)
-                    .PublishingCommands(typeof(ResetEnrolledBalanceCommand),
-                                        typeof(NotifyCashinCompletedCommand))
+                    .PublishingCommands(typeof(ResetEnrolledBalanceCommand))
                     .To(Self)
                     .With(defaultPipeline)
 
@@ -253,13 +253,15 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .ListeningEvents(typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent))
                     .From(BlockchainOperationsExecutorBoundedContext.Name)
                     .On(defaultRoute)
-                    .PublishingCommands(typeof(NotifyCashinFailedCommand))
-                    .To(Self)
-                    .With(defaultPipeline)
 
                     .ListeningEvents(typeof(DepositWalletLockReleasedEvent))
                     .From(Self)
                     .On(defaultRoute)
+                    .PublishingCommands(
+                        typeof(NotifyCashinFailedCommand),
+                        typeof(NotifyCashinCompletedCommand))
+                    .To(Self)
+                    .With(defaultPipeline)
 
                     .ProcessingOptions(defaultRoute).MultiThreaded(8).QueueCapacity(1024)
             };
