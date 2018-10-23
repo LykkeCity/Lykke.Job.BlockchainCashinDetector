@@ -6,7 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Lykke.Cqrs" Version="7.0.0" />
+    <PackageReference Include="Lykke.Cqrs" Version="8.0.0" />
+    <PackageReference Include="Lykke.Sdk" Version="5.7.0" />
   </ItemGroup>
 
   <ItemGroup>

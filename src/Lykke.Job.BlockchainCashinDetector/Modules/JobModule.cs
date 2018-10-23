@@ -1,41 +1,27 @@
 ﻿using System;
 using Autofac;
-using Autofac.Extensions.DependencyInjection;
-using Common.Log;
+using JetBrains.Annotations;
 using Lykke.Common.Chaos;
-using Lykke.Common.Log;
-using Lykke.Job.BlockchainCashinDetector.Core.Services;
 using Lykke.Job.BlockchainCashinDetector.Services;
-using Lykke.Job.BlockchainCashinDetector.Settings.Assets;
-using Lykke.Job.BlockchainCashinDetector.Settings.MeSettings;
-using Lykke.MatchingEngine.Connector.Services;
+using Lykke.Job.BlockchainCashinDetector.Settings;
+using Lykke.Sdk;
 using Lykke.Service.Assets.Client;
-using Microsoft.Extensions.DependencyInjection;
+using Lykke.SettingsReader;
 
 namespace Lykke.Job.BlockchainCashinDetector.Modules
 {
+    [UsedImplicitly]
     public class JobModule : Module
     {
-        private readonly MatchingEngineSettings _meSettings;
-        private readonly AssetsSettings _assetsSettings;
-        private readonly ChaosSettings _chaosSettings;
+        private readonly IReloadingManager<AppSettings> _settings;
 
-        public JobModule(
-            MatchingEngineSettings meSettings,
-            AssetsSettings assetsSettings,
-            ChaosSettings chaosSettings)
+        public JobModule(IReloadingManager<AppSettings> settings)
         {
-            _meSettings = meSettings;
-            _assetsSettings = assetsSettings;
-            _chaosSettings = chaosSettings;
+            _settings = settings;
         }
 
         protected override void Load(ContainerBuilder builder)
         {
-            builder.RegisterType<HealthService>()
-                .As<IHealthService>()
-                .SingleInstance();
-
             builder.RegisterType<StartupManager>()
                 .As<IStartupManager>();
 
@@ -44,19 +30,13 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
 
             builder.RegisterAssetsClient(new AssetServiceSettings
             {
-                BaseUri = new Uri(_assetsSettings.ServiceUrl),
-                AssetsCacheExpirationPeriod = _assetsSettings.CacheExpirationPeriod,
-                AssetPairsCacheExpirationPeriod = _assetsSettings.CacheExpirationPeriod
+                BaseUri = new Uri(_settings.CurrentValue.Assets.ServiceUrl),
+                AssetsCacheExpirationPeriod = _settings.CurrentValue.Assets.CacheExpirationPeriod,
+                AssetPairsCacheExpirationPeriod = _settings.CurrentValue.Assets.CacheExpirationPeriod
             });
 
-            RegisterMatchingEngine(builder);
-
-            builder.RegisterChaosKitty(_chaosSettings);
-        }
-
-        private void RegisterMatchingEngine(ContainerBuilder builder)
-        {
-            builder.RegisgterMeClient(_meSettings.IpEndpoint.GetClientIpEndPoint());
+            builder.RegisgterMeClient(_settings.CurrentValue.MatchingEngineClient.IpEndpoint.GetClientIpEndPoint());
+            builder.RegisterChaosKitty(_settings.CurrentValue.BlockchainCashinDetectorJob.ChaosKitty);
         }
     }
 }

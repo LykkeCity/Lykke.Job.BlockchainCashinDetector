@@ -1,22 +1,23 @@
 ﻿using Autofac;
-using Common.Log;
+using JetBrains.Annotations;
 using Lykke.Common.Chaos;
 using Lykke.Common.Log;
 using Lykke.Job.BlockchainCashinDetector.AzureRepositories;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain;
+using Lykke.Job.BlockchainCashinDetector.Settings;
 using Lykke.Job.BlockchainCashinDetector.Settings.JobSettings;
 using Lykke.SettingsReader;
 
 namespace Lykke.Job.BlockchainCashinDetector.Modules
 {
+    [UsedImplicitly]
     public class RepositoriesModule : Module
     {
         private readonly IReloadingManager<DbSettings> _dbSettings;
 
-        public RepositoriesModule(
-            IReloadingManager<DbSettings> dbSettings)
+        public RepositoriesModule(IReloadingManager<AppSettings> settings)
         {
-            _dbSettings = dbSettings;
+            _dbSettings = settings.Nested(x => x.BlockchainCashinDetectorJob.Db);
         }
 
         protected override void Load(ContainerBuilder builder)
