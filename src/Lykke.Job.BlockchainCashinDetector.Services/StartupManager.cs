@@ -5,8 +5,8 @@ using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Common.Log;
 using Lykke.Cqrs;
-using Lykke.Job.BlockchainCashinDetector.Core.Services;
 using Lykke.Job.BlockchainCashinDetector.Core.Services.BLockchains;
+using Lykke.Sdk;
 
 namespace Lykke.Job.BlockchainCashinDetector.Services
 {
@@ -35,7 +35,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Services
 
         public async Task StartAsync()
         {
-            _log.Info("Starting cqrs engine...");
+            _log.Info(nameof(StartAsync), "Starting deposit wallets balance monitoring...");
 
             _cqrsEngine.Start();
 
@@ -45,6 +45,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Services
             {
                 depositWalletsBalanceProcessingHandler.Start();
             }
+            
+            _cqrsEngine.Start();
 
             await Task.CompletedTask;
         }

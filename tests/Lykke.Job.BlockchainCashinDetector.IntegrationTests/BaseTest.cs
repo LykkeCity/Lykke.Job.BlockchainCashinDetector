@@ -6,32 +6,21 @@ using Lykke.Job.BlockchainCashinDetector.Core.Services.BLockchains;
 using Lykke.Job.BlockchainCashinDetector.IntegrationTests.Modules;
 using Lykke.Job.BlockchainCashinDetector.IntegrationTests.Utils;
 using Lykke.Job.BlockchainCashinDetector.Modules;
-using Lykke.Job.BlockchainCashinDetector.Settings;
 using Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers;
-using Lykke.Logs;
-using Lykke.Logs.Loggers.LykkeConsole;
 using Lykke.Service.Assets.Client;
 using Lykke.Service.BlockchainApi.Client;
 using Lykke.Service.BlockchainApi.Client.Models;
 using Lykke.Service.BlockchainApi.Contract;
 using Lykke.Service.BlockchainApi.Contract.Balances;
-using Lykke.Service.BlockchainWallets.Client;
-using Lykke.SettingsReader;
-using Microsoft.Extensions.Configuration;
 using Moq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Autofac.Core;
-using Autofac.Extensions.DependencyInjection;
-using Lykke.Job.BlockchainCashinDetector.Settings.JobSettings;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Commands;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Events;
-using Lykke.Logs.Loggers.LykkeSlack;
-using Microsoft.Extensions.DependencyInjection;
 using Xunit;
-using Xunit.Sdk;
 
 namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests
 {
@@ -370,16 +359,9 @@ namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests
 
             return new List<IModule>
             {
-                new JobModule(
-                    appSettings.CurrentValue.MatchingEngineClient,
-                    appSettings.CurrentValue.Assets,
-                    appSettings.CurrentValue.BlockchainCashinDetectorJob.ChaosKitty),
-                new BlockchainsModule(
-                    appSettings.CurrentValue.BlockchainCashinDetectorJob,
-                    appSettings.CurrentValue.BlockchainsIntegration,
-                    appSettings.CurrentValue.BlockchainWalletsServiceClient),
+                new JobModule(appSettings),
+                new BlockchainsModule(appSettings),
                 new CqrsTestModule(appSettings.CurrentValue.BlockchainCashinDetectorJob.Cqrs, "test")
-
             };
         }
 

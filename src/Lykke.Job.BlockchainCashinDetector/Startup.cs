@@ -1,26 +1,9 @@
 ﻿using System;
-using System.Threading.Tasks;
-using Autofac;
-using Autofac.Extensions.DependencyInjection;
-using AzureStorage.Tables;
-using Common.Log;
 using JetBrains.Annotations;
-using Lykke.Common.Api.Contract.Responses;
-using Lykke.Common.ApiLibrary.Middleware;
-using Lykke.Common.ApiLibrary.Swagger;
-using Lykke.Common.Log;
-using Lykke.Cqrs;
-using Lykke.Job.BlockchainCashinDetector.Core.Services;
-using Lykke.Job.BlockchainCashinDetector.Modules;
 using Lykke.Job.BlockchainCashinDetector.Settings;
-using Lykke.Logs;
 using Lykke.Logs.Loggers.LykkeSlack;
-using Lykke.Logs.Slack;
-using Lykke.SettingsReader;
-using Lykke.SlackNotification.AzureQueue;
+using Lykke.Sdk;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Lykke.Job.BlockchainCashinDetector
@@ -28,183 +11,47 @@ namespace Lykke.Job.BlockchainCashinDetector
     [UsedImplicitly]
     public class Startup
     {
-        private IContainer ApplicationContainer { get; set; }
-        private IConfigurationRoot Configuration { get; }
-        private ILog Log { get; set; }
-        private IHealthNotifier HealthNotifier { get; set; }
-
-        public Startup(IHostingEnvironment env)
+        private readonly LykkeSwaggerOptions _swaggerOptions = new LykkeSwaggerOptions
         {
-            var builder = new ConfigurationBuilder()
-                .SetBasePath(env.ContentRootPath)
-                .AddEnvironmentVariables();
-
-            Configuration = builder.Build();
-        }
+            ApiTitle = "BlockchainCashinDetector API",
+            ApiVersion = "v1"
+        };
 
         [UsedImplicitly]
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
-            try
+            return services.BuildServiceProvider<AppSettings>(options =>
             {
-                services.AddMvc()
-                    .AddJsonOptions(options =>
-                    {
-                        options.SerializerSettings.ContractResolver =
-                            new Newtonsoft.Json.Serialization.DefaultContractResolver();
-                    });
+                options.SwaggerOptions = _swaggerOptions;
 
-                services.AddSwaggerGen(options =>
+                options.Logs = logs =>
                 {
-                    options.DefaultLykkeConfiguration("v1", "BlockchainCashinDetector API");
-                });
-
-                var builder = new ContainerBuilder();
-                var appSettings = Configuration.LoadSettings<AppSettings>(options =>
-                {
-                    options.SetConnString(x => x.SlackNotifications.AzureQueue.ConnectionString);
-                    options.SetQueueName(x => x.SlackNotifications.AzureQueue.QueueName);
-                    options.SenderName = "Lykke.Job.BlockchainCashinDetector";
-                });
-
-                var slackSettings = appSettings.Nested(x => x.SlackNotifications);
-                services.AddLykkeLogging(
-                    appSettings.ConnectionString(x => x.BlockchainCashinDetectorJob.Db.LogsConnString),
-                    "BlockchainCashinDetectorLog",
-                    slackSettings.CurrentValue.AzureQueue.ConnectionString,
-                    slackSettings.CurrentValue.AzureQueue.QueueName,
-                    logging =>
+                    logs.AzureTableName = "BlockchainCashinDetectorLog";
+                    logs.AzureTableConnectionStringResolver = settings => settings.BlockchainCashinDetectorJob.Db.LogsConnString;
+                    
+                    logs.Extended = extendedLogs =>
                     {
-                        logging.AddAdditionalSlackChannel("CommonBlockChainIntegration", options =>
+                        extendedLogs.AddAdditionalSlackChannel("CommonBlockChainIntegration", channelOptions =>
                         {
-                            options.MinLogLevel = Microsoft.Extensions.Logging.LogLevel.Information;
-                            options.SpamGuard.DisableGuarding();
-                            options.IncludeHealthNotifications();
+                            channelOptions.MinLogLevel = Microsoft.Extensions.Logging.LogLevel.Information;
                         });
-
-                        logging.AddAdditionalSlackChannel("CommonBlockChainIntegrationImportantMessages", options =>
+                        
+                        extendedLogs.AddAdditionalSlackChannel("CommonBlockChainIntegrationImportantMessages", channelOptions =>
                         {
-                            options.MinLogLevel = Microsoft.Extensions.Logging.LogLevel.Warning;
-                            options.SpamGuard.DisableGuarding();
-                            options.IncludeHealthNotifications();
+                            channelOptions.MinLogLevel = Microsoft.Extensions.Logging.LogLevel.Warning;
                         });
-                    }
-                );
-
-                builder.Populate(services);
-
-                builder.RegisterModule(new JobModule(
-                    appSettings.CurrentValue.MatchingEngineClient,
-                    appSettings.CurrentValue.Assets,
-                    appSettings.CurrentValue.BlockchainCashinDetectorJob.ChaosKitty));
-                builder.RegisterModule(new RepositoriesModule(
-                    appSettings.Nested(x => x.BlockchainCashinDetectorJob.Db)));
-                builder.RegisterModule(new BlockchainsModule(
-                    appSettings.CurrentValue.BlockchainCashinDetectorJob,
-                    appSettings.CurrentValue.BlockchainsIntegration,
-                    appSettings.CurrentValue.BlockchainWalletsServiceClient));
-                builder.RegisterModule(new CqrsModule(
-                    appSettings.CurrentValue.BlockchainCashinDetectorJob.Cqrs));
-
-                ApplicationContainer = builder.Build();
-                Log = ApplicationContainer.Resolve<ILogFactory>().CreateLog(this);
-                HealthNotifier = ApplicationContainer.Resolve<IHealthNotifier>();
-
-                return new AutofacServiceProvider(ApplicationContainer);
-            }
-            catch (Exception ex)
-            {
-                Log?.Critical(ex);
-                throw;
-            }
+                    };
+                };
+            });
         }
 
         [UsedImplicitly]
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, IApplicationLifetime appLifetime)
+        public void Configure(IApplicationBuilder app)
         {
-            try
+            app.UseLykkeConfiguration(options =>
             {
-                if (env.IsDevelopment())
-                {
-                    app.UseDeveloperExceptionPage();
-                }
-
-                app.UseLykkeMiddleware(ex => ErrorResponse.Create("Technical problem"));
-
-                app.UseMvc();
-                app.UseSwagger(c =>
-                {
-                    c.PreSerializeFilters.Add((swagger, httpReq) => swagger.Host = httpReq.Host.Value);
-                });
-                app.UseSwaggerUI(x =>
-                {
-                    x.RoutePrefix = "swagger/ui";
-                    x.SwaggerEndpoint("/swagger/v1/swagger.json", "v1");
-                });
-                app.UseStaticFiles();
-
-                appLifetime.ApplicationStarted.Register(() => StartApplication().GetAwaiter().GetResult());
-                appLifetime.ApplicationStopping.Register(() => StopApplication().GetAwaiter().GetResult());
-                appLifetime.ApplicationStopped.Register(() => CleanUp().GetAwaiter().GetResult());
-            }
-            catch (Exception ex)
-            {
-                Log?.Critical(ex);
-                throw;
-            }
-        }
-
-        private async Task StartApplication()
-        {
-            try
-            {
-                // NOTE: Job not yet recieve and process IsAlive requests here
-
-                await ApplicationContainer.Resolve<IStartupManager>().StartAsync();
-
-                HealthNotifier.Notify("Started");
-            }
-            catch (Exception ex)
-            {
-                Log.Critical(ex);
-                throw;
-            }
-        }
-
-        private async Task StopApplication()
-        {
-            try
-            {
-                // NOTE: Job still can recieve and process IsAlive requests here, so take care about it if you add logic here.
-
-                await ApplicationContainer.Resolve<IShutdownManager>().StopAsync();
-            }
-            catch (Exception ex)
-            {
-                if (Log != null)
-                {
-                    Log.Critical(ex);
-                }
-                throw;
-            }
-        }
-
-        private async Task CleanUp()
-        {
-            try
-            {
-                // NOTE: Job can't recieve and process IsAlive requests here, so you can destroy all resources
-                HealthNotifier?.Notify("Terminating");
-
-                ApplicationContainer.Dispose();
-            }
-            catch (Exception ex)
-            {
-                Log?.Critical(ex);
-                (Log as IDisposable)?.Dispose();
-
-                throw;
-            }
+                options.SwaggerOptions = _swaggerOptions;
+            });
         }
     }
 }
