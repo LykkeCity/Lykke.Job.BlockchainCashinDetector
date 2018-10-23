@@ -3,7 +3,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Common;
-using Common.Log;
+using Lykke.Common.Log;
 using JetBrains.Annotations;
 using Lykke.Common.Chaos;
 using Lykke.Common.Log;
@@ -18,6 +18,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
     [UsedImplicitly]
     public class DepositWalletsBalanceProcessingPeriodicalHandler : IDepositWalletsBalanceProcessingPeriodicalHandler
     {
+        private readonly ILogFactory _logFactory;
         private readonly int _batchSize;
         private readonly string _blockchainType;
         private readonly IBlockchainApiClient _blockchainApiClient;
@@ -28,7 +29,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
         private readonly ICashinRepository _cashinRepository;
         private readonly IDepositWalletLockRepository _depositWalletLockRepository;
         private readonly IChaosKitty _chaosKitty;
-        private readonly ILogFactory _logFactory;
 
         private readonly ITimerTrigger _timer;
 
@@ -61,7 +61,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
             _timer = new TimerTrigger(
                 $"{nameof(DepositWalletsBalanceProcessingPeriodicalHandler)} : {blockchainType}",
                 period,
-                _logFactory);
+                logFactory);
 
             _timer.Triggered += ProcessBalancesAsync;   
         }
