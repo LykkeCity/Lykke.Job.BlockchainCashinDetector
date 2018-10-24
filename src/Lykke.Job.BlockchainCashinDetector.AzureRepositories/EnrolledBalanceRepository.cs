@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using AzureStorage;
 using AzureStorage.Tables;
 using Common.Log;
+using Lykke.Common.Log;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain;
 using Lykke.SettingsReader;
 
@@ -15,7 +16,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
         private readonly INoSQLTableStorage<EnrolledBalanceEntity> _storage;
 
 
-        public static IEnrolledBalanceRepository Create(IReloadingManager<string> connectionString, ILog log)
+        public static IEnrolledBalanceRepository Create(IReloadingManager<string> connectionString, ILogFactory log)
         {
             var storage = AzureTableStorage<EnrolledBalanceEntity>.Create(
                 connectionString,

@@ -23,6 +23,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "4. Contract", "4. Contract"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lykke.Job.BlockchainCashinDetector.Contract", "contract\Lykke.Job.BlockchainCashinDetector.Contract\Lykke.Job.BlockchainCashinDetector.Contract.csproj", "{58FEDF76-9CC9-4B3B-877F-0795CE7C50F9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lykke.Job.BlockchainCashinDetector.IntegrationTests", "tests\Lykke.Job.BlockchainCashinDetector.IntegrationTests\Lykke.Job.BlockchainCashinDetector.IntegrationTests.csproj", "{E4E919A2-5DE8-4C0A-8FFD-F77E40EBD9DE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -53,6 +55,10 @@ Global
 		{58FEDF76-9CC9-4B3B-877F-0795CE7C50F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{58FEDF76-9CC9-4B3B-877F-0795CE7C50F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{58FEDF76-9CC9-4B3B-877F-0795CE7C50F9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E4E919A2-5DE8-4C0A-8FFD-F77E40EBD9DE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E4E919A2-5DE8-4C0A-8FFD-F77E40EBD9DE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E4E919A2-5DE8-4C0A-8FFD-F77E40EBD9DE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E4E919A2-5DE8-4C0A-8FFD-F77E40EBD9DE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -63,6 +69,7 @@ Global
 		{1322B569-1032-4276-B86E-69F8BE3DC1F7} = {AA5ECC48-14C3-4BE7-AF0C-D59FCA2742C2}
 		{AAC9F450-14D7-4482-BC12-7C55006864E2} = {AB790991-CEB2-44A5-9C0C-A2D26DB86D41}
 		{58FEDF76-9CC9-4B3B-877F-0795CE7C50F9} = {579F7EFC-B394-4D2B-9F42-C1A4293F5C2B}
+		{E4E919A2-5DE8-4C0A-8FFD-F77E40EBD9DE} = {AB790991-CEB2-44A5-9C0C-A2D26DB86D41}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D2419990-C093-4EE2-AFE9-80857ECBB147}

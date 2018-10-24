@@ -1,6 +1,5 @@
-﻿using System.Collections.Generic;
-using Autofac;
-using Common.Log;
+﻿using Autofac;
+using Lykke.Common.Log;
 using Lykke.Cqrs;
 using Lykke.Cqrs.Configuration;
 using Lykke.Job.BlockchainCashinDetector.Contract;
@@ -13,25 +12,24 @@ using Lykke.Job.BlockchainCashinDetector.Workflow.Projections;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Sagas;
 using Lykke.Job.BlockchainOperationsExecutor.Contract;
 using Lykke.Messaging;
-using Lykke.Messaging.Contract;
 using Lykke.Messaging.RabbitMq;
 using Lykke.Messaging.Serialization;
-
+using System.Collections.Generic;
+using MoreLinq;
+using System.Linq;
 
 namespace Lykke.Job.BlockchainCashinDetector.Modules
 {
     public class CqrsModule : Module
     {
-        private static readonly string Self = BlockchainCashinDetectorBoundedContext.Name;
+        public static readonly string Self = BlockchainCashinDetectorBoundedContext.Name;
 
         private readonly CqrsSettings _settings;
-        private readonly ILog _log;
         private readonly string _rabbitMqVirtualHost;
 
-        public CqrsModule(CqrsSettings settings, ILog log, string rabbitMqVirtualHost = null)
+        public CqrsModule(CqrsSettings settings ,string rabbitMqVirtualHost = null)
         {
             _settings = settings;
-            _log = log;
             _rabbitMqVirtualHost = rabbitMqVirtualHost;
         }
 
@@ -39,6 +37,17 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
         {
             builder.Register(context => new AutofacDependencyResolver(context)).As<IDependencyResolver>().SingleInstance();
 
+            RegisterInfrastructure(builder);
+        }
+
+        protected virtual IRegistration[] GetInterceptors()
+        {
+            return null;
+        }
+
+        protected virtual MessagingEngine RegisterMessagingEngine(IComponentContext ctx)
+        {
+            var logFactory = ctx.Resolve<ILogFactory>();
             var rabbitMqSettings = new RabbitMQ.Client.ConnectionFactory
             {
                 Uri = _settings.RabbitConnectionString
@@ -46,19 +55,36 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
             var rabbitMqEndpoint = _rabbitMqVirtualHost == null
                 ? rabbitMqSettings.Endpoint.ToString()
                 : $"{rabbitMqSettings.Endpoint}/{_rabbitMqVirtualHost}";
-            var messagingEngine = new MessagingEngine(_log,
+#pragma warning disable CS0612 // Type or member is obsolete
+            var messagingEngine = new MessagingEngine(logFactory,
                 new TransportResolver(new Dictionary<string, TransportInfo>
                 {
                     {
                         "RabbitMq",
                         new TransportInfo(
-                            rabbitMqEndpoint, 
+                            rabbitMqEndpoint,
                             rabbitMqSettings.UserName,
                             rabbitMqSettings.Password, "None", "RabbitMq")
                     }
                 }),
-                new RabbitMqTransportFactory());
+                new RabbitMqTransportFactory(logFactory));
+#pragma warning restore CS0612 // Type or member is obsolete
 
+            return messagingEngine;
+        }
+
+        protected void RegisterInfrastructure(ContainerBuilder builder)
+        {
+            RegisterWorkflowDependencies(builder);
+
+            builder.Register(ctx => CreateEngine(ctx))
+                .As<ICqrsEngine>()
+                .SingleInstance()
+                .AutoActivate();
+        }
+
+        protected virtual void RegisterWorkflowDependencies(ContainerBuilder builder)
+        {
             // Sagas
             builder.RegisterType<CashinSaga>();
 
@@ -74,38 +100,37 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
             // Projections
             builder.RegisterType<ClientOperationsProjection>();
             builder.RegisterType<MatchingEngineCallDeduplicationsProjection>();
-
-            builder.Register(ctx => CreateEngine(ctx, messagingEngine))
-                .As<ICqrsEngine>()
-                .SingleInstance()
-                .AutoActivate();
         }
 
-        private CqrsEngine CreateEngine(IComponentContext ctx, IMessagingEngine messagingEngine)
+        protected virtual IEndpointResolver GetDefaultEndpointResolver()
         {
+            return new RabbitMqConventionEndpointResolver(
+                "RabbitMq",
+                SerializationFormat.MessagePack,
+                environment: "lykke");
+        }
+
+        protected CqrsEngine CreateEngine(IComponentContext ctx)
+        {
+            var logFactory = ctx.Resolve<ILogFactory>();
+            var messagingEngine = RegisterMessagingEngine(ctx);
             var defaultRetryDelay = (long)_settings.RetryDelay.TotalMilliseconds;
 
             const string defaultPipeline = "commands";
             const string defaultRoute = "self";
             const string eventsRoute = "evets";
 
-            return new CqrsEngine(
-                _log,
-                ctx.Resolve<IDependencyResolver>(),
-                messagingEngine,
-                new DefaultEndpointProvider(),
-                true,
-                Register.DefaultEndpointResolver(new RabbitMqConventionEndpointResolver(
-                    "RabbitMq",
-                    SerializationFormat.MessagePack,
-                    environment: "lykke")),
+#pragma warning disable CS0612 // Type or member is obsolete
 
+            var registration = new List<IRegistration>()
+            {
+                Register.DefaultEndpointResolver(GetDefaultEndpointResolver()),
                 Register.BoundedContext(Self)
                     .FailedCommandRetryDelay(defaultRetryDelay)
 
                     .ListeningCommands(typeof(LockDepositWalletCommand))
                     .On(defaultRoute)
-                    .WithLoopback()
+                    .WithLoopback()//When it is sent not from saga
                     .WithCommandsHandler<LockDepositWalletCommandsHandler>()
                     .PublishingEvents(typeof(DepositWalletLockedEvent))
                     .With(defaultPipeline)
@@ -214,8 +239,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .ListeningEvents(typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent))
                     .From(BlockchainOperationsExecutorBoundedContext.Name)
                     .On(defaultRoute)
-                    .PublishingCommands(typeof(ResetEnrolledBalanceCommand), 
-                                        typeof(NotifyCashinCompletedCommand))
+                    .PublishingCommands(typeof(ResetEnrolledBalanceCommand))
                     .To(Self)
                     .With(defaultPipeline)
 
@@ -229,15 +253,35 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .ListeningEvents(typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent))
                     .From(BlockchainOperationsExecutorBoundedContext.Name)
                     .On(defaultRoute)
-                    .PublishingCommands(typeof(NotifyCashinFailedCommand))
-                    .To(Self)
-                    .With(defaultPipeline)
 
                     .ListeningEvents(typeof(DepositWalletLockReleasedEvent))
                     .From(Self)
                     .On(defaultRoute)
+                    .PublishingCommands(
+                        typeof(NotifyCashinFailedCommand),
+                        typeof(NotifyCashinCompletedCommand))
+                    .To(Self)
+                    .With(defaultPipeline)
 
-                    .ProcessingOptions(defaultRoute).MultiThreaded(8).QueueCapacity(1024));
+                    .ProcessingOptions(defaultRoute).MultiThreaded(8).QueueCapacity(1024)
+            };
+
+            var interceptors = GetInterceptors();
+
+            if (interceptors != null)
+            {
+                registration.AddRange(interceptors);
+            }
+
+            return new CqrsEngine(
+                logFactory,
+                ctx.Resolve<IDependencyResolver>(),
+                messagingEngine,
+                new DefaultEndpointProvider(),
+                true,
+                registration.ToArray());
+
+#pragma warning restore CS0612 // Type or member is obsolete
         }
     }
 }

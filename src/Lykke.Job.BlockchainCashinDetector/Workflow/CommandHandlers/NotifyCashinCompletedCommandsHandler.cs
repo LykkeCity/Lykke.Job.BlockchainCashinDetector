@@ -10,7 +10,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
     [UsedImplicitly]
     public class NotifyCashinCompletedCommandsHandler
     {
-        public NotifyCashinCompletedCommandsHandler(ILog log)
+        public NotifyCashinCompletedCommandsHandler()
         {
         }
 

@@ -6,6 +6,7 @@ using Common;
 using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Common.Chaos;
+using Lykke.Common.Log;
 using Lykke.Cqrs;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain;
 using Lykke.Job.BlockchainCashinDetector.Core.Services.BLockchains;
@@ -28,11 +29,12 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
         private readonly ICashinRepository _cashinRepository;
         private readonly IDepositWalletLockRepository _depositWalletLockRepository;
         private readonly IChaosKitty _chaosKitty;
+        private readonly ILogFactory _logFactory;
 
         private readonly ITimerTrigger _timer;
 
         public DepositWalletsBalanceProcessingPeriodicalHandler(
-            ILog log,
+            ILogFactory logFactory,
             TimeSpan period,
             int batchSize,
             string blockchainType,
@@ -45,7 +47,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
             IDepositWalletLockRepository depositWalletLockRepository,
             IChaosKitty chaosKitty)
         {
-            _log = log;
+            _logFactory = logFactory;
+            _log = logFactory.CreateLog(this);
             _batchSize = batchSize;
             _blockchainType = blockchainType;
             _blockchainApiClient = blockchainApiClientProvider.Get(blockchainType);
@@ -60,7 +63,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
             _timer = new TimerTrigger(
                 $"{nameof(DepositWalletsBalanceProcessingPeriodicalHandler)} : {blockchainType}",
                 period, 
-                log);
+                _log);
 
             _timer.Triggered += ProcessBalancesAsync;   
         }
@@ -86,7 +89,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
 
             var balanceProcessor = new BalanceProcessor(
                 _blockchainType,
-                _log,
+                _logFactory,
                 _hotWalletsProvider,
                 _blockchainApiClient,
                 _cqrsEngine,

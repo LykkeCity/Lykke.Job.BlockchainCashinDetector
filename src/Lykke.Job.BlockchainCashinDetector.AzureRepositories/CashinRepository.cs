@@ -5,6 +5,7 @@ using AzureStorage.Tables;
 using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Common.Chaos;
+using Lykke.Common.Log;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain;
 using Lykke.SettingsReader;
 
@@ -18,7 +19,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
 
         public static ICashinRepository Create(
             IReloadingManager<string> connectionString, 
-            ILog log,
+            ILogFactory log,
             IChaosKitty chaosKitty)
         {
             if (chaosKitty == null) throw new ArgumentNullException(nameof(chaosKitty));
