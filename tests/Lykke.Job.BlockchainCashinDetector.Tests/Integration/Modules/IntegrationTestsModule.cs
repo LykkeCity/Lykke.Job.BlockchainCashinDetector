@@ -11,7 +11,6 @@ using Lykke.MatchingEngine.Connector.Abstractions.Services;
 using Lykke.Service.Assets.Client;
 using Lykke.Service.BlockchainApi.Client;
 using Lykke.Service.BlockchainWallets.Client;
-using Lykke.Service.OperationsRepository.Client.Abstractions.CashOperations;
 
 namespace Lykke.Job.BlockchainCashinDetector.Tests.Integration.Modules
 {
@@ -54,10 +53,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Tests.Integration.Modules
 
             builder.Register(c => c.Resolve<IntegrationTestsMocks>().AssetsClientWithCache.Object)
                 .As<IAssetsServiceWithCache>()
-                .SingleInstance();
-
-            builder.Register(c => c.Resolve<IntegrationTestsMocks>().CashOperationsRepositoryClient.Object)
-                .As<ICashOperationsRepositoryClient>()
                 .SingleInstance();
 
             builder.Register(c => c.Resolve<IntegrationTestsMocks>().MatchingEngineClient.Object)
