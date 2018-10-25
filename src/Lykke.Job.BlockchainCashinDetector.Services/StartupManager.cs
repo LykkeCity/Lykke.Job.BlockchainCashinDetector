@@ -25,11 +25,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Services
             ILogFactory logFactory, 
             IEnumerable<IDepositWalletsBalanceProcessingPeriodicalHandler> depositWalletsBalanceProcessingHandlers)
         {
-            if (logFactory == null)
-            {
-                throw new ArgumentNullException(nameof(logFactory));
-            }
-
             _log = logFactory.CreateLog(this);
             _depositWalletsBalanceProcessingHandlers = depositWalletsBalanceProcessingHandlers ?? throw new ArgumentNullException(nameof(depositWalletsBalanceProcessingHandlers));
         }
