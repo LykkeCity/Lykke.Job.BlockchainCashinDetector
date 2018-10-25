@@ -10,9 +10,6 @@ using Lykke.Job.BlockchainCashinDetector.Settings.Assets;
 using Lykke.Job.BlockchainCashinDetector.Settings.MeSettings;
 using Lykke.MatchingEngine.Connector.Services;
 using Lykke.Service.Assets.Client;
-using Lykke.Service.OperationsRepository.Client;
-using Lykke.Service.OperationsRepository.Client.Abstractions.CashOperations;
-using Lykke.Service.OperationsRepository.Client.CashOperations;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Lykke.Job.BlockchainCashinDetector.Modules
@@ -22,18 +19,15 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
         private readonly MatchingEngineSettings _meSettings;
         private readonly AssetsSettings _assetsSettings;
         private readonly ChaosSettings _chaosSettings;
-        private readonly Settings.OperationsRepositoryServiceClientSettings _operationsRepositoryServiceSettings;
 
         public JobModule(
             MatchingEngineSettings meSettings,
             AssetsSettings assetsSettings,
-            ChaosSettings chaosSettings,
-            Settings.OperationsRepositoryServiceClientSettings operationsRepositoryServiceSettings)
+            ChaosSettings chaosSettings)
         {
             _meSettings = meSettings;
             _assetsSettings = assetsSettings;
             _chaosSettings = chaosSettings;
-            _operationsRepositoryServiceSettings = operationsRepositoryServiceSettings;
         }
 
         protected override void Load(ContainerBuilder builder)
@@ -54,18 +48,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                 AssetsCacheExpirationPeriod = _assetsSettings.CacheExpirationPeriod,
                 AssetPairsCacheExpirationPeriod = _assetsSettings.CacheExpirationPeriod
             });
-
-            builder.Register(c =>
-                {
-                    var log = c.Resolve<ILogFactory>().CreateLog(this);
-
-                    return new CashOperationsRepositoryClient(_operationsRepositoryServiceSettings.ServiceUrl,
-                        log,
-                        _operationsRepositoryServiceSettings.RequestTimeout);
-                })
-            .As<ICashOperationsRepositoryClient>()
-            .SingleInstance();
-
 
             RegisterMatchingEngine(builder);
 
