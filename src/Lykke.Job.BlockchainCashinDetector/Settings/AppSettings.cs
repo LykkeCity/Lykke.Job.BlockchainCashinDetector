@@ -31,8 +31,5 @@ namespace Lykke.Job.BlockchainCashinDetector.Settings
 
         [UsedImplicitly(ImplicitUseKindFlags.Assign)]
         public OperationsRepositoryServiceClientSettings OperationsRepositoryServiceClient { get; set; }
-
-        [UsedImplicitly(ImplicitUseKindFlags.Assign)]
-        public PayInternalServiceClientSettings PayInternalServiceClient { get; set; }
     }
 }

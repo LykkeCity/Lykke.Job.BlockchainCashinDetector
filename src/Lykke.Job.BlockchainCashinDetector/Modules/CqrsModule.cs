@@ -55,7 +55,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
             var rabbitMqEndpoint = _rabbitMqVirtualHost == null
                 ? rabbitMqSettings.Endpoint.ToString()
                 : $"{rabbitMqSettings.Endpoint}/{_rabbitMqVirtualHost}";
-#pragma warning disable CS0612 // Type or member is obsolete
+
             var messagingEngine = new MessagingEngine(logFactory,
                 new TransportResolver(new Dictionary<string, TransportInfo>
                 {
@@ -68,7 +68,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     }
                 }),
                 new RabbitMqTransportFactory(logFactory));
-#pragma warning restore CS0612 // Type or member is obsolete
 
             return messagingEngine;
         }
@@ -119,8 +118,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
             const string defaultPipeline = "commands";
             const string defaultRoute = "self";
             const string eventsRoute = "evets";
-
-#pragma warning disable CS0612 // Type or member is obsolete
 
             var registration = new List<IRegistration>()
             {
@@ -280,8 +277,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                 new DefaultEndpointProvider(),
                 true,
                 registration.ToArray());
-
-#pragma warning restore CS0612 // Type or member is obsolete
         }
     }
 }

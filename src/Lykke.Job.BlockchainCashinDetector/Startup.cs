@@ -74,10 +74,16 @@ namespace Lykke.Job.BlockchainCashinDetector
                     slackSettings.CurrentValue.AzureQueue.QueueName,
                     logging =>
                     {
-                        logging.AddAdditionalSlackChannel("CommonBlockChainIntegration");
+                        logging.AddAdditionalSlackChannel("CommonBlockChainIntegration", options =>
+                        {
+                            options.MinLogLevel = Microsoft.Extensions.Logging.LogLevel.Information;
+                            options.SpamGuard.DisableGuarding();
+                        });
+
                         logging.AddAdditionalSlackChannel("CommonBlockChainIntegrationImportantMessages", options =>
                         {
                             options.MinLogLevel = Microsoft.Extensions.Logging.LogLevel.Warning;
+                            options.SpamGuard.DisableGuarding();
                         });
                     }
                 );
@@ -152,7 +158,7 @@ namespace Lykke.Job.BlockchainCashinDetector
                 // NOTE: Job not yet recieve and process IsAlive requests here
 
                 await ApplicationContainer.Resolve<IStartupManager>().StartAsync();
-                ApplicationContainer.Resolve<ICqrsEngine>().Start();
+
                 await Log.WriteMonitorAsync("", "", "Started");
             }
             catch (Exception ex)

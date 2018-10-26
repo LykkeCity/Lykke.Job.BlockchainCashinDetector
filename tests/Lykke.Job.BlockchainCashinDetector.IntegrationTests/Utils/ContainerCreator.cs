@@ -40,11 +40,6 @@ namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests.Utils
                 appSettings.CurrentValue.BlockchainsIntegration,
                 appSettings.CurrentValue.BlockchainWalletsServiceClient));
             builder.RegisterModule(new CqrsTestModule(
-                //new CqrsSettings()
-                //{
-                //    RabbitConnectionString = "amqp://guest:guest@0.0.0.0:5672",
-                //    RetryDelay = TimeSpan.FromMinutes(2)
-                //}));
                 appSettings.CurrentValue.BlockchainCashinDetectorJob.Cqrs, "test"));
 
             var testContainer = builder.Build();
@@ -78,7 +73,7 @@ namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests.Utils
 
             if (modules != null && modules.Length == 0)
             {
-                return null;
+                return builder.Build();
             }
 
             foreach (var module in modules)

@@ -355,6 +355,21 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                 throw new InvalidOperationException("IsDustCashin should be not null here");
             }
 
+            if (!aggregate.ClientId.HasValue)
+            {
+                throw new InvalidOperationException("Client ID should be not null here");
+            }
+
+            if (!aggregate.OperationAmount.HasValue)
+            {
+                throw new InvalidOperationException("Operation amount should be not null here");
+            }
+
+            if (aggregate.OperationAmount.Value == 0M)
+            {
+                throw new InvalidOperationException("Operation amount should be not 0 here");
+            }
+
             if (transitionResult.ShouldSendCommands())
             {
                 if (aggregate.ErrorCode.HasValue)
@@ -364,8 +379,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                         new NotifyCashinFailedCommand
                         {
                             OperationId = aggregate.OperationId,
-                            Amount = aggregate.OperationAmount,
-                            ClientId = aggregate.ClientId,
+                            Amount = aggregate.OperationAmount.Value,
+                            ClientId = aggregate.ClientId.Value,
                             AssetId = aggregate.AssetId,
                             Error = aggregate.Error,
                             ErrorCode = aggregate.ErrorCode.Value.MapToCashinErrorCode()
@@ -393,16 +408,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                 }
                 else
                 {
-                    if (!aggregate.OperationAmount.HasValue)
-                    {
-                        throw new InvalidOperationException("Operation amount should be not null here");
-                    }
-
-                    if (aggregate.OperationAmount.Value == 0M)
-                    {
-                        throw new InvalidOperationException("Operation amount should be not 0 here");
-                    }
-
                     if (!aggregate.TransactionAmount.HasValue)
                     {
                         throw new InvalidOperationException("Transaction amount should be not null here");
@@ -416,11 +421,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                     if (!aggregate.Fee.HasValue)
                     {
                         throw new InvalidOperationException("TransactionFee should be not null here");
-                    }
-
-                    if (!aggregate.ClientId.HasValue)
-                    {
-                        throw new InvalidOperationException("Client ID should be not null here");
                     }
 
                     sender.SendCommand
@@ -440,6 +440,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                     );
                 }
 
+                _chaosKitty.Meow(aggregate.OperationId);
             }
         }
     }
