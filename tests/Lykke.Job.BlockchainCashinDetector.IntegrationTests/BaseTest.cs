@@ -42,7 +42,7 @@ namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests
         }
 
         [Fact(Skip = "Should be update after refactoring")]
-        public async Task Test1()
+        public async Task BalanceProcessorStarted__BalanceIsGtThanZero_DepositWalletLockedEventSent()
         {
             var testContainer = ContainerCreator.CreateIntegrationContainer();
             Mock<IBlockchainApiClient> apiClient = new Mock<IBlockchainApiClient>();
