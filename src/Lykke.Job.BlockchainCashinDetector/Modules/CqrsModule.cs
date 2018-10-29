@@ -68,7 +68,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     }
                 }),
                 new RabbitMqTransportFactory(logFactory));
-#pragma warning restore CS0612 // Type or member is obsolete
 
             return messagingEngine;
         }

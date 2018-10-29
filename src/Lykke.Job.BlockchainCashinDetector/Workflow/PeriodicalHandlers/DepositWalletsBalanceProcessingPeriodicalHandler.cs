@@ -33,7 +33,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
         private readonly IChaosKitty _chaosKitty;
         private readonly ILogFactory _logFactory;
         private readonly IBlockchainWalletsClient _blockchainWalletsClient;
-        private readonly ILogFactory _logFactory;
 
         private readonly ITimerTrigger _timer;
 
