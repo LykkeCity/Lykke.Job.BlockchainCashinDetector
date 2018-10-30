@@ -16,12 +16,12 @@ namespace Lykke.Job.BlockchainCashinDetector.Contract.Events
         /// <summary>
         /// Amount
         /// </summary>
-        public decimal? Amount { get; set; }
+        public decimal Amount { get; set; }
 
         /// <summary>
         /// Lykke unique client ID
         /// </summary>
-        public Guid? ClientId { get; set; }
+        public Guid ClientId { get; set; }
 
         /// <summary>
         /// Lykke unique operation ID
