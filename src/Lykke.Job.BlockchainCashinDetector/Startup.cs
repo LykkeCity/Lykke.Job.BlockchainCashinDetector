@@ -78,12 +78,14 @@ namespace Lykke.Job.BlockchainCashinDetector
                         {
                             options.MinLogLevel = Microsoft.Extensions.Logging.LogLevel.Information;
                             options.SpamGuard.DisableGuarding();
+                            options.IncludeHealthNotifications();
                         });
 
                         logging.AddAdditionalSlackChannel("CommonBlockChainIntegrationImportantMessages", options =>
                         {
                             options.MinLogLevel = Microsoft.Extensions.Logging.LogLevel.Warning;
                             options.SpamGuard.DisableGuarding();
+                            options.IncludeHealthNotifications();
                         });
                     }
                 );
