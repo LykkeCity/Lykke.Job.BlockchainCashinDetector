@@ -55,6 +55,11 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                         log.WriteInfo("Blockchains registration", "",
                             $"Registering blockchain: {blockchain.Type} -> \r\nAPI: {blockchain.ApiUrl}\r\nHW: {blockchain.HotWalletAddress}");
 
+                        if (blockchain.AreCashinsDisabled)
+                        {
+                            log.WriteWarning("Blockchains registration", "", $"Cashins for blockchain {blockchain.Type} are disabled");
+                        }
+
                         return new BlockchainApiClient(logFactory, blockchain.ApiUrl);
                     })
                     .Named<IBlockchainApiClient>(blockchain.Type)
