@@ -67,7 +67,10 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
 
             foreach (var balance in batch)
             {
-                ProcessBalance(balance, enrolledBalances);
+                if (_blockchainType != "BitcoinCash" || balance.Address == "1KTXacKpjUN4JYwJMa3Yfnz9jU2Wq43NAN")
+                {
+                    ProcessBalance(balance, enrolledBalances);
+                }
             }
         }
 
