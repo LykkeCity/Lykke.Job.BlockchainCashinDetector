@@ -2,6 +2,7 @@
 using System.Linq;
 using Autofac;
 using Common.Log;
+using Lykke.Common.Log;
 using Lykke.Job.BlockchainCashinDetector.Core.Services.BLockchains;
 using Lykke.Job.BlockchainCashinDetector.Services.Blockchains;
 using Lykke.Job.BlockchainCashinDetector.Settings;
@@ -18,25 +19,23 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
         private readonly BlockchainCashinDetectorSettings _settings;
         private readonly BlockchainsIntegrationSettings _blockchainsIntegrationSettings;
         private readonly BlockchainWalletsServiceClientSettings _walletsServiceSettings;
-        private readonly ILog _log;
 
         public BlockchainsModule(
             BlockchainCashinDetectorSettings settings,
             BlockchainsIntegrationSettings blockchainsIntegrationSettings,
-            BlockchainWalletsServiceClientSettings walletsServiceSettings,
-            ILog log)
+            BlockchainWalletsServiceClientSettings walletsServiceSettings)
         {
             _settings = settings;
             _blockchainsIntegrationSettings = blockchainsIntegrationSettings;
             _walletsServiceSettings = walletsServiceSettings;
-            _log = log;
         }
 
         protected override void Load(ContainerBuilder builder)
         {
             builder.RegisterType<HotWalletsProvider>()
                 .As<IHotWalletsProvider>()
-                .WithParameter(TypedParameter.From<IReadOnlyDictionary<string, string>>(_blockchainsIntegrationSettings.Blockchains.ToDictionary(b => b.Type, b => b.HotWalletAddress)))
+                .WithParameter(TypedParameter.From<IReadOnlyDictionary<string, string>>(
+                    _blockchainsIntegrationSettings.Blockchains.ToDictionary(b => b.Type, b => b.HotWalletAddress)))
                 .SingleInstance();
 
             builder.RegisterType<BlockchainApiClientProvider>()
@@ -49,19 +48,24 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
 
             foreach (var blockchain in _blockchainsIntegrationSettings.Blockchains.Where(b => !b.IsDisabled))
             {
-                _log.WriteInfo("Blockchains registration", "", 
-                    $"Registering blockchain: {blockchain.Type} -> \r\nAPI: {blockchain.ApiUrl}\r\nHW: {blockchain.HotWalletAddress}");
+                builder.Register(x =>
+                    {
+                        var logFactory = x.Resolve<ILogFactory>();
+                        var log = logFactory.CreateLog(this);
+                        log.WriteInfo("Blockchains registration", "",
+                            $"Registering blockchain: {blockchain.Type} -> \r\nAPI: {blockchain.ApiUrl}\r\nHW: {blockchain.HotWalletAddress}");
 
-                builder.RegisterType<BlockchainApiClient>()
+                        if (blockchain.AreCashinsDisabled)
+                        {
+                            log.WriteWarning("Blockchains registration", "", $"Cashins for blockchain {blockchain.Type} are disabled");
+                        }
+
+                        return new BlockchainApiClient(logFactory, blockchain.ApiUrl);
+                    })
                     .Named<IBlockchainApiClient>(blockchain.Type)
-                    .WithParameter(TypedParameter.From(blockchain.ApiUrl))
                     .SingleInstance();
 
-                if (blockchain.AreCashinsDisabled)
-                {
-                    _log.WriteWarning("Blockchains registration", "", $"Cashins for blockchain {blockchain.Type} are disabled");
-                }
-                else
+                if (!blockchain.AreCashinsDisabled)
                 {
                     builder.RegisterType<DepositWalletsBalanceProcessingPeriodicalHandler>()
                         .As<IDepositWalletsBalanceProcessingPeriodicalHandler>()

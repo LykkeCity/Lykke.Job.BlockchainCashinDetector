@@ -263,59 +263,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                 );
 
                 _chaosKitty.Meow(evt.OperationId);
-
-                if (!aggregate.OperationAmount.HasValue)
-                {
-                    throw new InvalidOperationException("Operation amount should be not null here");
-                }
-
-                if (aggregate.OperationAmount.Value == 0M)
-                {
-                    throw new InvalidOperationException("Operation amount should be not 0 here");
-                }
-
-                if (!aggregate.TransactionAmount.HasValue)
-                {
-                    throw new InvalidOperationException("Transaction amount should be not null here");
-                }
-
-                if (aggregate.TransactionAmount.Value == 0M)
-                {
-                    throw new InvalidOperationException("Transaction amount should be not 0 here");
-                }
-
-                if (!aggregate.Fee.HasValue)
-                {
-                    throw new InvalidOperationException("TransactionFee should be not null here");
-                }
-
-                if (!aggregate.ClientId.HasValue)
-                {
-                    throw new InvalidOperationException("Client ID should be not null here");
-                }
-
-                if (!aggregate.IsDustCashin.HasValue)
-                {
-                    throw new InvalidOperationException("IsDustCashin should be not null here");
-                }
-
-                sender.SendCommand
-                (
-                    new NotifyCashinCompletedCommand
-                    {
-                        OperationAmount = aggregate.OperationAmount.Value,
-                        TransactionnAmount = aggregate.TransactionAmount.Value,
-                        TransactionFee = aggregate.Fee.Value,
-                        AssetId = aggregate.AssetId,
-                        ClientId = aggregate.ClientId.Value,
-                        OperationType = CashinOperationType.OnBlockchain,
-                        OperationId = aggregate.OperationId,
-                        TransactionHash = aggregate.TransactionHash
-                    },
-                    Self
-                );
-
-                _chaosKitty.Meow(aggregate.OperationId);
             }
         }
 
@@ -366,7 +313,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
             {
                 throw new InvalidOperationException("ErrorCode should be not null here");
             }
-            
+
             if (transitionResult.ShouldSaveAggregate())
             {
                 await _cashinRepository.SaveAsync(aggregate);
@@ -382,20 +329,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                         BlockchainType = aggregate.BlockchainType,
                         BlockchainAssetId = aggregate.BlockchainAssetId,
                         DepositWalletAddress = aggregate.DepositWalletAddress
-                    },
-                    Self
-                );
-
-                sender.SendCommand
-                (
-                    new NotifyCashinFailedCommand
-                    {
-                        OperationId = aggregate.OperationId,
-                        Amount = aggregate.OperationAmount,
-                        ClientId = aggregate.ClientId,
-                        AssetId = aggregate.AssetId,
-                        Error = aggregate.Error,
-                        ErrorCode = aggregate.ErrorCode.Value.MapToCashinErrorCode()
                     },
                     Self
                 );
@@ -422,24 +355,92 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                 throw new InvalidOperationException("IsDustCashin should be not null here");
             }
 
-            if (aggregate.IsDustCashin.Value &&
-                transitionResult.ShouldSendCommands())
+            if (!aggregate.ClientId.HasValue)
             {
-                sender.SendCommand
-                (
-                    new NotifyCashinCompletedCommand
+                throw new InvalidOperationException("Client ID should be not null here");
+            }
+
+            if (!aggregate.OperationAmount.HasValue)
+            {
+                throw new InvalidOperationException("Operation amount should be not null here");
+            }
+
+            if (aggregate.OperationAmount.Value == 0M)
+            {
+                throw new InvalidOperationException("Operation amount should be not 0 here");
+            }
+
+            if (transitionResult.ShouldSendCommands())
+            {
+                if (aggregate.ErrorCode.HasValue)
+                {
+                    sender.SendCommand
+                    (
+                        new NotifyCashinFailedCommand
+                        {
+                            OperationId = aggregate.OperationId,
+                            Amount = aggregate.OperationAmount.Value,
+                            ClientId = aggregate.ClientId.Value,
+                            AssetId = aggregate.AssetId,
+                            Error = aggregate.Error,
+                            ErrorCode = aggregate.ErrorCode.Value.MapToCashinErrorCode()
+                        },
+                        Self
+                    );
+                }
+                else if (aggregate.IsDustCashin.Value)
+                {
+                    sender.SendCommand
+                    (
+                        new NotifyCashinCompletedCommand
+                        {
+                            OperationAmount = aggregate.OperationAmount.Value,
+                            TransactionnAmount = 0M,
+                            TransactionFee = 0M,
+                            AssetId = aggregate.AssetId,
+                            ClientId = aggregate.ClientId.Value,
+                            OperationType = CashinOperationType.OffBlockchain,
+                            OperationId = aggregate.OperationId,
+                            TransactionHash = "0x"
+                        },
+                        Self
+                    );
+                }
+                else
+                {
+                    if (!aggregate.TransactionAmount.HasValue)
                     {
-                        OperationAmount = aggregate.OperationAmount.Value,
-                        TransactionnAmount = 0M,
-                        TransactionFee = 0M,
-                        AssetId = aggregate.AssetId,
-                        ClientId = aggregate.ClientId.Value,
-                        OperationType = CashinOperationType.OffBlockchain,
-                        OperationId = aggregate.OperationId,
-                        TransactionHash = "0x"
-                    },
-                    Self
-                );
+                        throw new InvalidOperationException("Transaction amount should be not null here");
+                    }
+
+                    if (aggregate.TransactionAmount.Value == 0M)
+                    {
+                        throw new InvalidOperationException("Transaction amount should be not 0 here");
+                    }
+
+                    if (!aggregate.Fee.HasValue)
+                    {
+                        throw new InvalidOperationException("TransactionFee should be not null here");
+                    }
+
+                    sender.SendCommand
+                    (
+                        new NotifyCashinCompletedCommand
+                        {
+                            OperationAmount = aggregate.OperationAmount.Value,
+                            TransactionnAmount = aggregate.TransactionAmount.Value,
+                            TransactionFee = aggregate.Fee.Value,
+                            AssetId = aggregate.AssetId,
+                            ClientId = aggregate.ClientId.Value,
+                            OperationType = CashinOperationType.OnBlockchain,
+                            OperationId = aggregate.OperationId,
+                            TransactionHash = aggregate.TransactionHash
+                        },
+                        Self
+                    );
+                }
+
+                _chaosKitty.Meow(aggregate.OperationId);
             }
         }
     }

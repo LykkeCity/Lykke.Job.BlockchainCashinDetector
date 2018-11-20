@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Common.Log;
 using Lykke.Common.Chaos;
+using Lykke.Common.Log;
 using Lykke.Cqrs;
 using Lykke.Job.BlockchainCashinDetector.Contract;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain;
@@ -41,6 +42,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Tests
             var hotWallet = "hot-wallet";
             var depositWallet = "deposit-wallet";
             var operationId = Guid.NewGuid();
+            Mock<ILogFactory> logFactory = new Mock<ILogFactory>();
             var hotWalletProviderMock = new Mock<IHotWalletsProvider>();
             var blockchainApiClientMock = new Mock<IBlockchainApiClient>();
             var cqrsEngineMock = new Mock<ICqrsEngine>();
@@ -100,7 +102,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Tests
             
             var balanceProcessor = new BalanceProcessor(
                 blockchainType,
-                EmptyLog.Instance,
+                logFactory.Object,
                 hotWalletProviderMock.Object,
                 blockchainApiClientMock.Object,
                 cqrsEngineMock.Object,

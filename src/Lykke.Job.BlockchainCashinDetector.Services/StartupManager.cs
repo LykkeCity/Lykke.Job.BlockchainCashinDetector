@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Common.Log;
 using JetBrains.Annotations;
+using Lykke.Common.Log;
+using Lykke.Cqrs;
 using Lykke.Job.BlockchainCashinDetector.Core.Services;
 using Lykke.Job.BlockchainCashinDetector.Core.Services.BLockchains;
 
@@ -19,22 +21,24 @@ namespace Lykke.Job.BlockchainCashinDetector.Services
     {
         private readonly ILog _log;
         private readonly IEnumerable<IDepositWalletsBalanceProcessingPeriodicalHandler> _depositWalletsBalanceProcessingHandlers;
+        private readonly ICqrsEngine _cqrsEngine;
 
         public StartupManager(
-            ILog log, 
-            IEnumerable<IDepositWalletsBalanceProcessingPeriodicalHandler> depositWalletsBalanceProcessingHandlers)
+            ILogFactory logFactory, 
+            IEnumerable<IDepositWalletsBalanceProcessingPeriodicalHandler> depositWalletsBalanceProcessingHandlers,
+            ICqrsEngine cqrsEngine)
         {
-            if (log == null)
-            {
-                throw new ArgumentNullException(nameof(log));
-            }
-
-            _log = log.CreateComponentScope(nameof(StartupManager));
+            _log = logFactory.CreateLog(this);
             _depositWalletsBalanceProcessingHandlers = depositWalletsBalanceProcessingHandlers ?? throw new ArgumentNullException(nameof(depositWalletsBalanceProcessingHandlers));
+            _cqrsEngine = cqrsEngine ?? throw new ArgumentNullException(nameof(cqrsEngine));
         }
 
         public async Task StartAsync()
         {
+            _log.WriteInfo(nameof(StartAsync), null, "Starting cqrs engine...");
+
+            _cqrsEngine.Start();
+
             _log.WriteInfo(nameof(StartAsync), null, "Starting deposit wallets balance monitoring...");
 
             foreach (var depositWalletsBalanceProcessingHandler in _depositWalletsBalanceProcessingHandlers)

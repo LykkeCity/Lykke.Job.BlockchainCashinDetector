@@ -8,10 +8,13 @@ using JetBrains.Annotations;
 using Lykke.Common.Api.Contract.Responses;
 using Lykke.Common.ApiLibrary.Middleware;
 using Lykke.Common.ApiLibrary.Swagger;
+using Lykke.Common.Log;
+using Lykke.Cqrs;
 using Lykke.Job.BlockchainCashinDetector.Core.Services;
 using Lykke.Job.BlockchainCashinDetector.Modules;
 using Lykke.Job.BlockchainCashinDetector.Settings;
 using Lykke.Logs;
+using Lykke.Logs.Loggers.LykkeSlack;
 using Lykke.Logs.Slack;
 using Lykke.SettingsReader;
 using Lykke.SlackNotification.AzureQueue;
@@ -63,29 +66,48 @@ namespace Lykke.Job.BlockchainCashinDetector
                     options.SenderName = "Lykke.Job.BlockchainCashinDetector";
                 });
 
-                Log = CreateLogWithSlack(services, appSettings);
+                var slackSettings = appSettings.Nested(x => x.SlackNotifications);
+                services.AddLykkeLogging(
+                    appSettings.ConnectionString(x => x.BlockchainCashinDetectorJob.Db.LogsConnString),
+                    "BlockchainCashinDetectorLog",
+                    slackSettings.CurrentValue.AzureQueue.ConnectionString,
+                    slackSettings.CurrentValue.AzureQueue.QueueName,
+                    logging =>
+                    {
+                        logging.AddAdditionalSlackChannel("CommonBlockChainIntegration", options =>
+                        {
+                            options.MinLogLevel = Microsoft.Extensions.Logging.LogLevel.Information;
+                            options.SpamGuard.DisableGuarding();
+                            options.IncludeHealthNotifications();
+                        });
+
+                        logging.AddAdditionalSlackChannel("CommonBlockChainIntegrationImportantMessages", options =>
+                        {
+                            options.MinLogLevel = Microsoft.Extensions.Logging.LogLevel.Warning;
+                            options.SpamGuard.DisableGuarding();
+                            options.IncludeHealthNotifications();
+                        });
+                    }
+                );
 
                 builder.Populate(services);
-                
+
                 builder.RegisterModule(new JobModule(
                     appSettings.CurrentValue.MatchingEngineClient,
-                    appSettings.CurrentValue.Assets, 
+                    appSettings.CurrentValue.Assets,
                     appSettings.CurrentValue.BlockchainCashinDetectorJob.ChaosKitty,
-                    appSettings.CurrentValue.OperationsRepositoryServiceClient,
-                    Log));
+                    appSettings.CurrentValue.OperationsRepositoryServiceClient));
                 builder.RegisterModule(new RepositoriesModule(
-                    appSettings.Nested(x => x.BlockchainCashinDetectorJob.Db),
-                    Log));
+                    appSettings.Nested(x => x.BlockchainCashinDetectorJob.Db)));
                 builder.RegisterModule(new BlockchainsModule(
                     appSettings.CurrentValue.BlockchainCashinDetectorJob,
                     appSettings.CurrentValue.BlockchainsIntegration,
-                    appSettings.CurrentValue.BlockchainWalletsServiceClient,
-                    Log));
+                    appSettings.CurrentValue.BlockchainWalletsServiceClient));
                 builder.RegisterModule(new CqrsModule(
-                    appSettings.CurrentValue.BlockchainCashinDetectorJob.Cqrs,
-                    Log));
+                    appSettings.CurrentValue.BlockchainCashinDetectorJob.Cqrs));
 
                 ApplicationContainer = builder.Build();
+                Log = ApplicationContainer.Resolve<ILogFactory>().CreateLog(this);
 
                 return new AutofacServiceProvider(ApplicationContainer);
             }
@@ -106,7 +128,7 @@ namespace Lykke.Job.BlockchainCashinDetector
                     app.UseDeveloperExceptionPage();
                 }
 
-                app.UseLykkeMiddleware("BlockchainCashinDetector", ex => ErrorResponse.Create("Technical problem"));
+                app.UseLykkeMiddleware(ex => ErrorResponse.Create("Technical problem"));
 
                 app.UseMvc();
                 app.UseSwagger(c =>
@@ -138,6 +160,7 @@ namespace Lykke.Job.BlockchainCashinDetector
                 // NOTE: Job not yet recieve and process IsAlive requests here
 
                 await ApplicationContainer.Resolve<IStartupManager>().StartAsync();
+
                 await Log.WriteMonitorAsync("", "", "Started");
             }
             catch (Exception ex)
@@ -170,12 +193,12 @@ namespace Lykke.Job.BlockchainCashinDetector
             try
             {
                 // NOTE: Job can't recieve and process IsAlive requests here, so you can destroy all resources
-                
+
                 if (Log != null)
                 {
                     await Log.WriteMonitorAsync("", "", "Terminating");
                 }
-                
+
                 ApplicationContainer.Dispose();
             }
             catch (Exception ex)
@@ -187,70 +210,6 @@ namespace Lykke.Job.BlockchainCashinDetector
                 }
                 throw;
             }
-        }
-
-        private static ILog CreateLogWithSlack(IServiceCollection services, IReloadingManager<AppSettings> settings)
-        {
-            var consoleLogger = new LogToConsole();
-            var aggregateLogger = new AggregateLogger();
-
-            aggregateLogger.AddLog(consoleLogger);
-
-            var dbLogConnectionStringManager = settings.Nested(x => x.BlockchainCashinDetectorJob.Db.LogsConnString);
-            var dbLogConnectionString = dbLogConnectionStringManager.CurrentValue;
-
-            if (string.IsNullOrEmpty(dbLogConnectionString))
-            {
-                consoleLogger.WriteWarningAsync(nameof(Startup), nameof(CreateLogWithSlack), "Table loggger is not inited").Wait();
-                return aggregateLogger;
-            }
-
-            if (dbLogConnectionString.StartsWith("${") && dbLogConnectionString.EndsWith("}"))
-                throw new InvalidOperationException($"LogsConnString {dbLogConnectionString} is not filled in settings");
-
-            var persistenceManager = new LykkeLogToAzureStoragePersistenceManager(
-                AzureTableStorage<LogEntity>.Create(dbLogConnectionStringManager, "BlockchainCashinDetectorLog", consoleLogger),
-                consoleLogger);
-
-            // Creating slack notification service, which logs own azure queue processing messages to aggregate log
-            var slackService = services.UseSlackNotificationsSenderViaAzureQueue(new AzureQueueIntegration.AzureQueueSettings
-            {
-                ConnectionString = settings.CurrentValue.SlackNotifications.AzureQueue.ConnectionString,
-                QueueName = settings.CurrentValue.SlackNotifications.AzureQueue.QueueName
-            }, aggregateLogger);
-
-            var slackNotificationsManager = new LykkeLogToAzureSlackNotificationsManager(slackService, consoleLogger);
-
-            // Creating azure storage logger, which logs own messages to concole log
-            var azureStorageLogger = new LykkeLogToAzureStorage(
-                persistenceManager,
-                slackNotificationsManager,
-                consoleLogger);
-
-            azureStorageLogger.Start();
-
-            aggregateLogger.AddLog(azureStorageLogger);
-
-            var allMessagesSlackLogger = LykkeLogToSlack.Create
-            (
-                slackService,
-                "CommonBlockChainIntegration",
-                // ReSharper disable once RedundantArgumentDefaultValue
-                LogLevel.All
-            );
-
-            aggregateLogger.AddLog(allMessagesSlackLogger);
-
-            var importantMessagesSlackLogger = LykkeLogToSlack.Create
-            (
-                slackService,
-                "CommonBlockChainIntegrationImportantMessages",
-                LogLevel.All ^ LogLevel.Info
-            );
-
-            aggregateLogger.AddLog(importantMessagesSlackLogger);
-
-            return aggregateLogger;
         }
     }
 }

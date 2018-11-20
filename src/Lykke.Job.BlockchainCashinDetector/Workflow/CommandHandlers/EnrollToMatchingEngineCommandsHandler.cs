@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Common.Chaos;
+using Lykke.Common.Log;
 using Lykke.Cqrs;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Commands;
@@ -24,13 +25,13 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
 
         public EnrollToMatchingEngineCommandsHandler(
             IChaosKitty chaosKitty,
-            ILog log,
+            ILogFactory logFactory,
             IBlockchainWalletsClient walletsClient,
             IMatchingEngineCallsDeduplicationRepository deduplicationRepository, 
             IMatchingEngineClient meClient)
         {
             _chaosKitty = chaosKitty;
-            _log = log;
+            _log = logFactory.CreateLog(this);
             _walletsClient = walletsClient;
             _deduplicationRepository = deduplicationRepository;
             _meClient = meClient;

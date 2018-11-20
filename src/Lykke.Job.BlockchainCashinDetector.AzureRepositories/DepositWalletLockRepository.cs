@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using AzureStorage;
 using AzureStorage.Tables;
 using Common.Log;
+using Lykke.Common.Log;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain;
 using Lykke.SettingsReader;
 
@@ -12,7 +13,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
     {
         private readonly INoSQLTableStorage<DepositWalletLockEntity> _storage;
 
-        public static IDepositWalletLockRepository Create(IReloadingManager<string> connectionString, ILog log)
+        public static IDepositWalletLockRepository Create(IReloadingManager<string> connectionString, ILogFactory log)
         {
             var storage = AzureTableStorage<DepositWalletLockEntity>.Create(
                 connectionString,
