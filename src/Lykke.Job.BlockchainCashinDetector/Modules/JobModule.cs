@@ -10,8 +10,6 @@ using Lykke.Job.BlockchainCashinDetector.Settings.Assets;
 using Lykke.Job.BlockchainCashinDetector.Settings.MeSettings;
 using Lykke.MatchingEngine.Connector.Services;
 using Lykke.Service.Assets.Client;
-using Lykke.Service.OperationsRepository.Client.Abstractions.CashOperations;
-using Lykke.Service.OperationsRepository.Client.CashOperations;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Lykke.Job.BlockchainCashinDetector.Modules
@@ -25,8 +23,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
         public JobModule(
             MatchingEngineSettings meSettings,
             AssetsSettings assetsSettings,
-            ChaosSettings chaosSettings,
-            ILog log)
+            ChaosSettings chaosSettings)
         {
             _meSettings = meSettings;
             _assetsSettings = assetsSettings;
@@ -51,11 +48,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                 AssetsCacheExpirationPeriod = _assetsSettings.CacheExpirationPeriod,
                 AssetPairsCacheExpirationPeriod = _assetsSettings.CacheExpirationPeriod
             });
-
-            builder.Register(c =>
-                {
-                    var log = c.Resolve<ILogFactory>().CreateLog(this);
-
 
             RegisterMatchingEngine(builder);
 
