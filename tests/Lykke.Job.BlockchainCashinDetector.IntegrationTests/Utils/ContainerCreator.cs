@@ -31,8 +31,7 @@ namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests.Utils
             builder.RegisterModule(new JobModule(
                 appSettings.CurrentValue.MatchingEngineClient,
                 appSettings.CurrentValue.Assets,
-                appSettings.CurrentValue.BlockchainCashinDetectorJob.ChaosKitty,
-                appSettings.CurrentValue.OperationsRepositoryServiceClient));
+                appSettings.CurrentValue.BlockchainCashinDetectorJob.ChaosKitty));
             builder.RegisterModule(new RepositoriesModule(
                 appSettings.Nested(x => x.BlockchainCashinDetectorJob.Db)));
             builder.RegisterModule(new BlockchainsModule(

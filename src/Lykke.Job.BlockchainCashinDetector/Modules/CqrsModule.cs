@@ -97,7 +97,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
             builder.RegisterType<NotifyCashinFailedCommandsHandler>();
 
             // Projections
-            builder.RegisterType<ClientOperationsProjection>();
             builder.RegisterType<MatchingEngineCallDeduplicationsProjection>();
         }
 
@@ -187,27 +186,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
 
                     .ProcessingOptions(defaultRoute).MultiThreaded(8).QueueCapacity(1024)
                     .ProcessingOptions(eventsRoute).MultiThreaded(8).QueueCapacity(1024),
-
-                // TODO: This should be moved to the separate service, which is responsible
-                // for the client operations history
-
-                Register.BoundedContext($"{Self}.client-operations")
-                    .ListeningEvents(typeof(CashinEnrolledToMatchingEngineEvent))
-                    .From(Self)
-                    .On(defaultRoute)
-                    .WithProjection(typeof(ClientOperationsProjection), Self)
-
-                    .ListeningEvents(typeof(EnrolledBalanceSetEvent))
-                    .From(Self)
-                    .On(defaultRoute)
-                    .WithProjection(typeof(ClientOperationsProjection), Self)
-
-                    .ListeningEvents(typeof(BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent))
-                    .From(BlockchainOperationsExecutorBoundedContext.Name)
-                    .On(defaultRoute)
-                    .WithProjection(typeof(ClientOperationsProjection), BlockchainOperationsExecutorBoundedContext.Name)
-
-                    .ProcessingOptions(defaultRoute).MultiThreaded(8).QueueCapacity(1024),
 
                 Register.Saga<CashinSaga>($"{Self}.saga")
                     .ListeningEvents(typeof(DepositWalletLockedEvent))

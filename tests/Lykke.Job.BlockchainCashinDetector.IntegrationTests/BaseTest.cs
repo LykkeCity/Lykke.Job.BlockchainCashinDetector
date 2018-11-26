@@ -373,8 +373,7 @@ namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests
                 new JobModule(
                     appSettings.CurrentValue.MatchingEngineClient,
                     appSettings.CurrentValue.Assets,
-                    appSettings.CurrentValue.BlockchainCashinDetectorJob.ChaosKitty,
-                    appSettings.CurrentValue.OperationsRepositoryServiceClient),
+                    appSettings.CurrentValue.BlockchainCashinDetectorJob.ChaosKitty),
                 new BlockchainsModule(
                     appSettings.CurrentValue.BlockchainCashinDetectorJob,
                     appSettings.CurrentValue.BlockchainsIntegration,
