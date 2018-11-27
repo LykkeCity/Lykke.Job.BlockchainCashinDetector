@@ -18,7 +18,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
     [UsedImplicitly]
     public class DepositWalletsBalanceProcessingPeriodicalHandler : IDepositWalletsBalanceProcessingPeriodicalHandler
     {
-        private readonly ILog _log;
         private readonly int _batchSize;
         private readonly string _blockchainType;
         private readonly IBlockchainApiClient _blockchainApiClient;
@@ -48,7 +47,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
             IChaosKitty chaosKitty)
         {
             _logFactory = logFactory;
-            _log = logFactory.CreateLog(this);
             _batchSize = batchSize;
             _blockchainType = blockchainType;
             _blockchainApiClient = blockchainApiClientProvider.Get(blockchainType);
@@ -62,8 +60,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
 
             _timer = new TimerTrigger(
                 $"{nameof(DepositWalletsBalanceProcessingPeriodicalHandler)} : {blockchainType}",
-                period, 
-                _log);
+                period,
+                _logFactory);
 
             _timer.Triggered += ProcessBalancesAsync;   
         }
