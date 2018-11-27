@@ -2,13 +2,16 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Autofac;
+using Autofac.Extensions.DependencyInjection;
 using Common.Log;
 using Lykke.Job.BlockchainCashinDetector.Tests.Integration.Common;
 using Lykke.Job.BlockchainCashinDetector.Tests.Integration.Modules;
+using Lykke.Logs;
 using Lykke.Service.BlockchainApi.Client.Models;
 using Lykke.Service.BlockchainApi.Contract;
 using Lykke.Service.BlockchainApi.Contract.Assets;
 using Lykke.Service.BlockchainApi.Contract.Balances;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Xunit;
 
@@ -34,12 +37,13 @@ namespace Lykke.Job.BlockchainCashinDetector.Tests.Integration
 
         public DepositBalanceDeduplicationTests()
         {
-            var log = new LogToConsole();
+            //var log = new LogToConsole();
+            //var services = new ServiceCollection();
+            //services.AddEmptyLykkeLogging();
+            //var containerBuilder = new ContainerBuilder();
 
-            var containerBuilder = new ContainerBuilder();
-
-            containerBuilder.RegisterModule(new IntegrationTestsModule(log));
-
+            //containerBuilder.RegisterModule(new IntegrationTestsModule(log));
+            //containerBuilder.Populate(services);
             // TODO: Should be in-memory implementations
             //containerBuilder.RegisterModule(new RepositoriesModule(
             //    ConstantReloadingManager.From(new DbSettings
@@ -56,27 +60,27 @@ namespace Lykke.Job.BlockchainCashinDetector.Tests.Integration
             //    log,
             //    rabbitMqVirtualHost: $"IntegrationTests-{Environment.MachineName}"));
 
-            Container = containerBuilder.Build();
+            //Container = containerBuilder.Build();
 
-            Mocks = Container.Resolve<IntegrationTestsMocks>();
+            //Mocks = Container.Resolve<IntegrationTestsMocks>();
 
-            // Setup mocks
+            //// Setup mocks
 
-            Mocks.LiteCoinApiClient
-                .Setup(m => m.GetAllAssetsAsync(It.IsAny<int>()))
-                .Returns<int>(batchSize => Task.FromResult<IReadOnlyDictionary<string, BlockchainAsset>>(
-                    new Dictionary<string, BlockchainAsset>
-                    {
-                        {
-                            Constants.Assets.Ltc.Id,
-                            new BlockchainAsset(new AssetContract
-                            {
-                                AssetId = Constants.Assets.Ltc.Id,
-                                Accuracy = Constants.Assets.Ltc.Accuracy,
-                                Name = "LiteCoin"
-                            })
-                        }
-                    }));
+            //Mocks.LiteCoinApiClient
+            //    .Setup(m => m.GetAllAssetsAsync(It.IsAny<int>()))
+            //    .Returns<int>(batchSize => Task.FromResult<IReadOnlyDictionary<string, BlockchainAsset>>(
+            //        new Dictionary<string, BlockchainAsset>
+            //        {
+            //            {
+            //                Constants.Assets.Ltc.Id,
+            //                new BlockchainAsset(new AssetContract
+            //                {
+            //                    AssetId = Constants.Assets.Ltc.Id,
+            //                    Accuracy = Constants.Assets.Ltc.Accuracy,
+            //                    Name = "LiteCoin"
+            //                })
+            //            }
+            //        }));
         }
 
         [Fact(Skip = "Not implemented yet")]
