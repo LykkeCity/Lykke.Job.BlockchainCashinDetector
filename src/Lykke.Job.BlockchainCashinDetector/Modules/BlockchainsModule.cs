@@ -52,12 +52,11 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     {
                         var logFactory = x.Resolve<ILogFactory>();
                         var log = logFactory.CreateLog(this);
-                        log.WriteInfo("Blockchains registration", "",
-                            $"Registering blockchain: {blockchain.Type} -> \r\nAPI: {blockchain.ApiUrl}\r\nHW: {blockchain.HotWalletAddress}");
+                        log.Info($"Registering blockchain: {blockchain.Type} -> \r\nAPI: {blockchain.ApiUrl}\r\nHW: {blockchain.HotWalletAddress}");
 
                         if (blockchain.AreCashinsDisabled)
                         {
-                            log.WriteWarning("Blockchains registration", "", $"Cashins for blockchain {blockchain.Type} are disabled");
+                            log.Warning($"Cashins for blockchain {blockchain.Type} are disabled");
                         }
 
                         return new BlockchainApiClient(logFactory, blockchain.ApiUrl);

@@ -31,6 +31,7 @@ namespace Lykke.Job.BlockchainCashinDetector
         private IContainer ApplicationContainer { get; set; }
         private IConfigurationRoot Configuration { get; }
         private ILog Log { get; set; }
+        private IHealthNotifier HealthNotifier { get; set; }
 
         public Startup(IHostingEnvironment env)
         {
@@ -107,12 +108,13 @@ namespace Lykke.Job.BlockchainCashinDetector
 
                 ApplicationContainer = builder.Build();
                 Log = ApplicationContainer.Resolve<ILogFactory>().CreateLog(this);
+                HealthNotifier = ApplicationContainer.Resolve<IHealthNotifier>();
 
                 return new AutofacServiceProvider(ApplicationContainer);
             }
             catch (Exception ex)
             {
-                Log?.WriteFatalErrorAsync(nameof(Startup), nameof(ConfigureServices), "", ex).GetAwaiter().GetResult();
+                Log?.Critical(ex);
                 throw;
             }
         }
@@ -147,7 +149,7 @@ namespace Lykke.Job.BlockchainCashinDetector
             }
             catch (Exception ex)
             {
-                Log?.WriteFatalErrorAsync(nameof(Startup), nameof(Configure), "", ex).GetAwaiter().GetResult();
+                Log?.Critical(ex);
                 throw;
             }
         }
@@ -160,11 +162,11 @@ namespace Lykke.Job.BlockchainCashinDetector
 
                 await ApplicationContainer.Resolve<IStartupManager>().StartAsync();
 
-                await Log.WriteMonitorAsync("", "", "Started");
+                HealthNotifier.Notify("Started");
             }
             catch (Exception ex)
             {
-                await Log.WriteFatalErrorAsync(nameof(Startup), nameof(StartApplication), "", ex);
+                Log.Critical(ex);
                 throw;
             }
         }
@@ -181,7 +183,7 @@ namespace Lykke.Job.BlockchainCashinDetector
             {
                 if (Log != null)
                 {
-                    await Log.WriteFatalErrorAsync(nameof(Startup), nameof(StopApplication), "", ex);
+                    Log.Critical(ex);
                 }
                 throw;
             }
@@ -192,21 +194,15 @@ namespace Lykke.Job.BlockchainCashinDetector
             try
             {
                 // NOTE: Job can't recieve and process IsAlive requests here, so you can destroy all resources
-
-                if (Log != null)
-                {
-                    await Log.WriteMonitorAsync("", "", "Terminating");
-                }
+                HealthNotifier?.Notify("Terminating");
 
                 ApplicationContainer.Dispose();
             }
             catch (Exception ex)
             {
-                if (Log != null)
-                {
-                    await Log.WriteFatalErrorAsync(nameof(Startup), nameof(CleanUp), "", ex);
-                    (Log as IDisposable)?.Dispose();
-                }
+                Log?.Critical(ex);
+                (Log as IDisposable)?.Dispose();
+
                 throw;
             }
         }

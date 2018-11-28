@@ -35,11 +35,11 @@ namespace Lykke.Job.BlockchainCashinDetector.Services
 
         public async Task StartAsync()
         {
-            _log.WriteInfo(nameof(StartAsync), null, "Starting cqrs engine...");
+            _log.Info("Starting cqrs engine...");
 
             _cqrsEngine.Start();
 
-            _log.WriteInfo(nameof(StartAsync), null, "Starting deposit wallets balance monitoring...");
+            _log.Info("Starting deposit wallets balance monitoring...");
 
             foreach (var depositWalletsBalanceProcessingHandler in _depositWalletsBalanceProcessingHandlers)
             {

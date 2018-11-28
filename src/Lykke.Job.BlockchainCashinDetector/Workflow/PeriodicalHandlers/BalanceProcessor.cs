@@ -80,8 +80,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
             {
                 if (!_warningAssets.Contains(depositWallet.AssetId))
                 {
-                    _log.WriteWarning(nameof(ProcessBalance), depositWallet,
-                        "Lykke asset for the blockchain asset is not found");
+                    _log.Warning("Lykke asset for the blockchain asset is not found", null, depositWallet);
 
                     _warningAssets.Add(depositWallet.AssetId);
                 }
