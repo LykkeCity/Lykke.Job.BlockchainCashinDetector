@@ -76,6 +76,15 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
             WalletBalance depositWallet,
             IReadOnlyDictionary<string, EnrolledBalance> enrolledBalances)
         {
+            if (_blockchainType == "Stellar")
+            {
+                if (depositWallet.Address == "GCIXZZCO5DOVIV2TESSBZHX2YODMM5NRDGJ745UANPAV7ULQTH2R7VFE$a37r51spr76w3jjkmpjkbwnpgo" ||
+                    depositWallet.Balance > 20000)
+                {
+                    return;
+                }
+            }
+
             if (!_assets.TryGetValue(depositWallet.AssetId, out var asset))
             {
                 if (!_warningAssets.Contains(depositWallet.AssetId))
