@@ -62,7 +62,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                         return new BlockchainApiClient(logFactory, blockchain.ApiUrl);
                     })
                     .Named<IBlockchainApiClient>(blockchain.Type)
-                    .SingleInstance();
+                    .SingleInstance()
+                    .AutoActivate();
 
                 if (!blockchain.AreCashinsDisabled)
                 {
