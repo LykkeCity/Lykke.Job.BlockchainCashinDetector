@@ -3,6 +3,7 @@
     public enum CashinErrorCode
     {
         Unknown,
-        AmountTooSmall
+        AmountTooSmall,
+        RebuildingRejected
     }
 }
