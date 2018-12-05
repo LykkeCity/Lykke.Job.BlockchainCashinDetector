@@ -243,13 +243,17 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                 registration.AddRange(interceptors);
             }
 
-            return new CqrsEngine(
+            var cqrsEngine = new CqrsEngine(
                 logFactory,
-                ctx.Resolve<IDependencyResolver>(),
+                new AutofacDependencyResolver(ctx.Resolve<IComponentContext>()),
                 messagingEngine,
                 new DefaultEndpointProvider(),
                 true,
                 registration.ToArray());
+            
+            cqrsEngine.StartPublishers();
+
+            return cqrsEngine;
         }
     }
 }

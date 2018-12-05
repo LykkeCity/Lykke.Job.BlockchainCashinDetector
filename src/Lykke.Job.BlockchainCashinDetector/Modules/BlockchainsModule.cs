@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Autofac;
 using JetBrains.Annotations;
-using Lykke.Common.Log;
 using Lykke.Job.BlockchainCashinDetector.Core.Services.BLockchains;
 using Lykke.Job.BlockchainCashinDetector.Services.Blockchains;
 using Lykke.Job.BlockchainCashinDetector.Settings;
@@ -48,8 +47,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .WithParameter(TypedParameter.From(blockchain.ApiUrl))
                     .SingleInstance();
 
-                        if (blockchain.AreCashinsDisabled)
-                        {
+                if (blockchain.AreCashinsDisabled)
+                {
                     Console.WriteLine($"Cashins for blockchain {blockchain.Type} are disabled");
                 }
                 else
