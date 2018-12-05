@@ -85,7 +85,7 @@ namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests
                 blockchainAssets
                 );
 
-            cqrsEngine.StartAll();
+            cqrsEngine.StartSubscribers();
 
             await processor.ProcessAsync(100);
 
@@ -179,7 +179,7 @@ namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests
                 OperationId = operationId
             };
 
-            cqrsEngine.StartAll();
+            cqrsEngine.StartSubscribers();
 
             cqrsEngine.PublishEvent(@event, CqrsTestModule.Self);
 
@@ -258,7 +258,7 @@ namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests
                 OperationId = operationId
             };
 
-            cqrsEngine.StartAll();
+            cqrsEngine.StartSubscribers();
 
             cqrsEngine.PublishEvent(@event, CqrsTestModule.Self);
 
@@ -340,7 +340,7 @@ namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests
                 OperationId = operationId
             };
 
-            cqrsEngine.StartAll();
+            cqrsEngine.StartSubscribers();
 
             cqrsEngine.PublishEvent(@event, CqrsTestModule.Self);
 
