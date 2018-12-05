@@ -1,5 +1,4 @@
 ﻿using System.Threading.Tasks;
-using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Cqrs;
 using Lykke.Job.BlockchainCashinDetector.Contract.Events;

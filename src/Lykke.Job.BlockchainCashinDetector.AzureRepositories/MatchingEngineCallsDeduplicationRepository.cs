@@ -2,7 +2,6 @@
 using System.Threading.Tasks;
 using AzureStorage;
 using AzureStorage.Tables;
-using Common.Log;
 using Lykke.Common.Log;
 using Lykke.Job.BlockchainCashinDetector.Core.Domain;
 using Lykke.SettingsReader;
@@ -13,12 +12,12 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
     {
         private readonly INoSQLTableStorage<MatchingEngineCallsDeduplicationEntity> _storage;
 
-        public static IMatchingEngineCallsDeduplicationRepository Create(IReloadingManager<string> connectionString, ILogFactory log)
+        public static IMatchingEngineCallsDeduplicationRepository Create(IReloadingManager<string> connectionString, ILogFactory logFactory)
         {
             var storage = AzureTableStorage<MatchingEngineCallsDeduplicationEntity>.Create(
                 connectionString,
                 "CashinMatchinEngineCallsDeduplication",
-                log);
+                logFactory);
 
             return new MatchingEngineCallsDeduplicationRepository(storage);
         }
