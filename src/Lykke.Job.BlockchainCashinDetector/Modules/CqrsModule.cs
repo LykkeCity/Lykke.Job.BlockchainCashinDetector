@@ -4,7 +4,6 @@ using Lykke.Cqrs;
 using Lykke.Cqrs.Configuration;
 using Lykke.Job.BlockchainCashinDetector.Contract;
 using Lykke.Job.BlockchainCashinDetector.Contract.Events;
-using Lykke.Job.BlockchainCashinDetector.Settings.JobSettings;
 using Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Commands;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Events;
@@ -15,8 +14,8 @@ using Lykke.Messaging;
 using Lykke.Messaging.RabbitMq;
 using Lykke.Messaging.Serialization;
 using System.Collections.Generic;
-using MoreLinq;
-using System.Linq;
+using Lykke.Job.BlockchainCashinDetector.Settings;
+using Lykke.SettingsReader;
 
 namespace Lykke.Job.BlockchainCashinDetector.Modules
 {
@@ -24,13 +23,11 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
     {
         public static readonly string Self = BlockchainCashinDetectorBoundedContext.Name;
 
-        private readonly CqrsSettings _settings;
-        private readonly string _rabbitMqVirtualHost;
+        private readonly IReloadingManager<AppSettings> _settings;
 
-        public CqrsModule(CqrsSettings settings ,string rabbitMqVirtualHost = null)
+        public CqrsModule(IReloadingManager<AppSettings> settings)
         {
             _settings = settings;
-            _rabbitMqVirtualHost = rabbitMqVirtualHost;
         }
 
         protected override void Load(ContainerBuilder builder)
@@ -50,11 +47,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
             var logFactory = ctx.Resolve<ILogFactory>();
             var rabbitMqSettings = new RabbitMQ.Client.ConnectionFactory
             {
-                Uri = _settings.RabbitConnectionString
+                Uri = _settings.CurrentValue.BlockchainCashinDetectorJob.Cqrs.RabbitConnectionString
             };
-            var rabbitMqEndpoint = _rabbitMqVirtualHost == null
-                ? rabbitMqSettings.Endpoint.ToString()
-                : $"{rabbitMqSettings.Endpoint}/{_rabbitMqVirtualHost}";
+            var rabbitMqEndpoint = rabbitMqSettings.Endpoint.ToString();
 
             var messagingEngine = new MessagingEngine(logFactory,
                 new TransportResolver(new Dictionary<string, TransportInfo>
@@ -112,7 +107,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
         {
             var logFactory = ctx.Resolve<ILogFactory>();
             var messagingEngine = RegisterMessagingEngine(ctx);
-            var defaultRetryDelay = (long)_settings.RetryDelay.TotalMilliseconds;
+            var defaultRetryDelay = (long)_settings.CurrentValue.BlockchainCashinDetectorJob.Cqrs.RetryDelay.TotalMilliseconds;
 
             const string defaultPipeline = "commands";
             const string defaultRoute = "self";
@@ -248,13 +243,17 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                 registration.AddRange(interceptors);
             }
 
-            return new CqrsEngine(
+            var cqrsEngine = new CqrsEngine(
                 logFactory,
-                ctx.Resolve<IDependencyResolver>(),
+                new AutofacDependencyResolver(ctx.Resolve<IComponentContext>()),
                 messagingEngine,
                 new DefaultEndpointProvider(),
                 true,
                 registration.ToArray());
+            
+            cqrsEngine.StartPublishers();
+
+            return cqrsEngine;
         }
     }
 }
