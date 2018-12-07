@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Autofac;
+﻿using Autofac;
 using Autofac.Core;
-using Autofac.Extensions.DependencyInjection;
 using Lykke.Common.Log;
 using Lykke.Job.BlockchainCashinDetector.IntegrationTests.Modules;
 using Lykke.Job.BlockchainCashinDetector.Modules;
@@ -12,7 +8,6 @@ using Lykke.Logs;
 using Lykke.Logs.Loggers.LykkeConsole;
 using Lykke.SettingsReader;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests.Utils
 {
@@ -28,16 +23,9 @@ namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests.Utils
                 .As<LogFactory>()
                 .SingleInstance();
 
-            builder.RegisterModule(new JobModule(
-                appSettings.CurrentValue.MatchingEngineClient,
-                appSettings.CurrentValue.Assets,
-                appSettings.CurrentValue.BlockchainCashinDetectorJob.ChaosKitty));
-            builder.RegisterModule(new RepositoriesModule(
-                appSettings.Nested(x => x.BlockchainCashinDetectorJob.Db)));
-            builder.RegisterModule(new BlockchainsModule(
-                appSettings.CurrentValue.BlockchainCashinDetectorJob,
-                appSettings.CurrentValue.BlockchainsIntegration,
-                appSettings.CurrentValue.BlockchainWalletsServiceClient));
+            builder.RegisterModule(new JobModule(appSettings));
+            builder.RegisterModule(new RepositoriesModule(appSettings));
+            builder.RegisterModule(new BlockchainsModule(appSettings));
             builder.RegisterModule(new CqrsTestModule(
                 appSettings.CurrentValue.BlockchainCashinDetectorJob.Cqrs, "test"));
 

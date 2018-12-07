@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 using JetBrains.Annotations;
-using Lykke.Job.BlockchainCashinDetector.Core.Services;
+using Lykke.Sdk;
 
 namespace Lykke.Job.BlockchainCashinDetector.Services
 {

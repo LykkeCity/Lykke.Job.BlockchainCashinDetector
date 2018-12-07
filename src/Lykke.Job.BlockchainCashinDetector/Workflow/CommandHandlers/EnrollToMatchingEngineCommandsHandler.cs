@@ -54,7 +54,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
             // First level deduplication just to reduce traffic to the ME
             if (await _deduplicationRepository.IsExistsAsync(command.OperationId))
             {
-                _log.Info("Deduplicated at first level", command);
+                _log.Info(nameof(EnrollToMatchingEngineCommand), "Deduplicated at first level", command.OperationId);
 
                 // Workflow should be continued
 
@@ -88,7 +88,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                 case MeStatusCodes.Duplicate:
                     if (cashInResult.Status == MeStatusCodes.Duplicate)
                     {
-                        _log.Info("Deduplicated by the ME", command);
+                        _log.Info(nameof(EnrollToMatchingEngineCommand), "Deduplicated by the ME", command.OperationId);
                     }
 
                     publisher.PublishEvent(new CashinEnrolledToMatchingEngineEvent
@@ -111,7 +111,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
 
                 default:
                     // Just abort cashin for futher manual processing. ME call could not be retried anyway if responce was received.
-                    _log.Warning($"Unexpected response from ME. Status: {cashInResult.Status}, ME message: {cashInResult.Message}", null, command);
+                    _log.Warning(nameof(EnrollToMatchingEngineCommand), $"Unexpected response from ME. Status: {cashInResult.Status}, ME message: {cashInResult.Message}", context: command.OperationId);
                     return CommandHandlingResult.Ok();
             }
         }
