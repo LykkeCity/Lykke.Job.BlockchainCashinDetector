@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <Version>1.0.1</Version>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="Lykke.AzureStorage" Version="8.13.1" />
+    <PackageReference Include="Lykke.Common" Version="7.3.1" />
+    <PackageReference Include="Lykke.Logs" Version="7.2.1" />
+    <PackageReference Include="Microsoft.Extensions.CommandLineUtils" Version="1.1.1" />
+    <PackageReference Include="NBitcoin" Version="4.1.1.75" />
+    <PackageReference Include="NBitcoin.Altcoins" Version="1.0.1.32" />
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Lykke.Job.BlockchainCashinDetector.AzureRepositories\Lykke.Job.BlockchainCashinDetector.AzureRepositories.csproj" />
+    <ProjectReference Include="..\..\src\Lykke.Job.BlockchainCashinDetector.Core\Lykke.Job.BlockchainCashinDetector.Core.csproj" />
+    <ProjectReference Include="..\..\src\Lykke.Job.BlockchainCashinDetector.Services\Lykke.Job.BlockchainCashinDetector.Services.csproj" />
+    <ProjectReference Include="..\..\src\Lykke.Job.BlockchainCashinDetector\Lykke.Job.BlockchainCashinDetector.csproj" />
+  </ItemGroup>
+
+</Project>
