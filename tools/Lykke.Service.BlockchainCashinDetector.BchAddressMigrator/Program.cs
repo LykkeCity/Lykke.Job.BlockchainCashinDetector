@@ -26,7 +26,7 @@ namespace Lykke.Service.BlockchainCashinDetector.BchAddressMigrator
         {
             var application = new CommandLineApplication
             {
-                Description = "Creates in sign facade new entities with bitcoin cash address format"
+                Description = "Migrates enrolled balances"
             };
 
             var arguments = new Dictionary<string, CommandArgument>
