@@ -329,7 +329,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Tests
                     && a.DepositWalletAddress == depositWallet
                     && a.HotWalletAddress == hotWallet
                     && a.OperationId == operationId
-                    && a.AssetAccuracy == xlmBlockchainAsset.Accuracy
+                    && a.BlockchainAssetAccuracy == xlmBlockchainAsset.Accuracy
                     && a.AssetId == xlmAsset.Id
                     && a.BlockchainAssetId == xlmBlockchainAsset.AssetId
                     && a.BlockchainType == blockchainType
