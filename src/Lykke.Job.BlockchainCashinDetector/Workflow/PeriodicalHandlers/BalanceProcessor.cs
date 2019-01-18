@@ -112,7 +112,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
                     DepositWalletBalance = depositWallet.Balance,
                     DepositWalletBlock = depositWallet.Block,
                     AssetId = asset.Id,
-                    AssetAccuracy = asset.Accuracy,
+                    AssetAccuracy = _blockchainAssets[asset.BlockChainAssetId].Accuracy,
                     CashinMinimalAmount = (decimal)asset.CashinMinimalAmount,
                     HotWalletAddress = _hotWalletAddress
                 },
