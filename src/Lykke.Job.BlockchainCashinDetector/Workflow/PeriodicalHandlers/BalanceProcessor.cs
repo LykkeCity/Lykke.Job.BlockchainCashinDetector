@@ -57,24 +57,25 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
                 assetId => GetAssetAccuracy(assetId, batchSize),
                 async batch => 
                 {
-                    await ProcessBalancesBatchAsync(batch);
+                    await ProcessBalancesBatchAsync(batch, batchSize);
                     return true;
                 });
         }
 
-        private async Task ProcessBalancesBatchAsync(IReadOnlyList<WalletBalance> batch)
+        private async Task ProcessBalancesBatchAsync(IReadOnlyList<WalletBalance> batch, int batchSize)
         {
             var enrolledBalances = await GetEnrolledBalancesAsync(batch);
 
             foreach (var balance in batch)
             {
-                ProcessBalance(balance, enrolledBalances);
+                ProcessBalance(balance, enrolledBalances, batchSize);
             }
         }
 
         private void ProcessBalance(
             WalletBalance depositWallet,
-            IReadOnlyDictionary<string, EnrolledBalance> enrolledBalances)
+            IReadOnlyDictionary<string, EnrolledBalance> enrolledBalances,
+            int batchSize)
         {
             if (!_assets.TryGetValue(depositWallet.AssetId, out var asset))
             {
@@ -112,7 +113,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.PeriodicalHandlers
                     DepositWalletBalance = depositWallet.Balance,
                     DepositWalletBlock = depositWallet.Block,
                     AssetId = asset.Id,
-                    AssetAccuracy = _blockchainAssets[asset.BlockChainAssetId].Accuracy,
+                    AssetAccuracy = GetAssetAccuracy(asset.BlockchainIntegrationLayerAssetId, batchSize),
                     CashinMinimalAmount = (decimal)asset.CashinMinimalAmount,
                     HotWalletAddress = _hotWalletAddress
                 },
