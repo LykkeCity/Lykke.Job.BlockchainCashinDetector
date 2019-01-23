@@ -29,7 +29,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
         public string DepositWalletAddress { get; set; }
         public string BlockchainAssetId { get; set; }
         public string AssetId { get; set; }
-        public int AssetAccuracy { get; set; }
+        public int BlockchainAssetAccuracy { get; set; }
         public decimal CashinMinimalAmount { get; set; }
         public CashinErrorCode? ErrorCode { get; set; }
 
@@ -77,7 +77,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
             return new CashinEntity
             {
                 AssetId = aggregate.AssetId,
-                AssetAccuracy =  aggregate.AssetAccuracy,
+                BlockchainAssetAccuracy =  aggregate.BlockchainAssetAccuracy,
                 BalanceAmount = aggregate.BalanceAmount,
                 BalanceBlock = aggregate.BalanceBlock,
                 BlockchainAssetId = aggregate.BlockchainAssetId,
@@ -121,7 +121,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
             (
                 clientId: ClientId,
                 assetId: AssetId,
-                assetAccuracy: AssetAccuracy,
+                blockchainAssetAccuracy: BlockchainAssetAccuracy,
                 balanceAmount: BalanceAmount,
                 balanceBlock: BalanceBlock,
                 blockchainAssetId: BlockchainAssetId,
