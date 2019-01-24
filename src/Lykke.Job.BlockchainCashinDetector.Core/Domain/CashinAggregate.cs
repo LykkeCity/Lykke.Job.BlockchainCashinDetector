@@ -29,6 +29,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
         public string BlockchainAssetId { get; }
         public string AssetId { get; }
         public int BlockchainAssetAccuracy { get; }
+        public int AssetAccuracy { get; }
         public decimal CashinMinimalAmount { get; }
 
         public Guid? ClientId { get; private set; }
@@ -48,6 +49,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
         private CashinAggregate(
             Guid operationId,
             string assetId,
+            int assetAccuracy,
             int blockchainAssetAccuracy,
             string blockchainAssetId,
             string blockchainType,
@@ -71,11 +73,13 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             Result = result;
             State = state;
             Version = version;
+            AssetAccuracy = assetAccuracy;
         }
 
         public static CashinAggregate Restore(
             Guid? clientId,
             string assetId,
+            int assetAccuracy,
             int blockchainAssetAccuracy,
             decimal? balanceAmount,
             long? balanceBlock,
@@ -111,6 +115,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             return new CashinAggregate
             (
                 assetId: assetId,
+                assetAccuracy: assetAccuracy,
                 blockchainAssetAccuracy: blockchainAssetAccuracy,
                 blockchainAssetId: blockchainAssetId,
                 blockchainType: blockchainType,
@@ -157,6 +162,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
         public static CashinAggregate StartWaitingForActualBalance(
             Guid operationId,
             string assetId,
+            int assetAccuracy,
             int blockchainAssetAccuracy,
             string blockchainAssetId,
             string blockchainType,
@@ -168,6 +174,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             (
                 operationId: operationId,
                 assetId: assetId,
+                assetAccuracy: assetAccuracy,
                 blockchainAssetAccuracy: blockchainAssetAccuracy,
                 blockchainAssetId: blockchainAssetId,
                 blockchainType: blockchainType,
@@ -193,7 +200,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
                 balanceBlock,
                 enrolledBalanceAmount,
                 enrolledBalanceBlock,
-                BlockchainAssetAccuracy,
+                AssetAccuracy,
                 out var operationAmount,
                 out var matchingEngineOperationAmount);
 

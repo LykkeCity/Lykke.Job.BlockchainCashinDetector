@@ -59,6 +59,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                 EnrolledBlock = enrolledBalance?.Block ?? 0,
                 AssetId = command.AssetId,
                 AssetAccuracy = command.AssetAccuracy,
+                BlockchainAssetAccuracy = command.BlockchainAssetAccuracy,
                 CashinMinimalAmount = command.CashinMinimalAmount,
                 HotWalletAddress = command.HotWalletAddress
             });
