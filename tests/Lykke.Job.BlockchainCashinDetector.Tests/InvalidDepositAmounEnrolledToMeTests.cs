@@ -16,6 +16,7 @@ using Lykke.Service.BlockchainApi.Client.Models;
 using Lykke.Service.BlockchainApi.Contract;
 using Lykke.Service.BlockchainApi.Contract.Assets;
 using Lykke.Service.BlockchainApi.Contract.Balances;
+using MongoDB.Bson;
 using Moq;
 using Xunit;
 
@@ -92,6 +93,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Tests
                 (
                     operationId,
                     xlmAsset.Id,
+                    xlmBlockchainAsset.Accuracy,
                     xlmBlockchainAsset.Accuracy,
                     xlmBlockchainAsset.AssetId,
                     blockchainType,
@@ -329,7 +331,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Tests
                     && a.DepositWalletAddress == depositWallet
                     && a.HotWalletAddress == hotWallet
                     && a.OperationId == operationId
-                    && a.BlockchainAssetAccuracy == xlmBlockchainAsset.Accuracy
+                    && a.AssetAccuracy == xlmBlockchainAsset.Accuracy
                     && a.AssetId == xlmAsset.Id
                     && a.BlockchainAssetId == xlmBlockchainAsset.AssetId
                     && a.BlockchainType == blockchainType

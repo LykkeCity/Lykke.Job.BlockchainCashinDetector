@@ -16,6 +16,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Events
         public long EnrolledBlock { get; set; }
         public string AssetId { get; set; }
         public int AssetAccuracy { get; set; }
+        public int BlockchainAssetAccuracy { get; set; }
         public decimal CashinMinimalAmount { get; set; }
         public string HotWalletAddress { get; set; }
     }

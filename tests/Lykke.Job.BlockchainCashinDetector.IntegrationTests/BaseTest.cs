@@ -120,10 +120,11 @@ namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests
             var cashinAggregate = CashinAggregate.Restore(operationId, 
                 "ETC", 
                 6,
+                6,
                 10,
                 250,
                 "ETC", 
-                "EthereumClassic", 
+                "EthereumClassic",
                 0,
                 DateTime.UtcNow,
                 "0x...", 
@@ -198,6 +199,7 @@ namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests
             var operationId = Guid.NewGuid();
             var cashinAggregate = CashinAggregate.Restore(operationId,
                 "ETC",
+                6,
                 6,
                 10,
                 250,
@@ -277,6 +279,7 @@ namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests
             var operationId = Guid.NewGuid();
             var cashinAggregate = CashinAggregate.Restore(operationId,
                 "ETC",
+                6,
                 6,
                 10,
                 250,
