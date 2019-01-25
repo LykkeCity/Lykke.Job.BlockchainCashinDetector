@@ -108,27 +108,44 @@ namespace Lykke.Service.BlockchainCashinDetector.BchAddressMigrator
                                       $"{enrolledBalanceEntity} : {enrolledBalanceEntity.Balance} : {enrolledBalanceEntity.Block} " +
                                       $"--- {counter} of {enrolledBalances.Count}");
 
-                    var addr = addressValidator.GetBitcoinAddress(enrolledBalanceEntity.DepositWalletAddress);
+                    var address = addressValidator.GetBitcoinAddress(enrolledBalanceEntity.DepositWalletAddress);
 
-                    if (addr == null)
+                    if (address == null)
                     {
                         throw new ArgumentException(
                             $"Unable to recognize address {enrolledBalanceEntity.DepositWalletAddress}", 
                             nameof(enrolledBalanceEntity.DepositWalletAddress));
                     }
+                    var oldAdrr = address.ScriptPubKey.GetDestinationAddress(network).ToString();
+                    var newAddr = address.ScriptPubKey.GetDestinationAddress(bcashNetwork).ToString();
 
-                    var bchCashAddr = addr.ScriptPubKey.GetDestinationAddress(bcashNetwork).ToString();
+                    Console.WriteLine("Processing " +
+                                      $"{enrolledBalanceEntity.DepositWalletAddress}:{oldAdrr}:{newAddr} " +
+                                      $"--- {enrolledBalanceEntity.Balance} " +
+                                      $"--- {enrolledBalanceEntity.Block} " +
+                                      $"| {counter} of {enrolledBalances.Count}");
 
+
+                    if (!string.Equals(enrolledBalanceEntity.DepositWalletAddress, oldAdrr))
+                    {
+                        var prevColor = Console.ForegroundColor;
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        Console.WriteLine($"{enrolledBalanceEntity.DepositWalletAddress} not in obsolete format. Old format: {oldAdrr} | New Format {newAddr}. Skipping.");
+                        Console.ForegroundColor = prevColor;
+
+                        continue;
+                    }
+                    
                     await enrolledBalanceRepository.SetBalanceAsync(new DepositWalletKey(enrolledBalanceEntity.BlockchainAssetId,
                         enrolledBalanceEntity.BlockchainType,
-                        bchCashAddr),
+                        newAddr),
                         enrolledBalanceEntity.Balance,
                         enrolledBalanceEntity.Block);
 
                     await enrolledBalanceRepository.ResetBalanceAsync(new DepositWalletKey(
-                            enrolledBalanceEntity.BlockchainAssetId,
-                            enrolledBalanceEntity.BlockchainType,
-                            enrolledBalanceEntity.DepositWalletAddress), enrolledBalanceEntity.Block);
+                        enrolledBalanceEntity.BlockchainAssetId,
+                        enrolledBalanceEntity.BlockchainType,
+                        oldAdrr), enrolledBalanceEntity.Block);
                 }
 
                 Console.WriteLine("All done");
