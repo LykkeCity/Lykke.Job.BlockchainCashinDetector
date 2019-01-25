@@ -126,7 +126,7 @@ namespace Lykke.Service.BlockchainCashinDetector.BchAddressMigrator
                                       $"| {counter} of {enrolledBalances.Count}");
 
 
-                    if (!string.Equals(enrolledBalanceEntity.DepositWalletAddress, oldAdrr))
+                    if (!string.Equals(enrolledBalanceEntity.DepositWalletAddress, oldAdrr, StringComparison.InvariantCultureIgnoreCase))
                     {
                         var prevColor = Console.ForegroundColor;
                         Console.ForegroundColor = ConsoleColor.Yellow;
