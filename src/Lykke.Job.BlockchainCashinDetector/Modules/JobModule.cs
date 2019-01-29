@@ -4,6 +4,8 @@ using JetBrains.Annotations;
 using Lykke.Common.Chaos;
 using Lykke.Job.BlockchainCashinDetector.Services;
 using Lykke.Job.BlockchainCashinDetector.Settings;
+using Lykke.Job.BlockchainCashinDetector.Workflow.Commands;
+using Lykke.Job.BlockchainCashinDetector.Workflow.Events;
 using Lykke.Sdk;
 using Lykke.Service.Assets.Client;
 using Lykke.SettingsReader;
@@ -22,6 +24,30 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
 
         protected override void Load(ContainerBuilder builder)
         {
+            Lykke.Cqrs.MessageCancellation.Configuration.ContainerBuilderExtensions.RegisterCqrsMessageCancellation(
+            builder,
+            (options) =>
+            {
+                #region Registry
+
+                //Commands
+                options.Value
+                    .MapMessageId<EnrollToMatchingEngineCommand>(x => x.OperationId.ToString())
+                    .MapMessageId<NotifyCashinCompletedCommand>(x => x.OperationId.ToString())
+                    .MapMessageId<NotifyCashinFailedCommand>(x => x.OperationId.ToString())
+                    .MapMessageId<ReleaseDepositWalletLockCommand>(x => x.OperationId.ToString())
+                    .MapMessageId<ResetEnrolledBalanceCommand>(x => x.OperationId.ToString())
+                    .MapMessageId<SetEnrolledBalanceCommand>(x => x.OperationId.ToString())
+
+                //Events
+                    .MapMessageId<CashinEnrolledToMatchingEngineEvent>(x => x.OperationId.ToString())
+                    .MapMessageId<DepositWalletLockedEvent>(x => x.OperationId.ToString())
+                    .MapMessageId<DepositWalletLockReleasedEvent>(x => x.OperationId.ToString())
+                    .MapMessageId<EnrolledBalanceResetEvent>(x => x.OperationId.ToString())
+                    .MapMessageId<EnrolledBalanceSetEvent>(x => x.OperationId.ToString());
+                #endregion
+            });
+
             builder.RegisterType<StartupManager>()
                 .As<IStartupManager>();
 
