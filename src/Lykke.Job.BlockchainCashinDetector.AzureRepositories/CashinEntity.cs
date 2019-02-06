@@ -22,6 +22,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
         public DateTime? EnrolledBalanceResetMoment { get; set; }
         public DateTime? OperationFinishMoment { get; set; }
         public DateTime? DepositWalletLockReleasedMoment { get; set; }
+        public DateTime? OperationAcceptanceMoment { get; set; }
         
         public Guid OperationId { get; set; }
         public string BlockchainType { get; set; }
@@ -107,6 +108,7 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 TransactionBlock = aggregate.TransactionBlock,
                 TransactionHash = aggregate.TransactionHash,
                 IsDustCashin = aggregate.IsDustCashin,
+                OperationAcceptanceMoment = aggregate.OperationAcceptanceMoment,
                 
                 ETag = string.IsNullOrEmpty(aggregate.Version) ? "*" : aggregate.Version,
                 PartitionKey = GetPartitionKey(aggregate.OperationId),
@@ -151,7 +153,8 @@ namespace Lykke.Job.BlockchainCashinDetector.AzureRepositories
                 state: State,
                 isDustCashin: IsDustCashin,
                 version: ETag,
-                cashinErrorCode: ErrorCode
+                cashinErrorCode: ErrorCode,
+                operationAcceptanceMoment: OperationAcceptanceMoment
             );
         }
 
