@@ -116,7 +116,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
 
             const string defaultPipeline = "commands";
             const string defaultRoute = "self";
-            const string eventsRoute = "evets";
+            const string eventsRoute = "events";
 
             var registration = new List<IRegistration>()
             {
@@ -191,16 +191,24 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .ListeningEvents(typeof(DepositWalletLockedEvent))
                     .From(Self)
                     .On(defaultRoute)
-                    .PublishingCommands(
-                        typeof(EnrollToMatchingEngineCommand),
-                        typeof(ReleaseDepositWalletLockCommand))
+                    .PublishingCommands(typeof(BlockchainRiskControl.Contract.Commands.ValidateOperationCommand))
+                    .To(BlockchainRiskControl.Contract.BlockchainRiskControlBoundedContext.Name)
+                    .With(defaultPipeline)
+                    .PublishingCommands(typeof(ReleaseDepositWalletLockCommand))
                     .To(Self)
                     .With(defaultPipeline)
 
-                    .ListeningEvents(typeof(CashinEnrolledToMatchingEngineEvent))
-                    .From(Self)
+                    .ListeningEvents(typeof(BlockchainRiskControl.Contract.Events.OperationAcceptedEvent))
+                    .From(BlockchainRiskControl.Contract.BlockchainRiskControlBoundedContext.Name)
                     .On(defaultRoute)
-                    .PublishingCommands(typeof(SetEnrolledBalanceCommand))
+                    .PublishingCommands(typeof(EnrollToMatchingEngineCommand))
+                    .To(Self)
+                    .With(defaultPipeline)
+
+                    .ListeningEvents(typeof(BlockchainRiskControl.Contract.Events.OperationRejectedEvent))
+                    .From(BlockchainRiskControl.Contract.BlockchainRiskControlBoundedContext.Name)
+                    .On(defaultRoute)
+                    .PublishingCommands(typeof(ReleaseDepositWalletLockCommand))
                     .To(Self)
                     .With(defaultPipeline)
 

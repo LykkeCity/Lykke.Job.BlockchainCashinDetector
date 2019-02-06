@@ -151,6 +151,7 @@ namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests
                 CashinState.OutdatedBalance,
                 false,
                 "1.0.0",
+                null,
                 null);
             var cashinRepoMock = new Mock<ICashinRepository>();
             cashinRepoMock.Setup(x => x.GetAsync(It.IsAny<Guid>())).ReturnsAsync(cashinAggregate);
@@ -231,6 +232,7 @@ namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests
                 CashinState.OutdatedBalance,
                 true,
                 "1.0.0",
+                null,
                 null);
             var cashinRepoMock = new Mock<ICashinRepository>();
             cashinRepoMock.Setup(x => x.GetAsync(It.IsAny<Guid>())).ReturnsAsync(cashinAggregate);
@@ -311,7 +313,8 @@ namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests
                 CashinState.OutdatedBalance,
                 true,
                 "1.0.0",
-                CashinErrorCode.Unknown);
+                CashinErrorCode.Unknown,
+                null);
             var cashinRepoMock = new Mock<ICashinRepository>();
             cashinRepoMock.Setup(x => x.GetAsync(It.IsAny<Guid>())).ReturnsAsync(cashinAggregate);
             var repoModule = new RepoMockModule((builder) =>

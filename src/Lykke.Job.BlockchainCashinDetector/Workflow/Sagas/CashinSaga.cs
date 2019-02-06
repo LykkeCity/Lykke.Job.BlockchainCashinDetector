@@ -13,6 +13,9 @@ using Lykke.Job.BlockchainCashinDetector.Workflow.Events;
 using Lykke.Job.BlockchainOperationsExecutor.Contract;
 using Lykke.Job.BlockchainOperationsExecutor.Contract.Commands;
 using Lykke.Job.BlockchainOperationsExecutor.Contract.Events;
+using Lykke.Job.BlockchainRiskControl.Contract;
+using Lykke.Job.BlockchainRiskControl.Contract.Commands;
+using Lykke.Job.BlockchainRiskControl.Contract.Events;
 
 namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
 {
@@ -78,16 +81,18 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                     case CashinState.Started:
                         sender.SendCommand
                         (
-                            new EnrollToMatchingEngineCommand
+                            new ValidateOperationCommand
                             {
-                                AssetId = aggregate.AssetId,
-                                BlockchainAssetId = aggregate.BlockchainAssetId,
-                                BlockchainType = aggregate.BlockchainType,
-                                DepositWalletAddress = aggregate.DepositWalletAddress,
                                 OperationId = aggregate.OperationId,
-                                MatchingEngineOperationAmount = aggregate.MeAmount.Value
+                                Type = OperationType.Deposit,
+                                UserId = aggregate.ClientId.Value,
+                                BlockchainType = aggregate.BlockchainType,
+                                BlockchainAssetId = aggregate.BlockchainAssetId,
+                                FromAddress = aggregate.DepositWalletAddress,
+                                ToAddress = aggregate.HotWalletAddress,
+                                Amount = aggregate.BalanceAmount.Value
                             },
-                            BlockchainCashinDetectorBoundedContext.Name
+                            BlockchainRiskControlBoundedContext.Name
                         );
                         break;
 
@@ -101,13 +106,86 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                                 DepositWalletAddress = aggregate.DepositWalletAddress,
                                 OperationId = aggregate.OperationId
                             },
-                            BlockchainCashinDetectorBoundedContext.Name
+                            Self
                         );
                         break;
 
                     default:
                         throw new InvalidOperationException($"Unexpected aggregate state {aggregate.State}");
                 }
+
+                _chaosKitty.Meow(aggregate.OperationId);
+            }
+        }
+
+        [UsedImplicitly]
+        private async Task Handle(OperationAcceptedEvent evt, ICommandSender sender)
+        {
+            var aggregate = await _cashinRepository.TryGetAsync(evt.OperationId);
+
+            if (aggregate == null)
+            {
+                // This is not a cashin operation
+                return;
+            }
+
+            var transitionResult = aggregate.OnOperationAccepted();
+
+            if (transitionResult.ShouldSaveAggregate())
+            {
+                await _cashinRepository.SaveAsync(aggregate);
+            }
+
+            if (transitionResult.ShouldSendCommands())
+            {
+                sender.SendCommand
+                (
+                    new EnrollToMatchingEngineCommand
+                    {
+                        AssetId = aggregate.AssetId,
+                        BlockchainAssetId = aggregate.BlockchainAssetId,
+                        BlockchainType = aggregate.BlockchainType,
+                        DepositWalletAddress = aggregate.DepositWalletAddress,
+                        OperationId = aggregate.OperationId,
+                        MatchingEngineOperationAmount = aggregate.MeAmount.Value
+                    },
+                    Self
+                );
+
+                _chaosKitty.Meow(evt.OperationId);
+            }
+        }
+
+        private async Task Handle(OperationRejectedEvent evt, ICommandSender sender)
+        {
+            var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
+
+            if (aggregate == null)
+            {
+                // This is not a cashin operation
+                return;
+            }
+
+            var transitionResult = aggregate.OnOperationRejected(evt.Message);
+
+            if (transitionResult.ShouldSaveAggregate())
+            {
+                await _cashinRepository.SaveAsync(aggregate);
+            }
+
+            if (transitionResult.ShouldSendCommands())
+            {
+                sender.SendCommand
+                (
+                    new ReleaseDepositWalletLockCommand
+                    {
+                        OperationId = aggregate.OperationId,
+                        BlockchainType = aggregate.BlockchainType,
+                        BlockchainAssetId = aggregate.BlockchainAssetId,
+                        DepositWalletAddress = aggregate.DepositWalletAddress
+                    },
+                    Self
+                );
 
                 _chaosKitty.Meow(aggregate.OperationId);
             }

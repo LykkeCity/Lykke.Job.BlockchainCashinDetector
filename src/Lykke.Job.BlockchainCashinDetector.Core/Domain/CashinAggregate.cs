@@ -21,6 +21,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
         public DateTime? EnrolledBalanceResetMoment { get; private set; }
         public DateTime? OperationFinishMoment { get; private set; }
         public DateTime? DepositWalletLockReleasedMoment { get; private set; }
+        public DateTime? OperationAcceptanceMoment { get; private set; }
 
         public Guid OperationId { get; }
         public string BlockchainType { get; }
@@ -110,7 +111,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             CashinState state,
             bool? isDustCashin,
             string version,
-            CashinErrorCode? cashinErrorCode)
+            CashinErrorCode? cashinErrorCode,
+            DateTime? operationAcceptanceMoment)
         {
             return new CashinAggregate
             (
@@ -136,6 +138,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
                 EnrolledBalanceResetMoment = enrolledBalanceResetMoment,
                 OperationFinishMoment = operationFinishMoment,
                 DepositWalletLockReleasedMoment = depositWalletLockReleasedMoment,
+                OperationAcceptanceMoment = operationAcceptanceMoment,
 
                 ClientId = clientId,
                 TransactionHash = transactionHash,
@@ -239,9 +242,45 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             return TransitionResult.Switched;
         }
 
+        public TransitionResult OnOperationAccepted()
+        {
+            switch (SwitchState(CashinState.Started, CashinState.OperationAccepted))
+            {
+                case TransitionResult.AlreadyInFutureState:
+                    return TransitionResult.AlreadyInFutureState;
+
+                case TransitionResult.AlreadyInTargetState:
+                    return TransitionResult.AlreadyInTargetState;
+            }
+
+            OperationAcceptanceMoment = DateTime.UtcNow;
+
+            return TransitionResult.Switched;
+        }
+
+        public TransitionResult OnOperationRejected(string reason)
+        {
+            switch (SwitchState(CashinState.Started, CashinState.OperationRejected))
+            {
+                case TransitionResult.AlreadyInFutureState:
+                    return TransitionResult.AlreadyInFutureState;
+
+                case TransitionResult.AlreadyInTargetState:
+                    return TransitionResult.AlreadyInTargetState;
+            }
+
+            Error = reason;
+
+            ErrorCode = CashinErrorCode.Unknown;
+
+            MarkOperationAsFinished(false);
+
+            return TransitionResult.Switched;
+        }
+
         public TransitionResult OnEnrolledToMatchingEngine(Guid clientId)
         {
-            switch (SwitchState(CashinState.Started, CashinState.EnrolledToMatchingEngine))
+            switch (SwitchState(CashinState.OperationAccepted, CashinState.EnrolledToMatchingEngine))
             {
                 case TransitionResult.AlreadyInFutureState:
                     return TransitionResult.AlreadyInFutureState;
