@@ -345,16 +345,15 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
 
             var transitionResult = aggregate.OnDepositWalletLockReleased();
 
-            if (aggregate.Result == CashinResult.OutdatedBalance)
-            {
-                await _cashinRepository.SaveAsync(aggregate);
-
-                return;
-            }
 
             if (transitionResult.ShouldSaveAggregate())
             {
                 await _cashinRepository.SaveAsync(aggregate);
+            }
+
+            if (aggregate.Result == CashinResult.OutdatedBalance)
+            {
+                return;
             }
 
             // Sending the "off-blockchain operation" event, if needed.
