@@ -6,6 +6,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
     {
         WaitingForActualBalance,
         Started,
+        ClientRetrieved,
+        OperationAccepted,
+        OperationRejected,
         EnrolledToMatchingEngine,
         EnrolledBalanceSet,
         DustEnrolledBalanceSet,
@@ -13,9 +16,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
         OperationFailed,
         EnrolledBalanceReset,
         OutdatedBalance,
-        DepositWalletLockIsReleased,
-        OperationAccepted,
-        OperationRejected,
-        ClientRetrieved
+        DepositWalletLockIsReleased
     }
 }

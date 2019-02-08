@@ -82,8 +82,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                         (
                             new RetrieveClientCommand
                             {
-                                OperationId = aggregate.OperationId,
-                                BlockchainType = aggregate.BlockchainType
+                                BlockchainType = aggregate.BlockchainType,
+                                DepositWalletAddress = aggregate.DepositWalletAddress,
+                                OperationId = aggregate.OperationId
                             },
                             Self
                         );

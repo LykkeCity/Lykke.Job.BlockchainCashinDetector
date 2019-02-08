@@ -109,7 +109,7 @@ namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests.Modules
 
             const string defaultPipeline = "commands";
             const string defaultRoute = "self";
-            const string eventsRoute = "events";
+            const string eventsRoute = "evets";
 
             var registration = new List<IRegistration>()
             {
