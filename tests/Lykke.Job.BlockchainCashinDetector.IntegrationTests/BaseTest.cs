@@ -89,7 +89,7 @@ namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests
 
             await processor.ProcessAsync(100);
 
-            await CqrsTestModule.CommandsInterceptor.WaitForCommandToBeHandledWithTimeoutAsync(typeof(LockDepositWalletCommand), 
+            await CqrsTestModule.CommandsInterceptor.WaitForCommandToBeHandledWithTimeoutAsync(typeof(LockDepositWalletCommand),
                 TimeSpan.MaxValue);
 
             await CqrsTestModule.EventsInterceptor.WaitForEventToBeHandledWithTimeoutAsync(typeof(DepositWalletLockedEvent),
@@ -117,16 +117,16 @@ namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests
         public async Task DepositWalletLockReleasedEventSent__AggregateIsCashin__NotifyCashinCompletedCommandSent()
         {
             var operationId = Guid.NewGuid();
-            var cashinAggregate = CashinAggregate.Restore(operationId, 
-                "ETC", 
+            var cashinAggregate = CashinAggregate.Restore(operationId,
+                "ETC",
                 6,
                 10,
                 250,
-                "ETC", 
-                "EthereumClassic", 
+                "ETC",
+                "EthereumClassic",
                 0,
                 DateTime.UtcNow,
-                "0x...", 
+                "0x...",
                 150,
                 250,
                 null,
@@ -134,10 +134,10 @@ namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests
                 null,
                 0.05m,
                 "0x...",
-                DateTime.UtcNow, 
+                DateTime.UtcNow,
                 10,
                 10,
-                DateTime.UtcNow, 
+                DateTime.UtcNow,
                 null,
                 operationId,
                 CashinResult.Success,
@@ -346,6 +346,93 @@ namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests
             cqrsEngine.StartSubscribers();
 
             cqrsEngine.PublishEvent(@event, CqrsTestModule.Self);
+
+            await CqrsTestModule.EventsInterceptor.WaitForEventToBeHandledWithTimeoutAsync(
+                typeof(DepositWalletLockReleasedEvent),
+                TimeSpan.FromMinutes(4));
+
+            await CqrsTestModule.CommandsInterceptor.WaitForCommandToBeHandledWithTimeoutAsync(
+                typeof(NotifyCashinFailedCommand),
+                TimeSpan.FromMinutes(4));
+        }
+
+        [Fact]
+        public async Task DepositWalletLockReleasedEventSent__AggregateIsRejectedCashin__NotifyCashinFailedCommandSent()
+        {
+            var operationId = Guid.NewGuid();
+            var cashinAggregate = CashinAggregate.Restore(operationId,
+                "ETC",
+                6,
+                10,
+                250,
+                "ETC",
+                "EthereumClassic",
+                0,
+                DateTime.UtcNow,
+                "0x...",
+                150,
+                250,
+                null,
+                null,
+                null,
+                0.05m,
+                "0x...",
+                DateTime.UtcNow,
+                10,
+                10,
+                DateTime.UtcNow,
+                null,
+                operationId,
+                CashinResult.Unknown,
+                null,
+                null,
+                10,
+                250,
+                "0xHASH",
+                CashinState.ClientRetrieved,
+                true,
+                "1.0.0",
+                CashinErrorCode.Unknown,
+                null);
+            var cashinRepoMock = new Mock<ICashinRepository>();
+            cashinRepoMock.Setup(x => x.GetAsync(It.IsAny<Guid>())).ReturnsAsync(cashinAggregate);
+            var repoModule = new RepoMockModule((builder) =>
+            {
+                var depositWalletLockRepository = new Mock<IDepositWalletLockRepository>();
+                var matchingEngineCallsDeduplicationRepository = new Mock<IMatchingEngineCallsDeduplicationRepository>();
+                var enrolledBalanceRepository = new Mock<IEnrolledBalanceRepository>();
+                builder.RegisterInstance(cashinRepoMock.Object)
+                    .As<ICashinRepository>();
+
+                builder.RegisterInstance(matchingEngineCallsDeduplicationRepository.Object)
+                    .As<IMatchingEngineCallsDeduplicationRepository>();
+
+                builder.RegisterInstance(enrolledBalanceRepository.Object)
+                    .As<IEnrolledBalanceRepository>();
+
+                builder.RegisterInstance(depositWalletLockRepository.Object)
+                    .As<IDepositWalletLockRepository>();
+            });
+
+            var dependencies = GetIntegrationDependencies();
+            dependencies.Add(repoModule);
+            var testContainer = ContainerCreator.CreateContainer(
+                dependencies.ToArray()
+                );
+            var cqrsEngine = testContainer.Resolve<ICqrsEngine>();
+            var @event = new BlockchainRiskControl.Contract.Events.OperationRejectedEvent()
+            {
+                OperationId = operationId,
+                Message = "Test"
+            };
+
+            cqrsEngine.StartSubscribers();
+
+            cqrsEngine.PublishEvent(@event, BlockchainRiskControl.Contract.BlockchainRiskControlBoundedContext.Name);
+
+            await CqrsTestModule.CommandsInterceptor.WaitForCommandToBeHandledWithTimeoutAsync(
+                typeof(ReleaseDepositWalletLockCommand),
+                TimeSpan.FromMinutes(4));
 
             await CqrsTestModule.EventsInterceptor.WaitForEventToBeHandledWithTimeoutAsync(
                 typeof(DepositWalletLockReleasedEvent),

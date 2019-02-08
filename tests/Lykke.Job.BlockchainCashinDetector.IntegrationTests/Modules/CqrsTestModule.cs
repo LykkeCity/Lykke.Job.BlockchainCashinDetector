@@ -87,6 +87,7 @@ namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests.Modules
             builder.RegisterType<NotifyCashinCompletedCommandsHandler>();
             builder.RegisterType<ReleaseDepositWalletLockCommandHandler>();
             builder.RegisterType<NotifyCashinFailedCommandsHandler>();
+            builder.RegisterType<RetrieveClientCommandHandler>();
 
             // Projections
             builder.RegisterType<MatchingEngineCallDeduplicationsProjection>();
@@ -108,7 +109,7 @@ namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests.Modules
 
             const string defaultPipeline = "commands";
             const string defaultRoute = "self";
-            const string eventsRoute = "evets";
+            const string eventsRoute = "events";
 
             var registration = new List<IRegistration>()
             {
@@ -121,6 +122,12 @@ namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests.Modules
                     .WithLoopback()//When it is sent not from saga
                     .WithCommandsHandler<LockDepositWalletCommandsHandler>()
                     .PublishingEvents(typeof(DepositWalletLockedEvent))
+                    .With(defaultPipeline)
+
+                    .ListeningCommands(typeof(RetrieveClientCommand))
+                    .On(defaultRoute)
+                    .WithCommandsHandler<RetrieveClientCommandHandler>()
+                    .PublishingEvents(typeof(ClientRetrievedEvent))
                     .With(defaultPipeline)
 
                     .ListeningCommands(typeof(EnrollToMatchingEngineCommand))
@@ -184,8 +191,29 @@ namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests.Modules
                     .From(Self)
                     .On(defaultRoute)
                     .PublishingCommands(
-                        typeof(EnrollToMatchingEngineCommand),
+                        typeof(RetrieveClientCommand),
                         typeof(ReleaseDepositWalletLockCommand))
+                    .To(Self)
+                    .With(defaultPipeline)
+
+                    .ListeningEvents(typeof(ClientRetrievedEvent))
+                    .From(Self)
+                    .On(defaultRoute)
+                    .PublishingCommands(typeof(BlockchainRiskControl.Contract.Commands.ValidateOperationCommand))
+                    .To(BlockchainRiskControl.Contract.BlockchainRiskControlBoundedContext.Name)
+                    .With(defaultPipeline)
+
+                    .ListeningEvents(typeof(BlockchainRiskControl.Contract.Events.OperationAcceptedEvent))
+                    .From(BlockchainRiskControl.Contract.BlockchainRiskControlBoundedContext.Name)
+                    .On(defaultRoute)
+                    .PublishingCommands(typeof(EnrollToMatchingEngineCommand))
+                    .To(Self)
+                    .With(defaultPipeline)
+
+                    .ListeningEvents(typeof(BlockchainRiskControl.Contract.Events.OperationRejectedEvent))
+                    .From(BlockchainRiskControl.Contract.BlockchainRiskControlBoundedContext.Name)
+                    .On(defaultRoute)
+                    .PublishingCommands(typeof(ReleaseDepositWalletLockCommand))
                     .To(Self)
                     .With(defaultPipeline)
 
@@ -230,7 +258,12 @@ namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests.Modules
                     .To(Self)
                     .With(defaultPipeline)
 
-                    .ProcessingOptions(defaultRoute).MultiThreaded(8).QueueCapacity(1024)
+                    .ProcessingOptions(defaultRoute).MultiThreaded(8).QueueCapacity(1024),
+
+                Register.BoundedContext(BlockchainRiskControl.Contract.BlockchainRiskControlBoundedContext.Name)
+                    .FailedCommandRetryDelay(defaultRetryDelay)
+                    .PublishingEvents(typeof(BlockchainRiskControl.Contract.Events.OperationRejectedEvent))
+                    .With(eventsRoute)
             };
 
             var interceptors = GetInterceptors();

@@ -90,6 +90,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
             builder.RegisterType<NotifyCashinCompletedCommandsHandler>();
             builder.RegisterType<ReleaseDepositWalletLockCommandHandler>();
             builder.RegisterType<NotifyCashinFailedCommandsHandler>();
+            builder.RegisterType<RetrieveClientCommandHandler>();
 
             // Projections
             builder.RegisterType<MatchingEngineCallDeduplicationsProjection>();
@@ -124,6 +125,12 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .WithLoopback()//When it is sent not from saga
                     .WithCommandsHandler<LockDepositWalletCommandsHandler>()
                     .PublishingEvents(typeof(DepositWalletLockedEvent))
+                    .With(defaultPipeline)
+
+                    .ListeningCommands(typeof(RetrieveClientCommand))
+                    .On(defaultRoute)
+                    .WithCommandsHandler<RetrieveClientCommandHandler>()
+                    .PublishingEvents(typeof(ClientRetrievedEvent))
                     .With(defaultPipeline)
 
                     .ListeningCommands(typeof(EnrollToMatchingEngineCommand))
@@ -186,11 +193,17 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .ListeningEvents(typeof(DepositWalletLockedEvent))
                     .From(Self)
                     .On(defaultRoute)
+                    .PublishingCommands(
+                        typeof(RetrieveClientCommand),
+                        typeof(ReleaseDepositWalletLockCommand))
+                    .To(Self)
+                    .With(defaultPipeline)
+
+                    .ListeningEvents(typeof(ClientRetrievedEvent))
+                    .From(Self)
+                    .On(defaultRoute)
                     .PublishingCommands(typeof(BlockchainRiskControl.Contract.Commands.ValidateOperationCommand))
                     .To(BlockchainRiskControl.Contract.BlockchainRiskControlBoundedContext.Name)
-                    .With(defaultPipeline)
-                    .PublishingCommands(typeof(ReleaseDepositWalletLockCommand))
-                    .To(Self)
                     .With(defaultPipeline)
 
                     .ListeningEvents(typeof(BlockchainRiskControl.Contract.Events.OperationAcceptedEvent))
@@ -204,6 +217,13 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .From(BlockchainRiskControl.Contract.BlockchainRiskControlBoundedContext.Name)
                     .On(defaultRoute)
                     .PublishingCommands(typeof(ReleaseDepositWalletLockCommand))
+                    .To(Self)
+                    .With(defaultPipeline)
+
+                    .ListeningEvents(typeof(CashinEnrolledToMatchingEngineEvent))
+                    .From(Self)
+                    .On(defaultRoute)
+                    .PublishingCommands(typeof(SetEnrolledBalanceCommand))
                     .To(Self)
                     .With(defaultPipeline)
 
