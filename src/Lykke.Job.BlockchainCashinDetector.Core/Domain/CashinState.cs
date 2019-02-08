@@ -15,6 +15,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
         OutdatedBalance,
         DepositWalletLockIsReleased,
         OperationAccepted,
-        OperationRejected
+        OperationRejected,
+        ClientRetrieved
     }
 }

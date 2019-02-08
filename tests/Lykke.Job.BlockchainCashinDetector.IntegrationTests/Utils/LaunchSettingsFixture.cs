@@ -14,7 +14,7 @@ namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests.Utils
         {
             try
             {
-                using (var file = File.OpenText("Properties\\launchSettings.json"))
+                using (var file = File.OpenText(Path.Combine("Properties", "launchSettings.json")))
                 {
                     var reader = new JsonTextReader(file);
                     var jObject = JObject.Load(reader);

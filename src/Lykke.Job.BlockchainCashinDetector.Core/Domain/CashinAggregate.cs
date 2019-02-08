@@ -22,6 +22,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
         public DateTime? OperationFinishMoment { get; private set; }
         public DateTime? DepositWalletLockReleasedMoment { get; private set; }
         public DateTime? OperationAcceptanceMoment { get; private set; }
+        public DateTime? ClientRetrievingMoment { get; private set; }
 
         public Guid OperationId { get; }
         public string BlockchainType { get; }
@@ -242,9 +243,27 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
             return TransitionResult.Switched;
         }
 
+        public TransitionResult OnClientRetrieved(Guid clientId)
+        {
+            switch (SwitchState(CashinState.Started, CashinState.ClientRetrieved))
+            {
+                case TransitionResult.AlreadyInFutureState:
+                    return TransitionResult.AlreadyInFutureState;
+
+                case TransitionResult.AlreadyInTargetState:
+                    return TransitionResult.AlreadyInTargetState;
+            }
+
+            ClientId = clientId;
+
+            ClientRetrievingMoment = DateTime.UtcNow;
+
+            return TransitionResult.Switched;
+        }
+
         public TransitionResult OnOperationAccepted()
         {
-            switch (SwitchState(CashinState.Started, CashinState.OperationAccepted))
+            switch (SwitchState(CashinState.ClientRetrieved, CashinState.OperationAccepted))
             {
                 case TransitionResult.AlreadyInFutureState:
                     return TransitionResult.AlreadyInFutureState;
@@ -260,7 +279,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
 
         public TransitionResult OnOperationRejected(string reason)
         {
-            switch (SwitchState(CashinState.Started, CashinState.OperationRejected))
+            switch (SwitchState(CashinState.ClientRetrieved, CashinState.OperationRejected))
             {
                 case TransitionResult.AlreadyInFutureState:
                     return TransitionResult.AlreadyInFutureState;
@@ -289,7 +308,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
                     return TransitionResult.AlreadyInTargetState;
             }
 
-            ClientId = clientId;
+            ClientId = ClientId ?? clientId;
 
             MatchingEngineEnrollementMoment = DateTime.UtcNow;
 
@@ -393,7 +412,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
                 CashinState.OutdatedBalance,
                 CashinState.DustEnrolledBalanceSet,
                 CashinState.EnrolledBalanceReset,
-                CashinState.OperationFailed
+                CashinState.OperationFailed,
+                CashinState.OperationRejected
             };
 
             switch (SwitchState(validStates, CashinState.DepositWalletLockIsReleased))
