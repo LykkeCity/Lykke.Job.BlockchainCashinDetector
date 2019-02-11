@@ -2,6 +2,7 @@
 using Autofac;
 using JetBrains.Annotations;
 using Lykke.Common.Chaos;
+using Lykke.Job.BlockchainCashinDetector.Contract.Events;
 using Lykke.Job.BlockchainCashinDetector.Services;
 using Lykke.Job.BlockchainCashinDetector.Settings;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Commands;
@@ -38,8 +39,11 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .MapMessageId<ReleaseDepositWalletLockCommand>(x => x.OperationId.ToString())
                     .MapMessageId<ResetEnrolledBalanceCommand>(x => x.OperationId.ToString())
                     .MapMessageId<SetEnrolledBalanceCommand>(x => x.OperationId.ToString())
+                    .MapMessageId<LockDepositWalletCommand>(x => x.BlockchainType.ToString())
 
                     //Events
+                    .MapMessageId<CashinCompletedEvent>(x => x.OperationId.ToString())
+                    .MapMessageId<CashinFailedEvent>(x => x.OperationId.ToString())
                     .MapMessageId<CashinEnrolledToMatchingEngineEvent>(x => x.OperationId.ToString())
                     .MapMessageId<DepositWalletLockedEvent>(x => x.OperationId.ToString())
                     .MapMessageId<DepositWalletLockReleasedEvent>(x => x.OperationId.ToString())
