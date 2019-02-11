@@ -30,8 +30,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
             {
                 #region Registry
 
-                //Commands
                 options.Value
+                    //Commands
                     .MapMessageId<EnrollToMatchingEngineCommand>(x => x.OperationId.ToString())
                     .MapMessageId<NotifyCashinCompletedCommand>(x => x.OperationId.ToString())
                     .MapMessageId<NotifyCashinFailedCommand>(x => x.OperationId.ToString())
@@ -39,12 +39,27 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .MapMessageId<ResetEnrolledBalanceCommand>(x => x.OperationId.ToString())
                     .MapMessageId<SetEnrolledBalanceCommand>(x => x.OperationId.ToString())
 
-                //Events
+                    //Events
                     .MapMessageId<CashinEnrolledToMatchingEngineEvent>(x => x.OperationId.ToString())
                     .MapMessageId<DepositWalletLockedEvent>(x => x.OperationId.ToString())
                     .MapMessageId<DepositWalletLockReleasedEvent>(x => x.OperationId.ToString())
                     .MapMessageId<EnrolledBalanceResetEvent>(x => x.OperationId.ToString())
-                    .MapMessageId<EnrolledBalanceSetEvent>(x => x.OperationId.ToString());
+                    .MapMessageId<EnrolledBalanceSetEvent>(x => x.OperationId.ToString())
+
+                    //External Commands
+                    .MapMessageId<BlockchainOperationsExecutor.Contract.Commands.StartOneToManyOutputsExecutionCommand>(
+                        x => x.OperationId.ToString())
+                    .MapMessageId<BlockchainOperationsExecutor.Contract.Commands.StartOperationExecutionCommand>(
+                        x => x.OperationId.ToString())
+
+                    //External Events
+                    .MapMessageId<BlockchainOperationsExecutor.Contract.Events.OperationExecutionCompletedEvent>(
+                        x => x.OperationId.ToString())
+                    .MapMessageId<BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent>(
+                        x => x.OperationId.ToString())
+                    .MapMessageId<BlockchainOperationsExecutor.Contract.Events.OneToManyOperationExecutionCompletedEvent>(
+                        x => x.OperationId.ToString());
+
                 #endregion
             });
 
