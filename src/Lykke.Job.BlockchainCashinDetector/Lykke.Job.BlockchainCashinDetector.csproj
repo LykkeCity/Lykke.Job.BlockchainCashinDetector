@@ -26,6 +26,7 @@
   <ItemGroup>
     <PackageReference Include="Lykke.Common.ApiLibrary" Version="1.12.0" />
     <PackageReference Include="Lykke.Cqrs.MessageCancellation" Version="2.4.1" />
+    <PackageReference Include="Lykke.Cqrs.MessageCancellation" Version="2.4.1" />
     <PackageReference Include="Lykke.Job.BlockchainOperationsExecutor.Contract" Version="12.0.0" />
     <PackageReference Include="Lykke.Job.BlockchainRiskControl.Contract" Version="1.0.0" />
     <PackageReference Include="Lykke.Logs" Version="7.2.1" />

@@ -33,6 +33,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
 
                 options.Value
                     //Commands
+                    .MapMessageId<RetrieveClientCommand>(x => x.OperationId.ToString())
                     .MapMessageId<EnrollToMatchingEngineCommand>(x => x.OperationId.ToString())
                     .MapMessageId<NotifyCashinCompletedCommand>(x => x.OperationId.ToString())
                     .MapMessageId<NotifyCashinFailedCommand>(x => x.OperationId.ToString())
@@ -42,6 +43,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .MapMessageId<LockDepositWalletCommand>(x => x.BlockchainType.ToString())
 
                     //Events
+                    .MapMessageId<ClientRetrievedEvent>(x => x.OperationId.ToString())
                     .MapMessageId<CashinCompletedEvent>(x => x.OperationId.ToString())
                     .MapMessageId<CashinFailedEvent>(x => x.OperationId.ToString())
                     .MapMessageId<CashinEnrolledToMatchingEngineEvent>(x => x.OperationId.ToString())
