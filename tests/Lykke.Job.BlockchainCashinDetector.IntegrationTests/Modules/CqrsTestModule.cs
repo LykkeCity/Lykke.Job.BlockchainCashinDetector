@@ -2,8 +2,10 @@
 using Lykke.Common.Log;
 using Lykke.Cqrs;
 using Lykke.Cqrs.Configuration;
+using Lykke.Cqrs.MessageCancellation.Interceptors;
 using Lykke.Job.BlockchainCashinDetector.Contract;
 using Lykke.Job.BlockchainCashinDetector.Contract.Events;
+using Lykke.Job.BlockchainCashinDetector.IntegrationTests.Utils;
 using Lykke.Job.BlockchainCashinDetector.Settings.JobSettings;
 using Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers;
 using Lykke.Job.BlockchainCashinDetector.Workflow.Commands;
@@ -15,7 +17,6 @@ using Lykke.Messaging;
 using Lykke.Messaging.RabbitMq;
 using Lykke.Messaging.Serialization;
 using System.Collections.Generic;
-using Lykke.Job.BlockchainCashinDetector.IntegrationTests.Utils;
 
 namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests.Modules
 {
@@ -266,6 +267,8 @@ namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests.Modules
         {
             return new IRegistration[]
             {
+                Register.CommandInterceptor<MessageCancellationCommandInterceptor>(),
+                Register.EventInterceptor<MessageCancellationEventInterceptor>(),
                 Register.CommandInterceptors(CommandsInterceptor),
                 Register.EventInterceptors(EventsInterceptor)
             };
