@@ -364,6 +364,7 @@ namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests
             var cashinAggregate = CashinAggregate.Restore(operationId,
                 "ETC",
                 6,
+                6,
                 10,
                 250,
                 "ETC",
