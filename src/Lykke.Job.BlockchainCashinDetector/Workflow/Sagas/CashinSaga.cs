@@ -45,7 +45,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
                  (
                      operationId: evt.OperationId,
                      assetId: evt.AssetId,
-                     blockchainAssetAccuracy: evt.AssetAccuracy,
+                     blockchainAssetAccuracy: evt.BlockchainAssetAccuracy,
+                     assetAccuracy: evt.AssetAccuracy,
                      blockchainAssetId: evt.BlockchainAssetId,
                      blockchainType: evt.BlockchainType,
                      cashinMinimalAmount: evt.CashinMinimalAmount,
