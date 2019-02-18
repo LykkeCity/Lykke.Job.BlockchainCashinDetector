@@ -116,7 +116,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         [UsedImplicitly]
         private async Task Handle(ClientRetrievedEvent evt, ICommandSender sender)
         {
-            var aggregate = await _cashinRepository.TryGetAsync(evt.OperationId);
+            var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
 
             var transitionResult = aggregate.OnClientRetrieved(clientId: evt.ClientId);
 
@@ -190,7 +190,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Sagas
         [UsedImplicitly]
         private async Task Handle(OperationRejectedEvent evt, ICommandSender sender)
         {
-            var aggregate = await _cashinRepository.GetAsync(evt.OperationId);
+            var aggregate = await _cashinRepository.TryGetAsync(evt.OperationId);
 
             if (aggregate == null)
             {
