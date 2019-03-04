@@ -26,5 +26,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.Commands
 
         [Key(5)]
         public double MatchingEngineOperationAmount{ get; set; }
+
+        [Key(6)]
+        public Guid? ClientId { get; set; }
     }
 }

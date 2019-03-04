@@ -40,11 +40,14 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
         [UsedImplicitly]
         public async Task<CommandHandlingResult> Handle(EnrollToMatchingEngineCommand command, IEventPublisher publisher)
         {
-            // TODO: Add client cache for the walletsClient
+            var clientId = command.ClientId;
 
-            var clientId = await _walletsClient.TryGetClientIdAsync(
-                command.BlockchainType,                
-                command.DepositWalletAddress);
+            if (clientId == null)
+            {
+                clientId = await _walletsClient.TryGetClientIdAsync(
+                    command.BlockchainType,
+                    command.DepositWalletAddress);
+            }
 
             if (clientId == null)
             {
