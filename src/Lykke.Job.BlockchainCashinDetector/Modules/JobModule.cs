@@ -40,6 +40,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .MapMessageId<ResetEnrolledBalanceCommand>(x => x.OperationId.ToString())
                     .MapMessageId<SetEnrolledBalanceCommand>(x => x.OperationId.ToString())
                     .MapMessageId<LockDepositWalletCommand>(x => x.BlockchainType.ToString())
+                    .MapMessageId<RetrieveClientCommand>(x => x.OperationId.ToString())
 
                     //Events
                     .MapMessageId<CashinCompletedEvent>(x => x.OperationId.ToString())
@@ -49,11 +50,14 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .MapMessageId<DepositWalletLockReleasedEvent>(x => x.OperationId.ToString())
                     .MapMessageId<EnrolledBalanceResetEvent>(x => x.OperationId.ToString())
                     .MapMessageId<EnrolledBalanceSetEvent>(x => x.OperationId.ToString())
+                    .MapMessageId<ClientRetrievedEvent>(x => x.OperationId.ToString())
 
                     //External Commands
                     .MapMessageId<BlockchainOperationsExecutor.Contract.Commands.StartOneToManyOutputsExecutionCommand>(
                         x => x.OperationId.ToString())
                     .MapMessageId<BlockchainOperationsExecutor.Contract.Commands.StartOperationExecutionCommand>(
+                        x => x.OperationId.ToString())
+                    .MapMessageId<BlockchainRiskControl.Contract.Commands.ValidateOperationCommand>(
                         x => x.OperationId.ToString())
 
                     //External Events
@@ -62,6 +66,10 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .MapMessageId<BlockchainOperationsExecutor.Contract.Events.OperationExecutionFailedEvent>(
                         x => x.OperationId.ToString())
                     .MapMessageId<BlockchainOperationsExecutor.Contract.Events.OneToManyOperationExecutionCompletedEvent>(
+                        x => x.OperationId.ToString())
+                    .MapMessageId<BlockchainRiskControl.Contract.Events.OperationAcceptedEvent>(
+                        x => x.OperationId.ToString())
+                    .MapMessageId<BlockchainRiskControl.Contract.Events.OperationRejectedEvent>(
                         x => x.OperationId.ToString());
 
                 #endregion
