@@ -450,19 +450,14 @@ namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests
         private List<IModule> GetIntegrationDependencies()
         {
             var appSettings = ContainerCreator.LoadAppSettings();
+            appSettings.CurrentValue.BlockchainCashinDetectorJob.Cqrs.Vhost = "test";
 
             return new List<IModule>
             {
                 new JobModule(appSettings),
                 new BlockchainsModule(appSettings),
-                new CqrsTestModule(appSettings.CurrentValue.BlockchainCashinDetectorJob.Cqrs, "test")
+                new CqrsTestModule(appSettings)
             };
         }
-
-
     }
-
-    #region Mock
-
-    #endregion
 }

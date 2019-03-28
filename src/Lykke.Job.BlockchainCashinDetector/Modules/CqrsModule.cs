@@ -24,7 +24,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
     {
         public static readonly string Self = BlockchainCashinDetectorBoundedContext.Name;
 
-        private readonly IReloadingManager<AppSettings> _settings;
+        protected readonly IReloadingManager<AppSettings> _settings;
 
         public CqrsModule(IReloadingManager<AppSettings> settings)
         {
@@ -54,7 +54,9 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
             {
                 Uri = _settings.CurrentValue.BlockchainCashinDetectorJob.Cqrs.RabbitConnectionString
             };
-            var rabbitMqEndpoint = rabbitMqSettings.Endpoint.ToString();
+
+            string vhost = _settings.CurrentValue.BlockchainCashinDetectorJob.Cqrs.Vhost;
+            var rabbitMqEndpoint = rabbitMqSettings.Endpoint.ToString() + (!string.IsNullOrEmpty(vhost) ? "/" + vhost : "");
 
             var messagingEngine = new MessagingEngine(logFactory,
                 new TransportResolver(new Dictionary<string, TransportInfo>
@@ -173,7 +175,6 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
                     .WithCommandsHandler<NotifyCashinFailedCommandsHandler>()
                     .PublishingEvents(typeof(CashinFailedEvent))
                     .With(eventsRoute)
-
 
                     .ListeningEvents(typeof(EnrolledBalanceSetEvent))
                     .From(Self)
