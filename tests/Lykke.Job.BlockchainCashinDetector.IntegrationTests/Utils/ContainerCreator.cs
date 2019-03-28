@@ -18,16 +18,15 @@ namespace Lykke.Job.BlockchainCashinDetector.IntegrationTests.Utils
             var builder = new ContainerBuilder();
             var appSettings = LoadAppSettings();
 
+            appSettings.CurrentValue.BlockchainCashinDetectorJob.Cqrs.Vhost = "test";
             builder.RegisterInstance(LogFactory.Create().AddUnbufferedConsole())
                 .As<ILogFactory>()
                 .As<LogFactory>()
                 .SingleInstance();
-
             builder.RegisterModule(new JobModule(appSettings));
             builder.RegisterModule(new RepositoriesModule(appSettings));
             builder.RegisterModule(new BlockchainsModule(appSettings));
-            builder.RegisterModule(new CqrsTestModule(
-                appSettings.CurrentValue.BlockchainCashinDetectorJob.Cqrs, "test"));
+            builder.RegisterModule(new CqrsTestModule(appSettings));
 
             var testContainer = builder.Build();
 

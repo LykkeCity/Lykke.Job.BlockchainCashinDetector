@@ -13,5 +13,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Settings.JobSettings
 
         [UsedImplicitly(ImplicitUseKindFlags.Assign)]
         public TimeSpan RetryDelay { get; set; }
+
+        [Optional]
+        public string Vhost { get; set; }
     }
 }
