@@ -229,7 +229,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Core.Domain
                 EnrolledBalanceBlock = enrolledBalanceBlock;
                 OperationAmount = operationAmount;
                 MeAmount = matchingEngineOperationAmount;
-                IsDustCashin = balanceAmount <= CashinMinimalAmount;
+                IsDustCashin = balanceAmount < CashinMinimalAmount;
 
                 StartMoment = DateTime.UtcNow;
 
