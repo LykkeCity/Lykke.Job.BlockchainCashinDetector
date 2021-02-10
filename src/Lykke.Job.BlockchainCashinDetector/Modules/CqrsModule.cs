@@ -17,6 +17,7 @@ using Lykke.Messaging.RabbitMq;
 using Lykke.Messaging.Serialization;
 using Lykke.SettingsReader;
 using System.Collections.Generic;
+using Lykke.Job.BlockchainCashinDetector.Workflow.Interceptors;
 
 namespace Lykke.Job.BlockchainCashinDetector.Modules
 {
@@ -42,6 +43,8 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
         {
             return new IRegistration[]
             {
+                Register.CommandInterceptor<ErrorsCommandInterceptor>(),
+                Register.EventInterceptor<ErrorsEventInterceptor>(),
                 Register.CommandInterceptor<MessageCancellationCommandInterceptor>(),
                 Register.EventInterceptor<MessageCancellationEventInterceptor>()
             };
@@ -99,6 +102,10 @@ namespace Lykke.Job.BlockchainCashinDetector.Modules
 
             // Projections
             builder.RegisterType<MatchingEngineCallDeduplicationsProjection>();
+
+            // Interceptors
+            builder.RegisterType<ErrorsCommandInterceptor>();
+            builder.RegisterType<ErrorsEventInterceptor>();
         }
 
         protected virtual IEndpointResolver GetDefaultEndpointResolver()
