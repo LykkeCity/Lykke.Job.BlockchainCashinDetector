@@ -27,7 +27,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
             IChaosKitty chaosKitty,
             ILogFactory logFactory,
             IBlockchainWalletsClient walletsClient,
-            IMatchingEngineCallsDeduplicationRepository deduplicationRepository, 
+            IMatchingEngineCallsDeduplicationRepository deduplicationRepository,
             IMatchingEngineClient meClient)
         {
             _chaosKitty = chaosKitty;
@@ -114,7 +114,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
 
                 default:
                     // Just abort cashin for futher manual processing. ME call could not be retried anyway if responce was received.
-                    _log.Warning(nameof(EnrollToMatchingEngineCommand), $"Unexpected response from ME. Status: {cashInResult.Status}, ME message: {cashInResult.Message}", context: command.OperationId);
+                    _log.Error(nameof(EnrollToMatchingEngineCommand), null, $"Unexpected response from ME. Status: {cashInResult.Status}, ME message: {cashInResult.Message}", context: command.OperationId);
                     return CommandHandlingResult.Ok();
             }
         }
