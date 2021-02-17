@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Common;
 using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Common.Chaos;
@@ -42,6 +43,11 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
         {
             var clientId = command.ClientId;
 
+            var amountDecimal = (decimal) command.MatchingEngineOperationAmount;
+
+            var scale = amountDecimal.GetScale();
+            var amount = command.MatchingEngineOperationAmount.TruncateDecimalPlaces(scale);
+
             if (clientId == null)
             {
                 clientId = await _walletsClient.TryGetClientIdAsync(
@@ -75,7 +81,7 @@ namespace Lykke.Job.BlockchainCashinDetector.Workflow.CommandHandlers
                 id: command.OperationId.ToString(),
                 clientId: clientId.Value.ToString(),
                 assetId: command.AssetId,
-                amount: command.MatchingEngineOperationAmount
+                amount: amount
             );
 
             _chaosKitty.Meow(command.OperationId);
